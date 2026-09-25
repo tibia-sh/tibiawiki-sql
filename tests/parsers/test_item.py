@@ -19,6 +19,14 @@ class TestItemParserRestores(unittest.TestCase):
 
         return {a.name: a.value for a in item.attributes if a.name.startswith("restores_")}
 
+    def _inline(self, notes: str) -> str:
+        return (
+            "{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}\n"
+            "| name          = Test Item\n"
+            f"| notes         = {notes}\n"
+            "}}\n"
+        )
+
     def _edited(self, resource: str, old: str, new: str) -> str:
         content = load_resource(resource)
         self.assertIn(old, content)
@@ -105,3 +113,22 @@ class TestItemParserRestores(unittest.TestCase):
         )
 
         self.assertEqual({}, self._restores("Great Spirit Potion", content))
+
+    def test_item_restores_none_when_amount_too_long(self):
+        content = self._edited(
+            "content_item_potion_health_potion.txt",
+            "'''175 [[Hit Point]]s'''",
+            f"'''{'9' * 4400} [[Hit Point]]s'''",
+        )
+
+        self.assertEqual({}, self._restores("Health Potion", content))
+
+    def test_item_restores_none_when_unit_runs_into_word(self):
+        restores = self._restores("Test Item", self._inline("It restores between 1 and 3 manatees."))
+
+        self.assertEqual({}, restores)
+
+    def test_item_restores_unit_before_punctuation(self):
+        restores = self._restores("Test Item", self._inline("It restores between 1 and 3 Hit Points."))
+
+        self.assertEqual({"restores_hp_min": "1", "restores_hp_max": "3"}, restores)

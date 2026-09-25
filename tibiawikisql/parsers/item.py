@@ -22,6 +22,9 @@ from tibiawikisql.utils import (
 RESTORE_AMOUNT = r"\d{1,3}(?:,\d{3})+|\d+"
 """An amount restored by an item, optionally with commas separating thousands."""
 
+MAX_RESTORE_DIGITS = 9
+"""The most digits a restored amount may have, without separators; a longer one is malformed."""
+
 HEALTH_UNIT_PATTERN = re.compile(r"hit\s?points?", re.IGNORECASE)
 """The unit of an amount of health restored."""
 
@@ -30,9 +33,9 @@ MANA_UNIT_PATTERN = re.compile(r"mana(?:\s+points?)?", re.IGNORECASE)
 
 RESTORE_CLAUSE = (
     rf"between\s+({RESTORE_AMOUNT})\s+and\s+({RESTORE_AMOUNT})\s+"
-    rf"({HEALTH_UNIT_PATTERN.pattern}|{MANA_UNIT_PATTERN.pattern})"
+    rf"({HEALTH_UNIT_PATTERN.pattern}|{MANA_UNIT_PATTERN.pattern})\b"
 )
-"""A range of health or mana restored, capturing the minimum, the maximum and the unit."""
+"""A range of health or mana restored, capturing the minimum, the maximum and the unit, which must end a word."""
 
 RESTORES_PATTERN = re.compile(rf"restores\s+{RESTORE_CLAUSE}(?:,\s+and\s+{RESTORE_CLAUSE})?", re.IGNORECASE)
 """The sentence in an item's notes stating one or two ranges it restores."""
@@ -223,7 +226,8 @@ class ItemParser(BaseParser):
 
         Each range becomes a ``restores_hp_min`` and ``restores_hp_max`` or a ``restores_mana_min`` and
         ``restores_mana_max`` attribute, with thousands separators removed. Nothing is added when the notes state
-        no range, the same unit twice, a minimum greater than its maximum, or a ``between`` after the parsed ranges.
+        no range, the same unit twice, an amount longer than :data:`MAX_RESTORE_DIGITS` digits, a minimum greater than
+        its maximum, or a ``between`` after the parsed ranges.
         """
         notes = row["_raw_attributes"].get("notes")
         if not notes:
@@ -240,7 +244,11 @@ class ItemParser(BaseParser):
             kind = "hp" if HEALTH_UNIT_PATTERN.fullmatch(unit) else "mana"
             minimum_value = minimum.replace(",", "")
             maximum_value = maximum.replace(",", "")
-            if kind in ranges or int(minimum_value) > int(maximum_value):
+            if (
+                kind in ranges
+                or max(len(minimum_value), len(maximum_value)) > MAX_RESTORE_DIGITS
+                or int(minimum_value) > int(maximum_value)
+            ):
                 return
             ranges[kind] = (minimum_value, maximum_value)
         for kind, (minimum_value, maximum_value) in ranges.items():
