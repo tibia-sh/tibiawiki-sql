@@ -22,6 +22,14 @@ Releases are wheels on this repository's [GitHub releases](https://github.com/ti
 on PyPI. Their versions end in `+tibiash.N`, like `9.0.0+tibiash.1`. To install one, download the wheel from a release
 and run `pip install` on it. The PyPI package and the install steps below are upstream's.
 
+To release a version, set `__version__` in `tibiawikisql/__init__.py`, add a `## <version>` section to `CHANGELOG.md`
+and merge both to `main`. Then push the tag `v<version>`, like `v9.0.0+tibiash.1`, on that commit. The release
+workflow checks that the tag matches the version and that the commit is on `main`, then runs the tests. It builds the
+wheel and the sdist with the hashed build dependencies in `build-constraints.txt`, writes `SHA256SUMS`, attests all
+three files and publishes them with the changelog section as the release notes. Running the workflow by hand is a dry
+run: it skips the tag checks and the release. To check a download, run `sha256sum -c SHA256SUMS` and
+`gh attestation verify <file> --repo tibia-sh/tibiawiki-sql`.
+
 Every upstream file this copy changes carries this line at the top, in the file's comment syntax:
 
 ```

@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: "0.12.12"
+          enable-cache: false
+      - name: Install
+        env:
+          PYTHON_VERSION: ${{ matrix.python-version }}
+        run: |
+          uv venv --python "$PYTHON_VERSION"
+          uv pip install -e '.[testing]'
+      - name: Test
+        run: .venv/bin/python -m unittest discover
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      UV_PYTHON: "3.10"
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: "0.12.12"
+          enable-cache: false
+      - name: Read the version
+        id: version
+        run: |
+          version="$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' tibiawikisql/__init__.py)"
+          if [[ ! "$version" =~ ^[0-9A-Za-z.+!-]+$ ]]; then
+            echo "::error::tibiawikisql/__init__.py must set __version__ exactly once, got: $version"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Build
+        id: build
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          uv build --build-constraints build-constraints.txt --require-hashes --out-dir dist
+          wheel="tibiawikisql-${VERSION}-py3-none-any.whl"
+          sdist="tibiawikisql-${VERSION}.tar.gz"
+          expected="$(printf '%s\n' "$wheel" "$sdist" | sort)"
+          actual="$(find dist -mindepth 1 -maxdepth 1 -printf '%f\n' | sort)"
+          if [ "$actual" != "$expected" ]; then
+            printf '::error::dist/ holds:\n%s\nexpected:\n%s\n' "$actual" "$expected"
+            exit 1
+          fi
+          echo "wheel=dist/$wheel" >> "$GITHUB_OUTPUT"
+          echo "sdist=dist/$sdist" >> "$GITHUB_OUTPUT"
+      - name: Check the installed wheel
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          WHEEL: ${{ steps.build.outputs.wheel }}
+        run: |
+          venv="$RUNNER_TEMP/wheel-venv"
+          uv venv "$venv"
+          uv pip install --python "$venv" "$WHEEL"
+          output="$("$venv/bin/tibiawikisql" --version)"
+          echo "$output"
+          if [[ "$output" != *"$VERSION"* ]]; then
+            echo "::error::tibiawikisql --version does not report $VERSION"
+            exit 1
+          fi
