@@ -496,6 +496,18 @@ class NpcDestinationTable(Table, table_name="npc_destination"):
     notes = Column(Text)
 
 
+class NpcLocationTable(Table, table_name="npc_location"):
+    """Table containing every position an NPC can be found at."""
+    npc_id = Column(ForeignKey(Integer, "npc", "article_id"), index=True)
+    position = Column(Integer, nullable=False)
+    city = Column(Text)
+    subarea = Column(Text)
+    geolabel = Column(Text)
+    x = Column(Integer)
+    y = Column(Integer)
+    z = Column(Integer)
+
+
 class OutfitTable(Table):
     """Table containing information about outfits."""
     article_id = Column(Integer, primary_key=True)

@@ -1,4 +1,5 @@
 import datetime
+import re
 import unittest
 
 from tests import load_resource
@@ -37,3 +38,94 @@ class TestNpcParser(unittest.TestCase):
         self.assertEqual("Captain Bluebear", npc.title)
         self.assertEqual("Human", npc.race)
         self.assertEqual(10, len(npc.destinations))
+
+    def test_npc_parser_locations_all_positions(self):
+        article = Article(
+            article_id=1,
+            title="Buddel",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource("content_npc_locations.txt"),
+        )
+
+        npc = NpcParser.from_article(article)
+
+        self.assertEqual(
+            [
+                (1, "Svargrond", None, 32254, 31195, 7),
+                (2, "Svargrond", "Okolnir", 32225, 31381, 7),
+                (3, "Svargrond", "Helheim", 32464, 31172, 7),
+                (4, "Svargrond", "Tyrsung", 32332, 31229, 7),
+                (5, "Svargrond", "Krimhorn", 32019, 31293, 7),
+            ],
+            [(p.position, p.city, p.subarea, p.x, p.y, p.z) for p in npc.locations],
+        )
+
+    def test_npc_parser_locations_single(self):
+        article = Article(
+            article_id=1,
+            title="Captain Bluebear",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource("content_npc_travel.txt"),
+        )
+
+        npc = NpcParser.from_article(article)
+
+        self.assertEqual(1, len(npc.locations))
+        location = npc.locations[0]
+        self.assertEqual(1, location.position)
+        self.assertEqual(
+            (npc.city, npc.x, npc.y, npc.z),
+            (location.city, location.x, location.y, location.z),
+        )
+
+    def test_npc_parser_locations_position_7_and_geolabel(self):
+        content = (
+            "{{Infobox NPC|List={{{1|}}}|GetValue={{{GetValue|}}}\n"
+            "| name         = Test NPC\n"
+            "| city         = Thais\n"
+            "| city7        = Carlin\n"
+            "| geolabel7    = [[Carlin Harbour|Harbour]]\n"
+            "| posx7        = 125.1.2\n"
+            "| posy7        = 124.10\n"
+            "}}\n"
+        )
+        article = Article(
+            article_id=1,
+            title="Test NPC",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=content,
+        )
+
+        npc = NpcParser.from_article(article)
+
+        self.assertEqual([1, 7], [p.position for p in npc.locations])
+        position_7 = npc.locations[1]
+        self.assertEqual("Carlin", position_7.city)
+        self.assertEqual("Harbour", position_7.geolabel)
+        self.assertIsNone(position_7.x)
+        self.assertEqual(31754, position_7.y)
+        self.assertIsNone(position_7.z)
+
+    def test_npc_parser_locations_malformed_and_gaps(self):
+        content = load_resource("content_npc_locations.txt")
+        content = re.sub(r"^\| posx2\s*=.*$", "| posx2        = 125", content, flags=re.MULTILINE)
+        content = re.sub(r"^\| posy2\s*=.*$", "| posy2        = abc", content, flags=re.MULTILINE)
+        content = re.sub(r"^\| posx4\s*=.*$", "| posx4        =", content, flags=re.MULTILINE)
+        content = re.sub(r"^\| (city|subarea|posx|posy|posz)3\s*=.*\n", "", content, flags=re.MULTILINE)
+        article = Article(
+            article_id=1,
+            title="Buddel",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=content,
+        )
+
+        npc = NpcParser.from_article(article)
+
+        self.assertEqual([1, 2, 4, 5], [p.position for p in npc.locations])
+        position_2 = npc.locations[1]
+        self.assertEqual(32000, position_2.x)
+        self.assertIsNone(position_2.y)
+        self.assertEqual("Okolnir", position_2.subarea)
+        position_4 = npc.locations[2]
+        self.assertIsNone(position_4.x)
+        self.assertEqual(31229, position_4.y)

@@ -1,0 +1,43 @@
+{{Infobox NPC|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name         = Buddel
+| job          = Ferryman
+| job2         = Fisherman
+| location     = South of [[Svargrond]], [[Tyrsung]] ({{Mapper Coords|126.76|121.254|7|3|text=here}}), [[Okolnir]] ({{Mapper Coords|125.224|122.150|7|3|text=here}}), [[Barbarian Settlements]] ({{Mapper Coords|125.20|122.62|7|3|text=here}}) and [[Helheim]] ({{Mapper Coords|126.209|121.198|7|3|text=here}}).
+| city         = Svargrond
+| posx         = 125.254
+| posy         = 121.219
+| posz         = 7
+| city2        = Svargrond
+| subarea2     = Okolnir
+| posx2        = 125.225
+| posy2        = 122.149
+| posz2        = 7
+| city3        = Svargrond
+| subarea3     = Helheim
+| posx3        = 126.208
+| posy3        = 121.196
+| posz3        = 7
+| city4        = Svargrond
+| subarea4     = Tyrsung
+| posx4        = 126.76
+| posy4        = 121.253
+| posz4        = 7
+| city5        = Svargrond
+| subarea5     = Krimhorn
+| posx5        = 125.19
+| posy5        = 122.61
+| posz5        = 7
+| gender       = Male
+| race         = Human
+| buysell      = yes
+| implemented  = 8.00
+| notes        = He says that he was once called Bejorn, but that everyone calls him Buddel now. 
+Buddel will take you to some of the ice islands for 50 [[Currency|gold]], valid destinations are [[Tyrsung]], [[Okolnir]], [[Svargrond]], [[Barbarian Settlements|Camp]] and [[Helheim]].<br>
+But beware! This NPC is always [[Drunk NPCs|drunk]] so it is highly likely he will take you to wrong places. Bringing a [[Dwarven Ring]] in your backpack makes him take you to the right spot but you lose the ring. When the [[Dwarven Ring]] is used you also don't have to pay the 50 [[Currency|gold]].
+
+'''Note: you only will be able to travel with him after you have completed the [[Barbarian Test Quest]].'''
+
+There are two ways to prevent him from taking a [[Dwarven Ring]] you may be carrying:
+* The first and easiest way is to just tell him "no" when he offers to take it. (Note: this is the only way to prevent him from taking a [[Dwarven Ring]] if you have more than one with you).
+* The second way, if you carry just a single [[Dwarven Ring]], is to equip it in your ring slot. He won't take it then.
+}}

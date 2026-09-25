@@ -3,7 +3,7 @@ from typing import Any, ClassVar
 import mwparserfromhell
 import tibiawikisql.schema
 from tibiawikisql.api import Article
-from tibiawikisql.models.npc import Npc, NpcDestination
+from tibiawikisql.models.npc import Npc, NpcDestination, NpcLocation
 from tibiawikisql.parsers import BaseParser
 from tibiawikisql.parsers.base import AttributeParser
 from tibiawikisql.utils import clean_links, convert_tibiawiki_position, find_template, strip_code
@@ -34,6 +34,7 @@ class NpcParser(BaseParser):
         raw_attributes = row["_raw_attributes"]
         cls._parse_jobs(row)
         cls._parse_races(row)
+        cls._parse_locations(row)
 
         row["destinations"] = []
         destinations = []
@@ -74,6 +75,56 @@ class NpcParser(BaseParser):
             if key.startswith("race")
         ]
 
+    @classmethod
+    def _parse_locations(cls, row: dict[str, Any]) -> None:
+        """Read every position of an NPC's page into a list, in position order.
+
+        Position 1 uses the unsuffixed fields, positions 2 to 7 the fields suffixed with their number.
+        A position exists when any of its fields is present, and missing positions are skipped.
+        """
+        raw_attributes = row["_raw_attributes"]
+        row["locations"] = []
+        for position in range(1, 8):
+            suffix = "" if position == 1 else str(position)
+            fields = {
+                name: raw_attributes.get(f"{name}{suffix}", "").strip()
+                for name in ("city", "subarea", "geolabel", "posx", "posy", "posz")
+            }
+            if not any(fields.values()):
+                continue
+            row["locations"].append(NpcLocation(
+                position=position,
+                city=clean_links(fields["city"]) or None,
+                subarea=clean_links(fields["subarea"]) or None,
+                geolabel=clean_links(fields["geolabel"]) or None,
+                x=cls._parse_location_coordinate(fields["posx"]),
+                y=cls._parse_location_coordinate(fields["posy"]),
+                z=cls._parse_int(fields["posz"]),
+            ))
+
+    @classmethod
+    def _parse_location_coordinate(cls, value: str) -> int | None:
+        """Convert a TibiaWiki ``major.minor`` coordinate, returning ``None`` for anything malformed.
+
+        Unlike :func:`convert_tibiawiki_position`, which falls back to 0, this rejects a non-integer part
+        or more than two parts. An absent or empty minor counts as 0.
+        """
+        parts = value.split(".")
+        if len(parts) > 2:
+            return None
+        major = cls._parse_int(parts[0])
+        minor = cls._parse_int(parts[1]) if len(parts) == 2 and parts[1].strip() else 0
+        if major is None or minor is None:
+            return None
+        return (major << 8) + minor
+
+    @classmethod
+    def _parse_int(cls, value: str) -> int | None:
+        """Convert a string to an integer, returning ``None`` if it is not one."""
+        try:
+            return int(value)
+        except ValueError:
+            return None
 
     @classmethod
     def _parse_destinations(cls, value: str) -> list[tuple[str, int, str]]:
