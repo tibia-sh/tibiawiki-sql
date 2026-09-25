@@ -1,7 +1,9 @@
+# Changed by tibia.sh in 2026; see "About this copy" in README.md.
 import unittest
 
 import datetime
 
+import tibiawikisql
 from tests import load_resource
 from tibiawikisql.utils import (clean_links, client_color_to_rgb, parse_boolean, parse_float, parse_integer,
                                 parse_date, parse_loot_statistics, parse_min_max, parse_sounds,
@@ -139,3 +141,6 @@ class TestUtils(unittest.TestCase):
         self.assertIn("Sanguine 1H Axe", tables)
         self.assertIn(1, tables["Sanguine 1H Axe"])
         self.assertEqual("+1 Axe Fighting", tables["Sanguine 1H Axe"][1][0]["effect"])
+
+    def test_version_is_tibia_sh_build(self):
+        self.assertEqual("9.0.0+tibiash.1", tibiawikisql.__version__)

@@ -1,3 +1,4 @@
+# Changed by tibia.sh in 2026; see "About this copy" in README.md.
 [build-system]
 requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
@@ -15,7 +16,8 @@ authors = [
     { name = "Allan Galarza", email = "contact@galarzaa.com" }
 ]
 maintainers = [
-    { name = "Allan Galarza", email = "contact@galarzaa.com" }
+    { name = "Allan Galarza", email = "contact@galarzaa.com" },
+    { name = "tibia.sh" },
 ]
 license = { text = 'Apache 2.0' }
 description = "Python script that generates a SQLite database from TibiaWiki articles"
@@ -42,11 +44,10 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://galarzaa90.github.io/tibiawiki-sql/"
-"Documentation" = "https://galarzaa90.github.io/tibiawiki-sql/"
-"Repository" = "https://github.com/Galarzaa90/tibiawiki-sql"
-"Changelog" = "https://galarzaa90.github.io/tibiawiki-sql/changelog/"
-"Docker Hub: Repo" = "https://hub.docker.com/repository/docker/galarzaa90/tibiawiki-sql"
+"Homepage" = "https://github.com/tibia-sh/tibiawiki-sql"
+"Repository" = "https://github.com/tibia-sh/tibiawiki-sql"
+"Changelog" = "https://github.com/tibia-sh/tibiawiki-sql/blob/main/CHANGELOG.md"
+"Upstream" = "https://github.com/Galarzaa90/tibiawiki-sql"
 
 [project.scripts]
 tibiawikisql = "tibiawikisql.__main__:cli"

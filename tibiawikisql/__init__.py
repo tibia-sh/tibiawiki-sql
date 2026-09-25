@@ -1,7 +1,8 @@
+# Changed by tibia.sh in 2026; see "About this copy" in README.md.
 """API that reads and parses information from `TibiaWiki <https://tibiawiki.fandom.com>`_."""
 
 __author__ = "Allan Galarza"
 __copyright__ = "Copyright 2026 Allan Galarza"
 
 __license__ = "Apache 2.0"
-__version__ = "9.0.0"
+__version__ = "9.0.0+tibiash.1"
