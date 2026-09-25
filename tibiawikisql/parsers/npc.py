@@ -1,3 +1,4 @@
+import re
 from typing import Any, ClassVar
 
 import mwparserfromhell
@@ -7,6 +8,9 @@ from tibiawikisql.models.npc import Npc, NpcDestination, NpcLocation
 from tibiawikisql.parsers import BaseParser
 from tibiawikisql.parsers.base import AttributeParser
 from tibiawikisql.utils import clean_links, convert_tibiawiki_position, find_template, strip_code
+
+ORIGIN_NOTE_PATTERN = re.compile(r"^\s*[Ff]rom\s+\[\[([^\]|]+)(?:\|[^\]]*)?\]\]\s*$")
+"""A TransportCell note that consists only of a link to the place the leg starts from."""
 
 
 class NpcParser(BaseParser):
@@ -40,7 +44,7 @@ class NpcParser(BaseParser):
         destinations = []
         if "notes" in raw_attributes and "{{Transport" in raw_attributes["notes"]:
             destinations.extend(cls._parse_destinations(raw_attributes["notes"]))
-        for destination, price, notes in destinations:
+        for destination, price, notes, raw_notes in destinations:
             name = destination.strip()
             clean_notes = clean_links(notes.strip())
             if not notes:
@@ -49,6 +53,7 @@ class NpcParser(BaseParser):
                 name=name,
                 price=price,
                 notes=clean_notes,
+                origin=cls._parse_origin(name, raw_notes, row["city"]),
             ))
         return row
 
@@ -127,17 +132,41 @@ class NpcParser(BaseParser):
             return None
 
     @classmethod
-    def _parse_destinations(cls, value: str) -> list[tuple[str, int, str]]:
+    def _parse_origin(cls, destination: str, raw_notes: str | None, city: str) -> str | None:
+        """Determine where a travel leg starts.
+
+        A note that is only a ``From [[Place]]`` link names the start. Otherwise the leg starts in the NPC's city,
+        unless the destination is that city (ignoring case), in which case the start is unknown.
+
+        Args:
+            destination: The stripped name of the destination.
+            raw_notes: The unstripped notes of a TransportCell, or ``None`` for a legacy Transport entry.
+            city: The NPC's city.
+
+        Returns:
+            The name of the place the leg starts from, or ``None`` if unknown.
+        """
+        if raw_notes is not None:
+            match = ORIGIN_NOTE_PATTERN.fullmatch(raw_notes)
+            if match:
+                return match.group(1).strip()
+        if city.lower() == destination.lower():
+            return None
+        return city
+
+    @classmethod
+    def _parse_destinations(cls, value: str) -> list[tuple[str, int, str, str | None]]:
         """Parse an NPC destinations into a list of tuples.
 
-        The tuple contains the  destination's name, price and notes.
+        The tuple contains the  destination's name, price, notes and raw notes.
         Price and notes may not be present.
 
         Args:
             value: A string containing the Transport template with destinations.
 
         Returns:
-            A list of tuples, where each element is the name of the destination, the price and additional notes.
+            A list of tuples, where each element is the name of the destination, the price, additional notes and
+            the unstripped notes of a TransportCell, which is ``None`` for a legacy Transport entry.
         """
         result = cls._parse_transport_cells(value)
         if result:
@@ -157,12 +186,15 @@ class NpcParser(BaseParser):
                 price = int(price_str)
             except ValueError:
                 price = 0
-            result.append((destination, price, notes))
+            result.append((destination, price, notes, None))
         return result
 
     @classmethod
-    def _parse_transport_cells(cls, value: str) -> list[tuple[str, int, str]]:
-        """Parse TransportCell entries from the NPC notes field."""
+    def _parse_transport_cells(cls, value: str) -> list[tuple[str, int, str, str]]:
+        """Parse TransportCell entries from the NPC notes field.
+
+        Each tuple holds the destination, the price, the stripped notes and the raw, unstripped notes.
+        """
         result = []
         parsed = mwparserfromhell.parse(value)
         for template in parsed.ifilter_templates(recursive=True):
@@ -171,12 +203,13 @@ class NpcParser(BaseParser):
                 continue
             destination = strip_code(template.get(1, ""))
             price_str = strip_code(template.get(2, "0"))
+            raw_notes = str(template.get(3).value) if template.has(3) else ""
             notes = strip_code(template.get(3, ""))
             try:
                 price = int(price_str)
             except ValueError:
                 price = 0
-            result.append((destination, price, notes))
+            result.append((destination, price, notes, raw_notes))
         return result
 
     # endregion

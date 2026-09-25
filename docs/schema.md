@@ -459,12 +459,13 @@ The generated database has the following tables.
 
 ### npc_destination
 
-| Column |   Type    |                               Description                                |
-| ------ | --------- | ------------------------------------------------------------------------ |
-| npc_id | `INTEGER` | The id of the NPC this destination belongs to.                           |
-| name   | `TEXT`    | The name of the place this NPC can take you to.                          |
-| price  | `INTEGER` | The price to travel to the destination with this NPC.                    |
-| notes  | `TEXT`    | Extra notes for this destination, like extra requirements or exceptions. |
+| Column |   Type    |                                                                                 Description                                                                                 |
+| ------ | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| npc_id | `INTEGER` | The id of the NPC this destination belongs to.                                                                                                                              |
+| name   | `TEXT`    | The name of the place this NPC can take you to.                                                                                                                             |
+| price  | `INTEGER` | The price to travel to the destination with this NPC.                                                                                                                       |
+| notes  | `TEXT`    | Extra notes for this destination, like extra requirements or exceptions.                                                                                                    |
+| origin | `TEXT`    | Where this leg starts: the place named by a `From [[Place]]` note, otherwise the NPC's city. `NULL` when the destination is the NPC's own city and no note names the start. |
 
 
 

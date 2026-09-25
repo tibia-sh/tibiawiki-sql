@@ -1,0 +1,30 @@
+{{Infobox NPC|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name         = Maris
+| job          = Ship Captain
+| location     = In the [[Foreigner Quarter]] all the way north-west in the harbour. Also on [[Fenrock]] and on [[Mistrock]].
+| city         = Yalahar
+| posx         = 127.137
+| posy         = 122.61
+| posz         = 6
+| gender       = Male
+| race         = Human
+| buysell      = no
+| implemented  = 8.40
+| notes        = Part of the [[Blood Brothers Quest]].
+{{TransportList|discount=no
+ |{{TransportCell|Fenrock|100|50 [[gp]] from [[Mistrock]]}}
+ |{{TransportCell|Mistrock|100}}
+ |{{TransportCell|Yalahar|100}}
+}}
+| subarea       = Yalahar Foreigner Quarter
+| subarea2      = Mistrock
+| city2         = Yalahar
+| posx2         = 127.126
+| posy2         = 122.206
+| posz2         = 7
+| subarea3      = Fenrock
+| city3         = Yalahar
+| posx3         = 127.51
+| posy3         = 122.81
+| posz3         = 7
+}}

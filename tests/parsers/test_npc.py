@@ -129,3 +129,95 @@ class TestNpcParser(unittest.TestCase):
         position_4 = npc.locations[2]
         self.assertIsNone(position_4.x)
         self.assertEqual(31229, position_4.y)
+
+    def test_npc_destinations_origin_from_note(self):
+        article = Article(
+            article_id=1,
+            title="Sebastian",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource("content_npc_multi_origin.txt"),
+        )
+
+        npc = NpcParser.from_article(article)
+
+        self.assertEqual(
+            [
+                ("Liberty Bay", 50, "Meriana"),
+                ("Liberty Bay", 100, "Nargor"),
+                ("Meriana", 50, "Liberty Bay"),
+                ("Nargor", 50, "Liberty Bay"),
+            ],
+            [(d.name, d.price, d.origin) for d in npc.destinations],
+        )
+        self.assertEqual("From Meriana", npc.destinations[0].notes)
+
+    def test_npc_destinations_origin_mid_sentence(self):
+        article = Article(
+            article_id=1,
+            title="Maris",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource("content_npc_origin_note.txt"),
+        )
+
+        npc = NpcParser.from_article(article)
+
+        self.assertEqual(
+            [("Fenrock", 100, "Yalahar"), ("Mistrock", 100, "Yalahar"), ("Yalahar", 100, None)],
+            [(d.name, d.price, d.origin) for d in npc.destinations],
+        )
+
+    def test_npc_destinations_origin_default(self):
+        article = Article(
+            article_id=1,
+            title="Captain Bluebear",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource("content_npc_travel.txt"),
+        )
+
+        npc = NpcParser.from_article(article)
+
+        self.assertTrue(npc.destinations)
+        self.assertEqual(["Thais"] * len(npc.destinations), [d.origin for d in npc.destinations])
+
+    def test_npc_destinations_origin_legacy_transport(self):
+        content = (
+            "{{Infobox NPC|List={{{1|}}}|GetValue={{{GetValue|}}}\n"
+            "| name         = Test NPC\n"
+            "| city         = Thais\n"
+            "| notes        = {{Transport|Carlin, 110|Thais, 0}}\n"
+            "}}\n"
+        )
+        article = Article(
+            article_id=1,
+            title="Test NPC",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=content,
+        )
+
+        npc = NpcParser.from_article(article)
+
+        self.assertEqual(
+            [("Carlin", 110, "Thais"), ("Thais", 0, None)],
+            [(d.name, d.price, d.origin) for d in npc.destinations],
+        )
+
+    def test_npc_destinations_origin_named_note_parameter(self):
+        content = (
+            "{{Infobox NPC|List={{{1|}}}|GetValue={{{GetValue|}}}\n"
+            "| name         = Test NPC\n"
+            "| city         = Liberty Bay\n"
+            "| notes        = {{TransportList|discount=no\n"
+            " |{{TransportCell|Liberty Bay|50|3=From [[Meriana]]}}\n"
+            "}}\n"
+            "}}\n"
+        )
+        article = Article(
+            article_id=1,
+            title="Test NPC",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=content,
+        )
+
+        npc = NpcParser.from_article(article)
+
+        self.assertEqual([("Liberty Bay", 50, "Meriana")], [(d.name, d.price, d.origin) for d in npc.destinations])

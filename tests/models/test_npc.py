@@ -3,7 +3,7 @@ import sqlite3
 import unittest
 
 from tibiawikisql import schema
-from tibiawikisql.models import Npc, NpcLocation
+from tibiawikisql.models import Npc, NpcDestination, NpcLocation
 from tibiawikisql.schema import ItemTable, NpcBuyingTable, NpcDestinationTable, NpcJobTable, NpcLocationTable, \
     NpcRaceTable, \
     NpcSellingTable, \
@@ -106,3 +106,34 @@ class TestNpc(unittest.TestCase):
             ],
             loaded.locations,
         )
+
+    def test_npc_destination_origin_round_trip(self):
+        conn = sqlite3.connect(":memory:")
+        conn.row_factory = sqlite3.Row
+        schema.create_tables(conn)
+        destinations = [
+            NpcDestination(name="Liberty Bay", price=50, notes="From Meriana", origin="Meriana"),
+            NpcDestination(name="Liberty Bay", price=0, notes=None, origin=None),
+        ]
+        npc = Npc(
+            article_id=1,
+            title="Sebastian",
+            name="Sebastian",
+            gender="Male",
+            location=None,
+            subarea=None,
+            city="Liberty Bay",
+            x=None,
+            y=None,
+            z=None,
+            version="7.8",
+            status="active",
+            timestamp=datetime.datetime.fromisoformat("2024-07-29T16:37:09+00:00"),
+            destinations=destinations,
+        )
+
+        npc.insert(conn)
+        loaded = Npc.get_one_by_field(conn, "article_id", 1)
+
+        self.assertEqual(["Meriana", None], [d.origin for d in loaded.destinations])
+        self.assertEqual(destinations, loaded.destinations)

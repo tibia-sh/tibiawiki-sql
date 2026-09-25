@@ -36,6 +36,8 @@ class NpcDestination(BaseModel):
     """The price in gold to travel."""
     notes: str | None
     """Notes about the destination, such as requirements."""
+    origin: str | None = None
+    """Where this leg starts, or ``None`` when the destination is the NPC's own city."""
 
 
 class NpcLocation(BaseModel):
@@ -126,6 +128,7 @@ class Npc(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=NpcTabl
                 name=destination.name,
                 price=destination.price,
                 notes=destination.notes,
+                origin=destination.origin,
             )
         for location in self.locations:
             NpcLocationTable.insert(
