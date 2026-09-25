@@ -35,6 +35,7 @@ The generated database has the following tables.
 | `npc`                   | Contains information for all NPCs.                                                  |
 | `npc_destination`       | Contains all the NPCs’ travel destinations.                                         |
 | `npc_job`               | Contains all the NPCs’ jobs.                                                        |
+| `npc_location`          | Contains all the NPCs’ positions.                                                   |
 | `npc_offer_buy`         | Contains all the NPCs’ buy offers.                                                  |
 | `npc_offer_sell`        | Contains all the NPCs’ sell offers.                                                 |
 | `npc_race`              | Contains all the NPCs’ races.                                                       |
@@ -473,6 +474,21 @@ The generated database has the following tables.
 | ------ | --------- | ---------------------------------- |
 | npc_id | `INTEGER` | The id of the NPC this job is for. |
 | name   | `TEXT`    | The name of the job.               |
+
+
+
+### npc_location
+
+|  Column  |   Type    |                                          Description                                          |
+| -------- | --------- | --------------------------------------------------------------------------------------------- |
+| npc_id   | `INTEGER` | The id of the NPC this position belongs to.                                                   |
+| position | `INTEGER` | The position's number in the wiki: 1 for the unsuffixed fields, 2 to 7 for the suffixed ones. |
+| city     | `TEXT`    | The nearest city to this position.                                                            |
+| subarea  | `TEXT`    | A finer location of this position.                                                            |
+| geolabel | `TEXT`    | A label for this position.                                                                    |
+| x        | `INTEGER` | The x coordinate of this position, `NULL` if missing or malformed.                            |
+| y        | `INTEGER` | The y coordinate of this position, `NULL` if missing or malformed.                            |
+| z        | `INTEGER` | The z coordinate of this position, `NULL` if missing or malformed.                            |
 
 
 

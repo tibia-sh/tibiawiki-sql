@@ -2,8 +2,10 @@ import datetime
 import sqlite3
 import unittest
 
-from tibiawikisql.models import Npc
-from tibiawikisql.schema import ItemTable, NpcBuyingTable, NpcDestinationTable, NpcJobTable, NpcRaceTable, \
+from tibiawikisql import schema
+from tibiawikisql.models import Npc, NpcLocation
+from tibiawikisql.schema import ItemTable, NpcBuyingTable, NpcDestinationTable, NpcJobTable, NpcLocationTable, \
+    NpcRaceTable, \
     NpcSellingTable, \
     NpcTable, \
     SpellTable
@@ -19,6 +21,7 @@ class TestNpc(unittest.TestCase):
         self.conn.executescript(NpcSellingTable.get_create_table_statement())
         self.conn.executescript(ItemTable.get_create_table_statement())
         self.conn.executescript(NpcDestinationTable.get_create_table_statement())
+        self.conn.executescript(NpcLocationTable.get_create_table_statement())
 
     def test_npc_with_spells(self):
         # Arrange
@@ -68,3 +71,38 @@ class TestNpc(unittest.TestCase):
         self.assertIsInstance(npc, Npc)
         self.assertEqual(5, len(npc.jobs))
         self.assertEqual("Human", npc.race)
+
+    def test_npc_locations_round_trip(self):
+        conn = sqlite3.connect(":memory:")
+        conn.row_factory = sqlite3.Row
+        schema.create_tables(conn)
+        npc = Npc(
+            article_id=1,
+            title="Buddel",
+            name="Buddel",
+            gender="Male",
+            location=None,
+            subarea=None,
+            city="Svargrond",
+            x=32254,
+            y=31195,
+            z=7,
+            version="8.00",
+            status="active",
+            timestamp=datetime.datetime.fromisoformat("2024-07-29T16:37:09+00:00"),
+            locations=[
+                NpcLocation(position=3, city="Svargrond", subarea="Helheim", x=32464, y=31172, z=7),
+                NpcLocation(position=1, city="Svargrond", geolabel="Harbour", x=32254, y=31195, z=7),
+            ],
+        )
+
+        npc.insert(conn)
+        loaded = Npc.get_one_by_field(conn, "article_id", 1)
+
+        self.assertEqual(
+            [
+                NpcLocation(position=1, city="Svargrond", geolabel="Harbour", x=32254, y=31195, z=7),
+                NpcLocation(position=3, city="Svargrond", subarea="Helheim", x=32464, y=31172, z=7),
+            ],
+            loaded.locations,
+        )

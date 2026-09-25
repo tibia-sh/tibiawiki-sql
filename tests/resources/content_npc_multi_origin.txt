@@ -1,0 +1,26 @@
+{{Infobox NPC|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name         = Sebastian
+| job          = Rebel
+| job2         = Ferryman
+| location     = South of [[Sabrehaven]] on [[Meriana]] and on [[Nargor]], {{Mapper Coords|125.24|128.47|7|2|text=here}}.
+| city         = Liberty Bay
+| posx         = 126.91
+| posy         = 127.111
+| posz         = 7
+| posx2        = 125.27
+| posy2        = 128.46
+| posz2        = 7
+| gender       = Male
+| race         = Human
+| buysell      = no
+| implemented  = 7.8
+| notes        = {{TransportList|discount=no
+ |{{TransportCell|Liberty Bay|50|From [[Meriana]]}}
+ |{{TransportCell|Liberty Bay|100|From [[Nargor]]}}
+ |{{TransportCell|Meriana|50}}
+ |{{TransportCell|Nargor|50}}
+}}
+| subarea         = Meriana
+| subarea2         = Nargor
+| city2         = Liberty Bay
+}}

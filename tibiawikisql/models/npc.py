@@ -7,8 +7,8 @@ from typing_extensions import Self
 
 from tibiawikisql.api import WikiEntry
 from tibiawikisql.models.base import RowModel, WithImage, WithStatus, WithVersion
-from tibiawikisql.schema import NpcBuyingTable, NpcDestinationTable, NpcJobTable, NpcRaceTable, NpcSellingTable, \
-    NpcTable
+from tibiawikisql.schema import NpcBuyingTable, NpcDestinationTable, NpcJobTable, NpcLocationTable, NpcRaceTable, \
+    NpcSellingTable, NpcTable
 
 
 class NpcOffer(BaseModel):
@@ -36,6 +36,25 @@ class NpcDestination(BaseModel):
     """The price in gold to travel."""
     notes: str | None
     """Notes about the destination, such as requirements."""
+
+
+class NpcLocation(BaseModel):
+    """Represents one of the positions where an NPC can be found."""
+
+    position: int
+    """The position's number in the wiki: 1 for the unsuffixed fields, 2 to 7 for the suffixed ones."""
+    city: str | None = None
+    """The nearest city to this position."""
+    subarea: str | None = None
+    """A finer location of this position."""
+    geolabel: str | None = None
+    """A label for this position."""
+    x: int | None = None
+    """The x coordinate of this position."""
+    y: int | None = None
+    """The y coordinate of this position."""
+    z: int | None = None
+    """The z coordinate of this position."""
 
 
 class RashidPosition(BaseModel):
@@ -84,6 +103,8 @@ class Npc(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=NpcTabl
     """Items bought by the NPC."""
     destinations: list[NpcDestination] = Field(default_factory=list)
     """Places where the NPC can travel to."""
+    locations: list[NpcLocation] = Field(default_factory=list)
+    """Every position where the NPC can be found, ordered by position number."""
 
     @property
     def job(self) -> str | None:
@@ -105,6 +126,18 @@ class Npc(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=NpcTabl
                 name=destination.name,
                 price=destination.price,
                 notes=destination.notes,
+            )
+        for location in self.locations:
+            NpcLocationTable.insert(
+                conn,
+                npc_id=self.article_id,
+                position=location.position,
+                city=location.city,
+                subarea=location.subarea,
+                geolabel=location.geolabel,
+                x=location.x,
+                y=location.y,
+                z=location.z,
             )
         for job in self.jobs:
             NpcJobTable.insert(conn, npc_id=self.article_id, name=job)
@@ -139,6 +172,10 @@ class Npc(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=NpcTabl
         npc.destinations = [
             NpcDestination.model_validate(dict(r))
             for r in NpcDestinationTable.get_list_by_field(conn, "npc_id", npc.article_id)
+        ]
+        npc.locations = [
+            NpcLocation.model_validate(dict(r))
+            for r in NpcLocationTable.get_list_by_field(conn, "npc_id", npc.article_id, sort_by="position")
         ]
         return npc
 
