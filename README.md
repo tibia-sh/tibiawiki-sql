@@ -1,4 +1,4 @@
-<!-- Changed by tibia.sh in 2026; see "About this copy" in README.md. -->
+<!-- Changed by tibia.sh in 2026. See "About this copy" in README.md. -->
 # tibiawiki-sql 
 
 ## About this copy
@@ -25,7 +25,7 @@ and run `pip install` on it. The PyPI package and the install steps below are up
 Every upstream file this copy changes carries this line at the top, in the file's comment syntax:
 
 ```
-Changed by tibia.sh in 2026; see "About this copy" in README.md.
+Changed by tibia.sh in 2026. See "About this copy" in README.md.
 ```
 
 If you change an upstream file, add the line to it. New files don't need it.
