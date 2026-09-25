@@ -112,7 +112,7 @@ jobs:
       - name: Build
         id: build
         run: |
-          uv build --build-constraints build-constraints.txt --require-hashes --out-dir dist
+          uv build --build-constraints build-constraints.txt --require-hashes --no-create-gitignore --out-dir dist
           wheel="tibiawikisql-${VERSION}-py3-none-any.whl"
           sdist="tibiawikisql-${VERSION}.tar.gz"
           expected="$(printf '%s\n' "$wheel" "$sdist" | sort)"
@@ -178,7 +178,7 @@ jobs:
       - name: Build
         id: build
         run: |
-          uv build --build-constraints build-constraints.txt --require-hashes --out-dir dist
+          uv build --build-constraints build-constraints.txt --require-hashes --no-create-gitignore --out-dir dist
           wheel="tibiawikisql-${VERSION}-py3-none-any.whl"
           sdist="tibiawikisql-${VERSION}.tar.gz"
           expected="$(printf '%s\n' "$wheel" "$sdist" | sort)"
