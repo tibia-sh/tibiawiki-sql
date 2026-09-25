@@ -1,0 +1,28 @@
+{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name          = Antidote Potion
+| article       = an
+| actualname    = antidote potion
+| itemid        = 7644
+| objectclass   = Plants, Animal Products, Food and Drink
+| primarytype   = Liquids
+| secondarytype = Potions
+| implemented   = 8.20
+| immobile      = no
+| walkable      = yes
+| pickupable    = yes
+| usable        = yes
+| weight        = 2.65
+| stackable     = yes
+| marketable    = yes
+| consumable    = yes
+| droppedby     = {{Dropped By|}}
+| value         = Negotiable
+| npcvalue      = 0
+| npcprice      = 50
+| npcvaluerook  = 0
+| npcpricerook  = 50
+| buyfrom       = Lily:50
+| sellto        = --
+| notes         = It has a deposit of '''5 [[Empty Potion Flask (Small)|gp]] '''It cures [[poisoned]] targets. 
+| history       = The Antidote Potion replaced the [[Cure Poison Rune]] in [[Rookgaard]].
+}}

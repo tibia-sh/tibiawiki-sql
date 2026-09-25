@@ -1,0 +1,32 @@
+{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name          = Superior Mana Potion
+| article       = a
+| actualname    = superior mana potion
+| plural        = superior mana potions
+| flavortext    = This potion can only be consumed by paladins, monks, sorcerers and druids of level 100 or higher.
+| itemid        = 53162
+| objectclass   = Plants, Animal Products, Food and Drink
+| primarytype   = Liquids
+| secondarytype = Potions
+| implemented   = 15.25.3a4a52
+| sounds        = {{Sound List|Aaaah...}}
+| immobile      = no
+| walkable      = yes
+| pickupable    = yes
+| usable        = yes
+| weight        = 3.10
+| stackable     = yes
+| marketable    = yes
+| consumable    = yes
+| droppedby     = {{Dropped By}}
+| value         = 
+| storevalue    = {{Store Trades|{{Store Product|17|amount=100}}|{{Store Product|40|amount=250}}}}
+| npcvalue      = 0
+| npcprice      = 254
+| buyfrom       = --
+| sellto        = --
+| notes         = Restores between 240 and 360 [[Mana]] points, around 300 on average.
+
+{{Seealso|Money Spent per Mana Point|Capacity Taken per Mana Point}}
+| history       = 
+}}
