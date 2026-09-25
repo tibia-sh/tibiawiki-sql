@@ -494,6 +494,7 @@ class NpcDestinationTable(Table, table_name="npc_destination"):
     name = Column(Text, index=True, nullable=False)
     price = Column(Integer, nullable=False)
     notes = Column(Text)
+    origin = Column(Text)
 
 
 class NpcLocationTable(Table, table_name="npc_location"):
