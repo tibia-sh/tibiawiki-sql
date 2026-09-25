@@ -1,4 +1,4 @@
-# Changed by tibia.sh in 2026; see "About this copy" in README.md.
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
 [build-system]
 requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
@@ -16,7 +16,6 @@ authors = [
     { name = "Allan Galarza", email = "contact@galarzaa.com" }
 ]
 maintainers = [
-    { name = "Allan Galarza", email = "contact@galarzaa.com" },
     { name = "tibia.sh" },
 ]
 license = { text = 'Apache 2.0' }

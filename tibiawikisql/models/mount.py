@@ -1,4 +1,4 @@
-# Changed by tibia.sh in 2026; see "About this copy" in README.md.
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
 
 from tibiawikisql.api import WikiEntry
 from tibiawikisql.models.base import RowModel, WithImage, WithStatus, WithVersion
