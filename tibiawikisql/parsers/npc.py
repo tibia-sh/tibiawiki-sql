@@ -54,7 +54,7 @@ class NpcParser(BaseParser):
                 name=name,
                 price=price,
                 notes=clean_notes,
-                origin=cls._parse_origin(name, raw_notes, row["city"]),
+                origin=cls._parse_origin(name, raw_notes, row["city"], row["locations"]),
             ))
         return row
 
@@ -133,16 +133,24 @@ class NpcParser(BaseParser):
             return None
 
     @classmethod
-    def _parse_origin(cls, destination: str, raw_notes: str | None, city: str) -> str | None:
+    def _parse_origin(
+        cls,
+        destination: str,
+        raw_notes: str | None,
+        city: str,
+        locations: list[NpcLocation],
+    ) -> str | None:
         """Determine where a travel leg starts.
 
         A note that is only a ``From [[Place]]`` link names the start. Otherwise the leg starts in the NPC's city,
-        unless the destination is that city (ignoring case), in which case the start is unknown.
+        but only if the NPC has a position in that city whose city, subarea and geolabel all differ from the
+        destination. Without such a position the start is unknown. Comparisons ignore case.
 
         Args:
             destination: The stripped name of the destination.
             raw_notes: The unstripped notes of a TransportCell, or ``None`` for a legacy Transport entry.
             city: The NPC's city.
+            locations: The NPC's parsed positions.
 
         Returns:
             The name of the place the leg starts from, or ``None`` if unknown.
@@ -151,9 +159,15 @@ class NpcParser(BaseParser):
             match = ORIGIN_NOTE_PATTERN.fullmatch(raw_notes)
             if match:
                 return match.group(1).strip()
-        if city.lower() == destination.lower():
-            return None
-        return city
+        city_key = clean_links(city).strip().lower()
+        destination_key = destination.strip().lower()
+        for location in locations:
+            if (location.city or "").lower() != city_key:
+                continue
+            places = (location.city, location.subarea, location.geolabel)
+            if not any(place is not None and place.strip().lower() == destination_key for place in places):
+                return city
+        return None
 
     @classmethod
     def _parse_destinations(cls, value: str) -> list[tuple[str, int, str, str | None]]:

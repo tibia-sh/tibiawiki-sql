@@ -223,11 +223,12 @@ class TestNpcParser(unittest.TestCase):
 
         self.assertEqual([("Liberty Bay", 50, "Meriana")], [(d.name, d.price, d.origin) for d in npc.destinations])
 
-    def _parse_inline_npc(self, city: str, notes: str) -> Npc:
+    def _parse_inline_npc(self, city: str, notes: str, positions: str = "") -> Npc:
         content = (
             "{{Infobox NPC|List={{{1|}}}|GetValue={{{GetValue|}}}\n"
             "| name         = Test NPC\n"
             f"| city         = {city}\n"
+            f"{positions}"
             f"| notes        = {notes}\n"
             "}}\n"
         )
@@ -265,6 +266,49 @@ class TestNpcParser(unittest.TestCase):
         )
 
         self.assertEqual([("liberty bay", 50, None)], [(d.name, d.price, d.origin) for d in npc.destinations])
+
+    def test_npc_destinations_origin_null_when_city_position_is_destination(self):
+        article = Article(
+            article_id=1,
+            title="Harlow",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource("content_npc_origin_position.txt"),
+        )
+
+        npc = NpcParser.from_article(article)
+
+        self.assertEqual(
+            [("Vengoth", 100, None), ("Yalahar", 50, "Farmine")],
+            [(d.name, d.price, d.origin) for d in npc.destinations],
+        )
+
+    def test_npc_destinations_origin_city_when_another_city_position_differs(self):
+        npc = self._parse_inline_npc(
+            "Thais",
+            "{{TransportList|discount=no\n"
+            " |{{TransportCell|Kazordoon|100}}\n"
+            " |{{TransportCell|Robson's Isle|100}}\n"
+            " |{{TransportCell|Thais|100}}\n"
+            "}}",
+            "| subarea      = Underground Isle\n"
+            "| geolabel     = Robson's Isle\n"
+            "| city2        = Thais\n"
+            "| city3        = Kazordoon\n",
+        )
+
+        self.assertEqual(
+            [("Kazordoon", 100, "Thais"), ("Robson's Isle", 100, "Thais"), ("Thais", 100, None)],
+            [(d.name, d.price, d.origin) for d in npc.destinations],
+        )
+
+    def test_npc_destinations_origin_null_when_subarea_matches_ignoring_case(self):
+        npc = self._parse_inline_npc(
+            "Farmine",
+            "{{TransportList|discount=no\n |{{TransportCell|vengoth|100}}\n}}",
+            "| subarea      = Vengoth\n",
+        )
+
+        self.assertEqual([("vengoth", 100, None)], [(d.name, d.price, d.origin) for d in npc.destinations])
 
     def test_npc_destinations_origin_legacy_transport_ignores_note(self):
         npc = self._parse_inline_npc("Venore", "{{Transport|Carlin, 110; From [[Thais]]}}")

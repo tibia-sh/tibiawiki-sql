@@ -6,7 +6,8 @@
 - Add the `npc_location` table with every position of an NPC, numbered 1 to 7. Each position has its city, subarea,
   geolabel and `x`, `y` and `z` coordinates.
 - Add `npc_destination.origin`, the place where each travel leg starts. It comes from a note that is only a
-  `From [[Place]]` link. Without one, it is the NPC's city, or `NULL` when the destination is that city, ignoring case.
+  `From [[Place]]` link. Without one, it is the NPC's city if the NPC has a position in that city whose city, subarea
+  and geolabel all differ from the destination, ignoring case. Otherwise it is `NULL`.
 - Add the item attributes `restores_hp_min`, `restores_hp_max`, `restores_mana_min` and `restores_mana_max`, parsed from
   the `restores between A and B Hit Points, and between C and D Mana Points` sentence in an item's notes.
 - Add `outfit.male_client_id`, `outfit.female_client_id` and `mount.client_id`, the client IDs (look types) of outfits

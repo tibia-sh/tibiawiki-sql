@@ -1,0 +1,24 @@
+{{Infobox NPC|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name         = Harlow
+| job          = Ferryman
+| location     = [[Yalahar]]: in the [[Trade Quarter]] docks (straight south from the main gate), West on [[Vengoth]] {{Mapper Coords|128.89|123.62|7|1|text=here}}.
+| city         = Farmine
+| posx         = 128.88
+| posy         = 123.60
+| posz         = 7
+| posx2        = 128.69
+| posy2        = 122.133
+| posz2        = 7
+| gender       = Male
+| race         = Human
+| buysell      = no
+| implemented  = 8.40
+| notes        = His name is one of Tibia's [[Allusions]]. It resembles Marlow, a ship captain and the main narrator of Joseph Conrad's [http://en.wikipedia.org/wiki/Heart_of_Darkness Heart of Darkness].
+{{TransportList|discount=no
+ |{{TransportCell|Vengoth|100|After mission 4 of the [[Blood Brothers Quest]]}}
+ |{{TransportCell|Yalahar|50|After mission 4 of the [[Blood Brothers Quest]]}}
+}}
+| subarea      = Vengoth
+| subarea2     = Yalahar Trade Quarter
+| city2        = Yalahar
+}}
