@@ -1,4 +1,38 @@
+<!-- Changed by tibia.sh in 2026; see "About this copy" in README.md. -->
 # tibiawiki-sql 
+
+## About this copy
+
+This repository is a copy of [Galarzaa90/tibiawiki-sql](https://github.com/Galarzaa90/tibiawiki-sql) by Allan Galarza,
+under the Apache License 2.0. The original work and its credit belong to him. tibia.sh maintains this copy.
+
+The copy adds this data to the database:
+
+* The `npc_location` table. It keeps every position of an NPC, numbered 1 to 7, with its city, subarea, geolabel and
+  coordinates.
+* The `npc_destination.origin` column. It holds the place where each travel leg starts.
+* The item attributes `restores_hp_min`, `restores_hp_max`, `restores_mana_min` and `restores_mana_max`. They hold the
+  ranges a potion restores.
+* The `outfit.male_client_id`, `outfit.female_client_id` and `mount.client_id` columns. They hold the client IDs (look
+  types) of outfits and mounts.
+
+The [database schema](docs/schema.md) describes each of them.
+
+Releases are wheels on this repository's [GitHub releases](https://github.com/tibia-sh/tibiawiki-sql/releases), not
+on PyPI. Their versions end in `+tibiash.N`, like `9.0.0+tibiash.1`. To install one, download the wheel from a release
+and run `pip install` on it. The PyPI package and the install steps below are upstream's.
+
+Every upstream file this copy changes carries this line at the top, in the file's comment syntax:
+
+```
+Changed by tibia.sh in 2026; see "About this copy" in README.md.
+```
+
+If you change an upstream file, add the line to it. New files don't need it.
+
+The rest of this README is upstream's.
+
+---
 
 Script that generates a sqlite database for the MMO Tibia.
 
