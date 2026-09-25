@@ -221,3 +221,51 @@ class TestNpcParser(unittest.TestCase):
         npc = NpcParser.from_article(article)
 
         self.assertEqual([("Liberty Bay", 50, "Meriana")], [(d.name, d.price, d.origin) for d in npc.destinations])
+
+    def _parse_inline_npc(self, city: str, notes: str) -> Npc:
+        content = (
+            "{{Infobox NPC|List={{{1|}}}|GetValue={{{GetValue|}}}\n"
+            "| name         = Test NPC\n"
+            f"| city         = {city}\n"
+            f"| notes        = {notes}\n"
+            "}}\n"
+        )
+        article = Article(
+            article_id=1,
+            title="Test NPC",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=content,
+        )
+        return NpcParser.from_article(article)
+
+    def test_npc_destinations_origin_plain_text_note(self):
+        npc = self._parse_inline_npc(
+            "Liberty Bay",
+            "{{TransportList|discount=no\n |{{TransportCell|Meriana|50|From Meriana}}\n}}",
+        )
+
+        self.assertEqual([("Meriana", 50, "Liberty Bay")], [(d.name, d.price, d.origin) for d in npc.destinations])
+
+    def test_npc_destinations_origin_piped_link_uses_target(self):
+        npc = self._parse_inline_npc(
+            "Liberty Bay",
+            "{{TransportList|discount=no\n |{{TransportCell|Liberty Bay|50|From [[Meriana Docks|Meriana]]}}\n}}",
+        )
+
+        self.assertEqual(
+            [("Liberty Bay", 50, "Meriana Docks")],
+            [(d.name, d.price, d.origin) for d in npc.destinations],
+        )
+
+    def test_npc_destinations_origin_same_city_ignores_case(self):
+        npc = self._parse_inline_npc(
+            "Liberty Bay",
+            "{{TransportList|discount=no\n |{{TransportCell|liberty bay|50}}\n}}",
+        )
+
+        self.assertEqual([("liberty bay", 50, None)], [(d.name, d.price, d.origin) for d in npc.destinations])
+
+    def test_npc_destinations_origin_legacy_transport_ignores_note(self):
+        npc = self._parse_inline_npc("Venore", "{{Transport|Carlin, 110; From [[Thais]]}}")
+
+        self.assertEqual([("Carlin", 110, "Venore")], [(d.name, d.price, d.origin) for d in npc.destinations])
