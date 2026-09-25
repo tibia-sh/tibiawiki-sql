@@ -38,7 +38,11 @@ class NpcDestination(BaseModel):
     notes: str | None
     """Notes about the destination, such as requirements."""
     origin: str | None = None
-    """Where this leg starts, or ``None`` when the destination is the NPC's own city."""
+    """Where this leg starts: the place named by a ``From [[Place]]`` note, otherwise the NPC's city.
+
+    The city counts only if the NPC has a position there that differs from the destination. Otherwise this is
+    ``None``, meaning the leg starts at one of the NPC's other positions.
+    """
 
 
 class NpcLocation(BaseModel):
