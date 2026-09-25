@@ -23,4 +23,6 @@ class Mount(WikiEntry, WithStatus, WithVersion, WithImage, RowModel, table=Mount
     """The color of the light emitted by this mount in RGB, if any."""
     light_radius: int | None
     """The radius of the light emitted by this mount, if any."""
+    client_id: int | None = None
+    """The client ID (look type) of the mount."""
 

@@ -91,6 +91,10 @@ class Outfit(WikiEntry, WithStatus, WithVersion, RowModel, table=OutfitTable):
     """The full price of this outfit in the Tibia Store."""
     achievement: str | None
     """The achievement obtained for acquiring this full outfit."""
+    male_client_id: int | None = None
+    """The client ID (look type) of the male outfit."""
+    female_client_id: int | None = None
+    """The client ID (look type) of the female outfit."""
     images: list[OutfitImage] = Field(default_factory=list, exclude=True)
     """The outfit's images."""
     quests: list[UnlockQuest] = Field(default_factory=list)

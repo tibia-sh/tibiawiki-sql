@@ -23,6 +23,8 @@ class OutfitParser(BaseParser):
         "is_bought": AttributeParser.optional("bought", parse_boolean, False),
         "full_price": AttributeParser.optional("fulloutfitprice", parse_integer),
         "achievement": AttributeParser.optional("achievement"),
+        "male_client_id": AttributeParser.optional("male_id", lambda x: parse_integer(x, None)),
+        "female_client_id": AttributeParser.optional("female_id", lambda x: parse_integer(x, None)),
         "status": AttributeParser.status(),
         "version": AttributeParser.version(),
     }
