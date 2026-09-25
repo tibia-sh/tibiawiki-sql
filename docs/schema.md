@@ -353,6 +353,11 @@ The generated database has the following tables.
 | name    | `TEXT`    | The name of the attribute.                    |
 | value   | `TEXT`    | The value of the attribute.                   |
 
+The ranges an item restores come from the `restores between A and B Hit Points, and between C and D Mana Points`
+sentence in its notes, as the attributes `restores_hp_min`, `restores_hp_max`, `restores_mana_min` and
+`restores_mana_max`, with thousands separators removed. An item gets none of them when that sentence is missing or
+ambiguous: the same unit twice, a minimum greater than its maximum, or another `between` that doesn't form a range.
+
 
 
 ### item_key

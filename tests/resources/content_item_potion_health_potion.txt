@@ -1,0 +1,33 @@
+{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name          = Health Potion
+| article       = a
+| actualname    = health potion
+| plural        = health potions
+| itemid        = 266
+| objectclass   = Plants, Animal Products, Food and Drink
+| primarytype   = Liquids
+| secondarytype = Potions
+| sounds        = {{Sound List|Aaaah...}}
+| implemented   = 8.10
+| immobile      = no
+| walkable      = yes
+| pickupable    = yes
+| usable        = yes
+| weight        = 2.70
+| stackable     = yes
+| marketable    = yes
+| consumable    = yes
+| droppedby     = {{Dropped By|Barbarian Bloodwalker|Barbarian Headsplitter|Barbarian Skullhunter|Bibby Bloodbath|Bonebeast|Corrupted Ghost|Corrupted Skeleton|Cursed Ape|Cyclops|Dark Apprentice|Dark Magician|Dawnfly|Death Priest|Demon Skeleton|Dragon Hatchling|Dreadbeast|Dwarf Guard|Dworc Voodoomaster|Elf Arcanist|Elf Overseer|Emerald Damselfly|Frost Dragon Hatchling|Frost Giant|Ghoulish Hyaena|Golden Servant|Golden Servant Replica|Grave Guard|Haunted Treeling|Herald of Fire|Infernoid Hound|Infernoid Spiritual|Insectoid Scout|Insectoid Worker|Iron Servant|Iron Servant Replica|Juvenile Cyclops|Kongra|Lizard Commander|Lizard Executioner|Lizard Henchman|Lizard Sentinel|Lizard Swordmaster|Lizard Templar|Mad Scientist|Memory of a Dwarf|Memory of an Elf|Memory of an Insectoid|Minotaur Guard|Muglex Clan Chief|Muglex Clan Footman|Mutated Rat|Oodok Witchmaster|Orc Leader|Orc Warlord|Pirate Cook|Pirate Gunner|Ragged Rabid Wolf|Renegade Orc|Salamander|Sea Captain|Terror Bird|The Corruptor|The Snapper|Thornback Tortoise|Troll-Trained Salamander|Undead Cavebear|Undead Gladiator|Valkyrie|Wailing Widow}}
+| value         = 50
+| storevalue    = {{Store Trades|{{Store Product|6|amount=125}}|{{Store Product|11|amount=300}}}}
+| npcvalue      = 0
+| npcprice      = 50
+| buyfrom       = Alaistar, Asima, Asnarus, Brom: 75, Brutus: 75, Chartan, Chuckles, Digger, Dino: 75, Faloriel, Frederik, Ghorza, Gnomegica, Hamish, Maun, Mehkesh, Nelly, Onfroi, Rabaz, Rachel, Raffael, Rock In A Hard Place, Romir, Roughington: 75, Sandra, Shadowpunch: 75, Shiriel, Siflind, Sigurd, Talila, Tandros, Tarun, Topsy, Valindara, Victor: 75, Xodet
+| sellto        = --
+| notes         = It has a deposit of '''5 [[Empty Potion Flask (Small)|gp]]''' and restores between '''125''' and '''175 [[Hit Point]]s''', around '''150''' on average.<br /> 
+{{Seealso|Money Spent per Hit Point|Capacity Taken per Hit Point}}
+| history       = 
+* The price was increased from '''45 gp''' to '''50 gp''', additionally the [[Store]] prices were also raised with the [[Updates/11.94.7495|update]] on {{OfficialNewsArchive|4795|October 29, 2018}} shown below.
+** 125x Health Potions went from '''5 Tibia Coins''' to '''6 Tibia Coins'''.
+** 300x Health Potions went from '''10 Tibia Coins''' to '''11 Tibia Coins'''.
+}}

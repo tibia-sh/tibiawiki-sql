@@ -1,6 +1,7 @@
 import re
 from typing import Any, ClassVar
 
+import mwparserfromhell
 from tibiawikisql.api import Article
 from tibiawikisql.models.item import Item, ItemAttribute, ItemStoreOffer
 from tibiawikisql.parsers import BaseParser
@@ -17,6 +18,27 @@ from tibiawikisql.utils import (
     parse_sounds,
     strip_code,
 )
+
+RESTORE_AMOUNT = r"\d{1,3}(?:,\d{3})+|\d+"
+"""An amount restored by an item, optionally with commas separating thousands."""
+
+HEALTH_UNIT_PATTERN = re.compile(r"hit\s?points?", re.IGNORECASE)
+"""The unit of an amount of health restored."""
+
+MANA_UNIT_PATTERN = re.compile(r"mana(?:\s+points?)?", re.IGNORECASE)
+"""The unit of an amount of mana restored."""
+
+RESTORE_CLAUSE = (
+    rf"between\s+({RESTORE_AMOUNT})\s+and\s+({RESTORE_AMOUNT})\s+"
+    rf"({HEALTH_UNIT_PATTERN.pattern}|{MANA_UNIT_PATTERN.pattern})"
+)
+"""A range of health or mana restored, capturing the minimum, the maximum and the unit."""
+
+RESTORES_PATTERN = re.compile(rf"restores\s+{RESTORE_CLAUSE}(?:,\s+and\s+{RESTORE_CLAUSE})?", re.IGNORECASE)
+"""The sentence in an item's notes stating one or two ranges it restores."""
+
+BETWEEN_PATTERN = re.compile(r"\bbetween\b", re.IGNORECASE)
+"""The word that starts a restore clause."""
 
 
 class ItemParser(BaseParser):
@@ -117,6 +139,7 @@ class ItemParser(BaseParser):
                 ))
         cls.parse_item_attributes(row)
         cls.parse_resistances(row)
+        cls.parse_restores(row)
         cls.parse_sounds(row)
         cls.parse_store_value(row)
         return row
@@ -193,6 +216,38 @@ class ItemParser(BaseParser):
             except ValueError:
                 value = 0
             attributes.append(ItemAttribute(name=attribute, value=str(value)))
+
+    @classmethod
+    def parse_restores(cls, row: dict[str, Any]) -> None:
+        """Add the ranges of health and mana an item restores, as stated in its notes.
+
+        Each range becomes a ``restores_hp_min`` and ``restores_hp_max`` or a ``restores_mana_min`` and
+        ``restores_mana_max`` attribute, with thousands separators removed. Nothing is added when the notes state
+        no range, the same unit twice, a minimum greater than its maximum, or a ``between`` after the parsed ranges.
+        """
+        notes = row["_raw_attributes"].get("notes")
+        if not notes:
+            return
+        text = mwparserfromhell.parse(notes).strip_code()
+        match = RESTORES_PATTERN.search(text)
+        if not match or BETWEEN_PATTERN.search(text, match.end()):
+            return
+        groups = match.groups()
+        ranges: dict[str, tuple[str, str]] = {}
+        for minimum, maximum, unit in (groups[:3], groups[3:]):
+            if unit is None:
+                continue
+            kind = "hp" if HEALTH_UNIT_PATTERN.fullmatch(unit) else "mana"
+            minimum_value = minimum.replace(",", "")
+            maximum_value = maximum.replace(",", "")
+            if kind in ranges or int(minimum_value) > int(maximum_value):
+                return
+            ranges[kind] = (minimum_value, maximum_value)
+        for kind, (minimum_value, maximum_value) in ranges.items():
+            row["attributes"].extend([
+                ItemAttribute(name=f"restores_{kind}_min", value=minimum_value),
+                ItemAttribute(name=f"restores_{kind}_max", value=maximum_value),
+            ])
 
     @classmethod
     def parse_sounds(cls, row):

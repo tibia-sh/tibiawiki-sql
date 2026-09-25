@@ -1,0 +1,35 @@
+{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name          = Supreme Health Potion
+| article       = a
+| actualname    = supreme health potion
+| plural        = supreme health potions
+| itemid        = 23375
+| objectclass   = Plants, Animal Products, Food and Drink
+| primarytype   = Liquids
+| secondarytype = Potions
+| flavortext    = This potion can only be consumed by knights of level 200 or higher.
+| sounds        = {{Sound List|Aaaah...}}
+| implemented   = 10.92
+| immobile      = no
+| walkable      = yes
+| pickupable    = yes
+| usable        = yes
+| weight        = 3.50
+| stackable     = yes
+| marketable    = yes
+| consumable    = yes
+| droppedby     = {{Dropped By|Alptramun|Arbaziloth|Bakragore|Bonelord's Phylactery|Brain Head|Chagorz|Count Vlarkorth|Drume|Duke Krule|Earl Osam|Eldritch Dragon Lord|Ghulosh|Gorzindel|Goshnar's Cruelty|Goshnar's Greed|Goshnar's Hatred|Goshnar's Malice|Goshnar's Megalomania|Goshnar's Spite|Ice Horror|Ichgahal|Izcandar Champion of Summer|Izcandar Champion of Winter|Izcandar the Banished|King Zelos|Lord Azaram|Malofur Mangrinder|Maxxenius|Mazzinor|Megasylvan Yselda|Murcion|Plagueroot|Scarlett Etzel|Sir Baeloc|The Abomination|The Brainstealer|The Dread Maiden|The Fear Feaster|The Gravedigger|The Nightmare Beast|The Pale Worm|The Percht Queen|The Rootkraken|The Scourge of Oblivion|The Unwelcome|Urmahlullu the Weakened|Vemiath|Vladrukh}}
+| value         = 650
+| storevalue    = {{Store Trades|{{Store Product|47|amount=100}}|{{Store Product|113|amount=250}}}}
+| npcvalue      = 0
+| npcprice      = 650
+| buyfrom       = Alaistar, Asima, Asnarus, Chartan, Chuckles, Faloriel, Frederik, Ghorza, Maun, Mehkesh, Nelly, Onfroi, Rabaz, Rock In A Hard Place, Romir, Sandra, Siflind, Talila, Tandros, Tarun, Valindara
+| sellto        = --
+| notes         = It has a deposit of '''5 [[Empty Potion Flask (Large)|gp]]''' and restores between '''875''' and '''1,175 [[Hit Point]]s''', around '''1,000''' on average.<br />
+{{Seealso|Money Spent per Hit Point|Capacity Taken per Hit Point}}
+| history =
+* The price was further increased from '''625 gp''' to '''650 gp''' with the [[Summer Update 2024|Summer 2024 Update]] on {{OfficialNewsArchive|7952|Jul 01, 2024}}.
+* The price was increased from '''500 gp''' to '''625 gp''', additionally the [[Store]] prices were also raised with the [[Updates/11.94.7495|update]] on {{OfficialNewsArchive|4795|October 29, 2018}} shown below.
+** 100x Supreme Health Potions went from '''37 Tibia Coins''' to '''47 Tibia Coins'''.
+** 250x Supreme Health Potions went from '''90 Tibia Coins''' to '''113 Tibia Coins'''.
+}}

@@ -1,0 +1,37 @@
+{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name          = Great Mana Potion
+| article       = a
+| actualname    = great mana potion
+| plural        = great mana potions
+| itemid        = 238
+| objectclass   = Plants, Animal Products, Food and Drink
+| primarytype   = Liquids
+| secondarytype = Potions
+| flavortext    = This potion can only be consumed by players of level 80 or higher.
+| sounds        = {{Sound List|Aaaah...}}
+| implemented   = 8.10
+| immobile      = no
+| walkable      = yes
+| pickupable    = yes
+| usable        = yes
+| weight        = 3.10
+| stackable     = yes
+| marketable    = yes
+| consumable    = yes
+| droppedby     = {{Dropped By|Ahau|Ancient Spawn of Morgathla|Angry Demon|Animated Guzzlemaw|Animated Moohtant|Annihilon|Anomaly|Arbaziloth|Armadile|Ashmunrah|Betrayed Wraith|Black Vixen|Blightwalker|Breach Brood|Bretzecutioner|Bulltaur Alchemist|Bullwark|Burster|Chizzoron the Distorter|Choking Fear|Chopper|Cliff Strider|Control Tower|Crawler|Crustacea Gigantica|Dark Carnisylvan|Dark Torturer|Dawnfire Asura|Death Priest Shargon|Deathling Scout|Deathling Spellsinger|Deepling Elite|Deepling Guard|Deepling Tyrant|Deepling Warrior|Demodras|Demon|Demon Outcast|Dharalion|Dipthrah|Dracola|Draken Abomination|Draken Elite|Draken Spellweaver|Dread Intruder|Dreadful Disruptor|Druid's Apparition|Eldritch Dragon Lord|Enslaved Dwarf|Eradicator|Essence of Malice|Ethershreck|Execowtioner|Exotic Bat|Falcon Knight|Feroxa|Feroxa (Gloom Wolf)|Feversleep|Flamecaller Zazrak|Fleshslicer|Frazzlemaw|Furyosa|Gaz'haragoth|Ghastly Dragon|Ghazbaran|Ghost of a Planegazer|Glooth Bandit|Glooth Battery|Glooth Bomb|Glooth Brigand|Glooth Fairy|Glooth Golem|Goggle Cake|Gorga|Gorgo|Grand Canon Dominus|Grand Chaplain Gaunder|Grand Commander Soeren|Great Timedisplaced Anomaly|Grim Reaper|Grimeleech|Guzzlemaw|Hand of Cursed Fate|Haunted Dragon|Hellflayer|Hellgorak|Hellhound|Hideous Fungus|Hive Overseer|Horestis|Humongous Fungus|Ice Dragon|Ice Horror|Infernalist|Instable Breach Brood|Instable Sparkion|Ironblight|Juggernaut|Kalyassa|Kerberos|Kollos|Lady Tenebris|Lava Golem|Lisa|Lizard Dragon Priest|Lizard Magistratus|Lloyd|Lost Basher|Lost Berserker|Lost Exile|Lost Husher|Lost Soul|Lost Thrower|Lucifuga Aranea|Madareth|Magma Crawler|Massacre|Massive Energy Elemental|Massive Water Elemental|Maw|Mazoran|Medusa|Melting Frozen Horror|Memory of a Frazzlemaw|Memory of a Fungus|Memory of a Golem|Memory of an Insectoid|Mindmasher|Minotaur Amazon|Minotaur Cult Prophet|Moohtant|Moohtant Wallbreaker|Morgaroth|Mr. Punish|Neutral Deepling Warrior|Night Harpy|Nymph|Omrafir|Orewalker|Orshabaal|Outburst|Paiz the Pauperizer|Phantasm|Pirat Bombardier|Pirat Scoundrel|Pixie|Plagirath|Preceptor Lazare|Prince Drazzak|Quara Hydromancer|Rage Squid|Ragiaz|Raging Mage|Rahemos|Ratmiral Blackwhiskers|Ravenous Hunger|Razzagorn|Reality Reaver|Realityquake|Reflection of a Mage|Renegade Quara Constrictor|Renegade Quara Hydromancer|Renegade Quara Pincher|Retching Horror|Retros Treasure|Rhindeer|Rotspit|Rupture|Sea Serpent|Serpent Spawn|Shadowstalker|Sharpclaw|Shulgrax|Sight of Surrender|Sineater Inferniarch|Sorcerer's Apparition|Soul of Dragonking Zyrtarch|Souleater|Sparkion|Spectre|Spidris|Spidris Elite|Spitter|Stabilizing Dread Intruder|Stabilizing Reality Reaver|Stone Devourer|Swan Maiden|Tarbaz|Terofar|Terrorsleep|The Baron from Below|The Blazing Time Guardian|The Brainstealer|The Count of the Core|The Duke of the Depths|The Enraged Thorn Knight|The Evil Eye|The False God|The Flaming Orchid|The Freezing Time Guardian|The Gravedigger|The Hungerer|The Last Lore Keeper|The Lord of the Lice|The Manhunter|The Mean Masher|The Moonlight Aster|The Noxious Spawn|The Ravager|The Sandking|The Shatterer|The Souldespoiler|The Source of Corruption|The Time Guardian|The Unarmored Voidborn|The Winter Bloom|Thul|Tremor Worm|True Dawnfire Asura|Undead Dragon|Ungreez|Ushuriel|Usurper Knight|Vashresamun|Vexclaw|Vladrukh|War Golem|Warlock|Weakened Frazzlemaw|Weakened Shlorg|Weeper|Werebadger|Werefox|Werehyaena Shaman|Worker Golem|World Devourer|Wrathful Archivist|Yakchal|Zamulosh|Zanakeph|Zavarash|Zorvorax|Zugurosh|Zulazza the Corruptor|Zushuka}}
+| value         = 158
+| storevalue    = {{Store Trades|{{Store Product|11|amount=100}}|{{Store Product|26|amount=250}}}}
+| npcvalue      = 0
+| npcprice      = 158
+| buyfrom       = Alaistar, Asima, Asnarus, Chartan, Chuckles, Digger, Faloriel, Frederik, Ghorza, Gnomegica, Maun, Mehkesh, Nelly, Onfroi, Rabaz, Rachel, Rock In A Hard Place, Romir, Sandra, Shiriel, Siflind, Sigurd, Talila, Tandros, Tarun, Topsy, Valindara, Xodet
+| sellto        = --
+| notes         = It has a deposit of 5 [[Empty Potion Flask (Large)|gp]] and restores between 150 and 250 [[Mana]] Points, around 200 on average.<br />
+{{Seealso|Money Spent per Mana Point|Capacity Taken per Mana Point}}
+| history       = 
+* The price was further increased from 144 gp to 158 gp with the [[Summer Update 2024|Summer 2024 Update]] on {{OfficialNewsArchive|7952|Jul 01, 2024}}.
+* [[Paladin]]s gained the ability to consume these potions with the release of the [[Vocation Adjustments Update]] on {{OfficialNewsArchive|5836#paladin1|November 23, 2020}}. 
+* The price was increased from 120 gp to 144 gp, additionally the [[Store]] prices were also raised with the [[Updates/11.94.7495|update]] on {{OfficialNewsArchive|4795|October 29, 2018}} shown below.
+** 100x Great Mana Potions went from 9 Tibia Coins to 11 Tibia Coins.
+** 250x Great Mana Potions went from 21 Tibia Coins to 26 Tibia Coins.
+* As announced on {{OfficialNewsArchive|8849|June 16, 2026}}, the [[Updates/15.25.3a4a52|Vocation Adjustments Update 2026]] removed its [[vocation]] requirements, all vocations can now use it.
+}}

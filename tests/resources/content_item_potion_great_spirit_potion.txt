@@ -1,0 +1,36 @@
+{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name          = Great Spirit Potion
+| article       = a
+| actualname    = great spirit potion
+| plural        = great spirit potions
+| itemid        = 7642
+| objectclass   = Plants, Animal Products, Food and Drink
+| primarytype   = Liquids
+| secondarytype = Potions
+| flavortext    = This potion can only be consumed by paladins and monks of level 80 or higher.
+| sounds        = {{Sound List|Aaaah...}}
+| implemented   = 8.11
+| immobile      = no
+| walkable      = yes
+| pickupable    = yes
+| usable        = yes
+| weight        = 3.10
+| stackable     = yes
+| marketable    = yes
+| consumable    = yes
+| droppedby     = {{Dropped By|Ahau|Ancient Spawn of Morgathla|Angry Demon|Annihilon|Anomaly|Arachnophobica|Arbaziloth|Bashmu|Black Vixen|Bog Raider|Breach Brood|Bretzecutioner|Brinebrute Inferniarch|Bullwark|Burster|Burster Spectre|Capricious Phantom|Cave Chimera|Choking Fear|Crazed Winter Rearguard|Cursed Prospector|Demon|Distorted Phantom|Draken Abomination|Dread Intruder|Dreadful Disruptor|Eldritch Dragon Lord|Emerald Tortoise|Eradicator|Essence of Malice|Ethershreck|Falcon Paladin|Feroxa|Feroxa (Gloom Wolf)|Furyosa|Gaffir|Gaz'haragoth|Ghastly Dragon|Ghazbaran|Glooth Bandit|Glooth Bomb|Glooth Brigand|Glooth Fairy|Great Timedisplaced Anomaly|Grimeleech|Harpy|Hatebreeder|Hellflayer|Hellgorak|Hellhound|Ice Horror|Instable Breach Brood|Instable Sparkion|Juvenile Bashmu|Kusuma|Lady Tenebris|Liodile|Lisa|Lloyd|Lokathmor|Madareth|Malvaroth|Mazoran|Melting Frozen Horror|Memory of a Book|Memory of a Carnisylvan|Memory of a Werelion|Moohtant Wallbreaker|Morgaroth|Neferi the Spy|Night Harpy|Night Harpy|Omrafir|Orshabaal|Outburst|Paiz the Pauperizer|Paladin's Apparition|Plagirath|Poisonous Carnisylvan|Prince Drazzak|Rage Squid|Ragiaz|Ratmiral Blackwhiskers|Ravenous Hunger|Razzagorn|Reality Reaver|Realityquake|Retros Treasure|Ripper Spectre|Rotten Golem|Rupture|Shrieking Cry-Stal|Shulgrax|Sight of Surrender|Soul of Dragonking Zyrtarch|Sparkion|Stabilizing Dread Intruder|Stabilizing Reality Reaver|Tarbaz|Terofar|Thanatursus|The Baron from Below|The Blazing Rose|The Blazing Time Guardian|The Count of the Core|The Diamond Blossom|The Duke of the Depths|The Enraged Thorn Knight|The False God|The Flaming Orchid|The Freezing Time Guardian|The Gravedigger|The Last Lore Keeper|The Lily of Night|The Lord of the Lice|The Moonlight Aster|The Rootkraken|The Sandking|The Shatterer|The Souldespoiler|The Source of Corruption|The Time Guardian|The Unarmored Voidborn|The Winter Bloom|Tremor Worm|Undertaker|Ushuriel|Vexclaw|Vladrukh|Walker|Weakened Shlorg|Werelion|White Lion|Worker Golem|World Devourer|Zamulosh|Zanakeph|Zavarash|Zorvorax|Zugurosh|Zulazza the Corruptor|Zushuka}}
+| value         = 254
+| storevalue    = {{Store Trades|{{Store Product|18|amount=100}}|{{Store Product|41|amount=250}}}}
+| npcvalue      = 0
+| npcprice      = 254
+| buyfrom       = Alaistar, Asima, Asnarus, Chartan, Chuckles, Digger, Faloriel, Frederik, Ghorza, Gnomegica, Maun, Mehkesh, Nelly, Onfroi, Rabaz, Rachel, Rock In A Hard Place, Romir, Sandra, Shiriel, Siflind, Sigurd, Talila, Tandros, Tarun, Topsy, Valindara, Xodet
+| sellto        = --
+| notes         = It has a deposit of '''5 [[Empty Potion Flask (Large)|gp]]''' and restores between '''250''' and '''350 [[Hit Points]]''', and between '''125''' and '''185 [[Mana Points]]''', around '''300''' health and '''150''' mana on average.<br />
+{{Seealso|Money Spent per Mana Point|Capacity Taken per Mana Point}}
+| history       =
+* [[Monk]]s gained the ability to consume these potions with the release of the [[Monk Vocation Update]] on {{OfficialNewsArchive|8317|April 08, 2025}}. 
+* The price was further increased from '''228 gp''' to '''254 gp''' with the [[Summer Update 2024|Summer 2024 Update]] on {{OfficialNewsArchive|7952|Jul 01, 2024}}.
+* The price was increased from '''190gp''' to '''228 gp''', additionally the [[Store]] prices were also raised with the [[Updates/11.94.7495|update]] on {{OfficialNewsArchive|4795|October 29, 2018}} shown below.
+** 100x Great Spirit Potions went from '''15 Tibia Coins''' to '''18 Tibia Coins'''.
+** 250x Great Spirit Potions went from '''34 Tibia Coins''' to '''41 Tibia Coins'''.
+}}
