@@ -46,3 +46,14 @@ class TestOutfitParserClientIds(unittest.TestCase):
 
         self.assertIsNone(outfit.male_client_id)
         self.assertEqual(147, outfit.female_client_id)
+
+    def test_outfit_female_client_id_none_when_empty(self):
+        outfit = self._parse(self._edited("| female_id\t= 147", "| female_id\t="))
+
+        self.assertIsNone(outfit.female_client_id)
+        self.assertEqual(143, outfit.male_client_id)
+
+    def test_outfit_female_client_id_none_when_not_numeric(self):
+        outfit = self._parse(self._edited("| female_id\t= 147", "| female_id\t= abc"))
+
+        self.assertIsNone(outfit.female_client_id)
