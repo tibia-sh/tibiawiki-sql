@@ -310,6 +310,15 @@ class TestNpcParser(unittest.TestCase):
 
         self.assertEqual([("vengoth", 100, None)], [(d.name, d.price, d.origin) for d in npc.destinations])
 
+    def test_npc_destinations_origin_null_when_geolabel_matches(self):
+        npc = self._parse_inline_npc(
+            "Thais",
+            "{{TransportList|discount=no\n |{{TransportCell|Robson's Isle|100}}\n}}",
+            "| geolabel     = Robson's Isle\n",
+        )
+
+        self.assertEqual([("Robson's Isle", 100, None)], [(d.name, d.price, d.origin) for d in npc.destinations])
+
     def test_npc_destinations_origin_legacy_transport_ignores_note(self):
         npc = self._parse_inline_npc("Venore", "{{Transport|Carlin, 110; From [[Thais]]}}")
 
