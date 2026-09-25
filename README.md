@@ -24,11 +24,20 @@ and run `pip install` on it. The PyPI package and the install steps below are up
 
 To release a version, set `__version__` in `tibiawikisql/__init__.py`, add a `## <version>` section to `CHANGELOG.md`
 and merge both to `main`. Then push the tag `v<version>`, like `v9.0.0+tibiash.1`, on that commit. The release
-workflow checks that the tag matches the version and that the commit is on `main`, then runs the tests. It builds the
-wheel and the sdist with the hashed build dependencies in `build-constraints.txt`, writes `SHA256SUMS`, attests all
-three files and publishes them with the changelog section as the release notes. Running the workflow by hand is a dry
-run: it skips the tag checks and the release. To check a download, run `sha256sum -c SHA256SUMS` and
-`gh attestation verify <file> --repo tibia-sh/tibiawiki-sql`.
+workflow checks that the tag matches the version and that the commit is on `main`. It runs the tests and checks an
+installed build of the wheel, both without write access. The publishing job then builds the wheel and the sdist with
+only the hashed build dependencies in `build-constraints.txt`, checks the wheel's version, writes `SHA256SUMS`, attests
+all three files and publishes them with the changelog section as the release notes. A running release is left to
+finish. A newer run for the same tag can still replace one that is waiting to start. Running the workflow by hand on
+`main` is a dry run: it skips the tag checks and the release. On any other branch it fails.
+
+To check a download, run `sha256sum -c SHA256SUMS` and this for each file:
+
+```
+gh attestation verify <file> --repo tibia-sh/tibiawiki-sql --signer-workflow tibia-sh/tibiawiki-sql/.github/workflows/release.yml --source-ref refs/tags/v<version> --deny-self-hosted-runners
+```
+
+This ties the file you downloaded to a tagged release run of this workflow.
 
 Every upstream file this copy changes carries this line at the top, in the file's comment syntax:
 
