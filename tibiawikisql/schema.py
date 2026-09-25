@@ -1,3 +1,4 @@
+# Changed by tibia.sh in 2026; see "About this copy" in README.md.
 """Defines the SQL schemas to use."""
 from sqlite3 import Connection, Cursor, Row
 from typing import Any, ClassVar

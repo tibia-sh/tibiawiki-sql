@@ -1,4 +1,17 @@
+<!-- Changed by tibia.sh in 2026; see "About this copy" in README.md. -->
 # Changelog
+
+## 9.0.0+tibiash.1
+
+- Add the `npc_location` table with every position of an NPC, numbered 1 to 7. Each position has its city, subarea,
+  geolabel and `x`, `y` and `z` coordinates.
+- Add `npc_destination.origin`, the place where each travel leg starts. It comes from a `From [[Place]]` note, otherwise
+  the NPC's city.
+- Add the item attributes `restores_hp_min`, `restores_hp_max`, `restores_mana_min` and `restores_mana_max`, parsed from
+  the `restores between A and B Hit Points, and between C and D Mana Points` sentence in an item's notes.
+- Add `outfit.male_client_id`, `outfit.female_client_id` and `mount.client_id`, the client IDs (look types) of outfits
+  and mounts.
+- Store a missing or malformed coordinate or client ID as `NULL`.
 
 ## 9.0.0 (2026-07-22)
 

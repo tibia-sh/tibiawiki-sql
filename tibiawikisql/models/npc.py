@@ -1,3 +1,4 @@
+# Changed by tibia.sh in 2026; see "About this copy" in README.md.
 import sqlite3
 from sqlite3 import Connection, Cursor
 from typing import Any

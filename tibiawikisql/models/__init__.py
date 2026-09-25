@@ -1,3 +1,4 @@
+# Changed by tibia.sh in 2026; see "About this copy" in README.md.
 """Contains all the models representing TibiaWiki articles."""
 
 from tibiawikisql.models.achievement import Achievement

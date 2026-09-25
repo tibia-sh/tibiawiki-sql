@@ -1,3 +1,4 @@
+# Changed by tibia.sh in 2026; see "About this copy" in README.md.
 from typing import Any, ClassVar
 
 import tibiawikisql.schema
