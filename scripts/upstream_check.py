@@ -1,11 +1,13 @@
 """Keep one issue listing the upstream commits that this copy's main branch lacks.
 
-Run by `.github/workflows/upstream.yml` with the runner's Python, so it uses only the standard library.
+Run by `.github/workflows/upstream.yml` with the runner's Python, so it uses only the standard library. The workflow
+passes the compared base in ``BASE_REF`` (empty unless a manual run set ``base_ref``) and ``BASE_SHA`` (its short SHA).
 """
 from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import shutil
 import subprocess
@@ -20,8 +22,14 @@ LIST_ISSUES = [
     "issue", "list", "--state", "all", "--author", "github-actions[bot]", "--json", "number,title,state,author",
 ]
 ISSUE_STATES = (None, "OPEN", "CLOSED")
+MAX_LINE = 200
+MAX_LINES = 300
+ELLIPSIS = "\u2026"
+CONTROL = re.compile(r"[\x00-\x08\x0a-\x1f\x7f-\x9f]")
 TILDE_RUN = re.compile(r"~{3,}")
 ZERO_WIDTH_SPACE = "\u200b"
+SHORT_SHA = re.compile(r"[0-9a-f]{7,40}")
+CODE_SPAN_SAFE = re.compile(r"[^`\s]+")
 
 log = logging.getLogger(__name__)
 
@@ -47,25 +55,72 @@ def decide(new_commits: list[str], issue_state: str | None) -> str:
     return "close" if issue_state == "OPEN" else "none"
 
 
-def build_body(new_commits: list[str]) -> str:
+def describe_base(base_ref: str, base_sha: str) -> str:
+    """Name the base that upstream was compared with, as Markdown.
+
+    Args:
+        base_ref: The manual run's ``base_ref``, or ``""`` when the base is ``origin/main``.
+        base_sha: The base's short SHA.
+
+    Returns:
+        ```main` at `<sha>``` or ```base_ref <ref>` at `<sha>```.
+
+    Raises:
+        ValueError: The SHA is not a lowercase hex SHA, or the ref would leave its code span.
+    """
+    if not SHORT_SHA.fullmatch(base_sha):
+        msg = f"BASE_SHA must be a lowercase hex SHA, got {base_sha!r}"
+        raise ValueError(msg)
+    if not base_ref:
+        return f"`main` at `{base_sha}`"
+    if not CODE_SPAN_SAFE.fullmatch(base_ref):
+        msg = f"BASE_REF must hold no backticks or whitespace, got {base_ref!r}"
+        raise ValueError(msg)
+    return f"`base_ref {base_ref}` at `{base_sha}`"
+
+
+def _commit_line(commit: str) -> str:
+    """Make one commit line inert and bounded: no control characters, no tilde run, at most ``MAX_LINE`` characters.
+
+    Tildes are split before the cut, and the cut only drops a suffix, so it can't rejoin a run.
+
+    Args:
+        commit: One ``<hash> <subject>`` line from git.
+
+    Returns:
+        The line to put inside the fence.
+    """
+    line = TILDE_RUN.sub(lambda run: ZERO_WIDTH_SPACE.join(run.group()), CONTROL.sub("", commit))
+    return line if len(line) <= MAX_LINE else line[:MAX_LINE - 1] + ELLIPSIS
+
+
+def build_body(new_commits: list[str], base: str) -> str:
     """Write the issue body, with the commit lines inside a ``~~~`` fence.
 
-    Inside the fence, ``#12`` and ``@user`` render as plain text. A zero-width space goes between the tildes of any run
-    of three or more in a subject, so no subject can close the fence.
+    Inside the fence, ``#12`` and ``@user`` render as plain text. Each line loses its control characters other than
+    tab, gets a zero-width space between the tildes of any run of three or more, so no subject can close the fence, and
+    is cut to ``MAX_LINE`` characters. The fence holds at most ``MAX_LINES`` lines, which keeps the body well under
+    GitHub's 65,536-character limit.
 
     Args:
         new_commits: The upstream commits that main lacks, one ``<hash> <subject>`` line each.
+        base: The compared base, from :func:`describe_base`.
 
     Returns:
         The issue body as Markdown.
     """
-    lines = [TILDE_RUN.sub(lambda run: ZERO_WIDTH_SPACE.join(run.group()), commit) for commit in new_commits]
+    lines = [_commit_line(commit) for commit in new_commits[:MAX_LINES]]
+    more = len(new_commits) - len(lines)
+    rest = [f"... and {more} more commit{'s' if more > 1 else ''}"] if more else []
     return "\n".join([
-        f"[Galarzaa90/tibiawiki-sql]({UPSTREAM}) `main` has {len(lines)} commit(s) that our `main` lacks:",
+        f"[Galarzaa90/tibiawiki-sql]({UPSTREAM}) `main` has {len(new_commits)} commit(s) that our `main` lacks.",
+        "",
+        f"Compared with {base}.",
         "",
         "~~~",
         *lines,
         "~~~",
+        *rest,
         "",
         'To merge them, see "About this copy" in README.md. This issue closes itself once `main` has them all.',
         "",
@@ -140,7 +195,7 @@ def gh_commands(action: str, issue_number: int | None, body_file: str) -> list[l
     edit = ["issue", "edit", number, "--body-file", body_file]
     return {
         "update": [edit],
-        "reopen": [["issue", "reopen", number], edit],
+        "reopen": [edit, ["issue", "reopen", number]],
         "close": [["issue", "close", number]],
     }[action]
 
@@ -154,6 +209,7 @@ def main(argv: list[str]) -> None:
     Raises:
         SystemExit: The arguments are wrong or ``gh`` is not installed.
     """
+    base = describe_base(os.environ.get("BASE_REF", ""), os.environ.get("BASE_SHA", ""))
     if len(argv) != 1:
         msg = "usage: upstream_check.py <commit-list file>"
         raise SystemExit(msg)
@@ -169,7 +225,7 @@ def main(argv: list[str]) -> None:
              f"#{issue['number']} {issue['state']}" if issue else "absent", action)
     with tempfile.TemporaryDirectory() as tmp:
         body_file = Path(tmp) / "body.md"
-        body_file.write_text(build_body(new_commits), encoding="utf-8")
+        body_file.write_text(build_body(new_commits, base), encoding="utf-8")
         for args in gh_commands(action, issue["number"] if issue else None, str(body_file)):
             subprocess.run([gh, *args], check=True)  # noqa: S603 - argument list, no shell, body passed as a file
 

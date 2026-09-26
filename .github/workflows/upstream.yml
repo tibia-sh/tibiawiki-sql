@@ -37,6 +37,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: List upstream commits missing from main
+        id: base
         env:
           BASE_REF: ${{ inputs.base_ref }}
         run: |
@@ -52,8 +53,12 @@ jobs:
           git fetch --no-tags https://github.com/Galarzaa90/tibiawiki-sql.git main
           git log --format='%h %s' --end-of-options "${base}..FETCH_HEAD" > "$RUNNER_TEMP/upstream-commits.txt"
           echo "Comparing with $base: $(wc -l < "$RUNNER_TEMP/upstream-commits.txt") upstream commit(s) missing"
+          echo "ref=$BASE_REF" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse --short "$base")" >> "$GITHUB_OUTPUT"
       - name: Open, update or close the issue
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          BASE_REF: ${{ steps.base.outputs.ref }}
+          BASE_SHA: ${{ steps.base.outputs.sha }}
         run: python3 scripts/upstream_check.py "$RUNNER_TEMP/upstream-commits.txt"
