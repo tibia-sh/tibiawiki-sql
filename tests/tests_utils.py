@@ -5,7 +5,8 @@ import datetime
 
 import tibiawikisql
 from tests import load_resource
-from tibiawikisql.utils import (clean_links, client_color_to_rgb, parse_boolean, parse_float, parse_integer,
+from tibiawikisql.utils import (clean_links, client_color_to_rgb, parse_boolean, parse_client_id, parse_float,
+                                parse_integer,
                                 parse_date, parse_loot_statistics, parse_min_max, parse_sounds,
                                 parse_weapon_proficiency_name, parse_weapon_proficiency_tables)
 
@@ -58,6 +59,15 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(parse_integer("100 tibia coins"), 100)
         self.assertEqual(parse_integer("10056"), 10056)
         self.assertEqual(parse_integer("--"), 0)
+
+    def test_parse_client_id(self):
+        self.assertEqual(35, parse_client_id("35"))
+        self.assertEqual(35, parse_client_id(" 35 <!-- note -->"))
+        self.assertEqual(644, parse_client_id("<!-- 7 -->644"))
+        self.assertIsNone(parse_client_id("<!-- objectID: 51952-->"))
+        self.assertIsNone(parse_client_id("\n<!-- objectID: 51952-->\n"))
+        self.assertIsNone(parse_client_id("abc"))
+        self.assertIsNone(parse_client_id(""))
 
     def test_parse_date_ignores_comma_separated_time(self):
         self.assertEqual(datetime.date(2026, 1, 27), parse_date("January 27, 2026, 16:00"))

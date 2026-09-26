@@ -43,3 +43,8 @@ class TestMountParserClientId(unittest.TestCase):
         mount = self._parse(self._edited("| mount_id\t= 644", "| mount_id\t= abc"))
 
         self.assertIsNone(mount.client_id)
+
+    def test_mount_client_id_none_when_only_a_comment(self):
+        mount = self._parse(self._edited("| mount_id\t= 644", "| mount_id\t= <!-- objectID: 51952-->"))
+
+        self.assertIsNone(mount.client_id)
