@@ -7,6 +7,8 @@
   and `mount.client_id`, as MediaWiki hides it. A value like `<!-- 51952` is now stored as `NULL`.
 - List up to 100 issues in the upstream check, and fail when the list reaches that limit. A cut-short list could miss
   the "Upstream has new commits" issue and open a second one.
+- Ship `CHANGELOG.md` in the sdist, which named a `CHANGELOG.rst` that does not exist, and leave out the upstream
+  check's test, which tests CI tooling the sdist does not ship.
 
 ## 9.0.0+tibiash.2
 
