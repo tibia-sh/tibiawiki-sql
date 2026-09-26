@@ -159,9 +159,18 @@ class TestFindIssue(unittest.TestCase):
     def test_list_command_filters_by_the_actions_bot(self):
         self.assertEqual(
             ["issue", "list", "--state", "all", "--author", "github-actions[bot]",
-             "--json", "number,title,state,author"],
+             "--json", "number,title,state,author", "--limit", "100"],
             LIST_ISSUES,
         )
+
+    def test_full_list_is_rejected(self):
+        issues = [{"number": i, "title": "Other", "state": "CLOSED", "author": BOT} for i in range(100)]
+        with self.assertRaisesRegex(ValueError, r"\b100\b"):
+            find_issue(issues)
+
+    def test_list_below_the_limit_without_the_title_is_none(self):
+        issues = [{"number": i, "title": "Other", "state": "CLOSED", "author": BOT} for i in range(99)]
+        self.assertIsNone(find_issue(issues))
 
     def test_matches_exact_title_only(self):
         issues = [

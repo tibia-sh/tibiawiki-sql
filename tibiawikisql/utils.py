@@ -20,6 +20,8 @@ if TYPE_CHECKING:
 min_max_pattern = re.compile(r"(\d+)-(\d+)")
 int_pattern = re.compile(r"[+-]?\d+")
 float_pattern = re.compile(r"[+-]?(\d*[.])?\d+")
+escaping_tags = frozenset(("nowiki", "pre"))
+inert_comment_start = "<!\u200b--"
 
 
 class Elapsed:
@@ -283,8 +285,10 @@ def parse_integer(value: str, default: int = 0) -> int:
 def parse_client_id(value: str) -> int | None:
     """Parse a client ID, ignoring wiki comments.
 
-    Each comment is replaced by a space, so digits on either side of it stay apart. A value that is only a comment,
-    such as ``<!-- objectID: 51952-->``, counts as absent.
+    Each comment is replaced by a space, so digits on either side of it stay apart. As in MediaWiki, an unclosed
+    ``<!--`` hides the rest of the value, even inside a tag, template or link. Inside a ``<nowiki>`` or ``<pre>``,
+    however deeply nested, ``<!--`` is text: it hides nothing, and the digits of an escaped comment count. A value that
+    is only a comment, such as ``<!-- objectID: 51952-->`` or ``<!-- 51952``, counts as absent.
 
     Args:
         value: The raw value of a client ID field.
@@ -296,7 +300,10 @@ def parse_client_id(value: str) -> int | None:
     code = mwparserfromhell.parse(value)
     for comment in code.filter_comments():
         code.replace(comment, " ")
-    return parse_integer(str(code), None)
+    # The parser leaves the contents of nowiki and pre unparsed, so no escaping tag is found inside another.
+    for tag in code.filter_tags(matches=lambda tag: str(tag.tag).strip().lower() in escaping_tags):
+        code.replace(tag, str(tag).replace("<!--", inert_comment_start))
+    return parse_integer(str(code).partition("<!--")[0], None)
 
 
 def parse_loot_statistics(value: str) -> tuple[int, list[Any]]:
