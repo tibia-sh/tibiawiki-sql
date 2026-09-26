@@ -71,6 +71,8 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(35, parse_client_id("35 <!-- note"))
         self.assertEqual(35, parse_client_id("<!-- a --> 35 <!-- b"))
         self.assertIsNone(parse_client_id("<!-- a --> <!-- 35"))
+        self.assertEqual(35, parse_client_id("<nowiki><!-- note --></nowiki>35"))
+        self.assertEqual(35, parse_client_id("<nowiki><!--</nowiki>35"))
         self.assertIsNone(parse_client_id("abc"))
         self.assertIsNone(parse_client_id(""))
 

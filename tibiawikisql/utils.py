@@ -10,6 +10,7 @@ from contextlib import contextmanager
 from typing import Any, Literal, TYPE_CHECKING, overload
 
 import mwparserfromhell
+from mwparserfromhell.nodes import Text
 from mwparserfromhell.nodes.extras import Parameter
 from mwparserfromhell.wikicode import Wikicode
 
@@ -284,8 +285,8 @@ def parse_client_id(value: str) -> int | None:
     """Parse a client ID, ignoring wiki comments.
 
     Each comment is replaced by a space, so digits on either side of it stay apart. As in MediaWiki, an unclosed
-    ``<!--`` hides the rest of the value. A value that is only a comment, such as ``<!-- objectID: 51952-->`` or
-    ``<!-- 51952``, counts as absent.
+    ``<!--`` hides the rest of the value, unless it is escaped, as inside ``<nowiki>``. A value that is only a comment,
+    such as ``<!-- objectID: 51952-->`` or ``<!-- 51952``, counts as absent.
 
     Args:
         value: The raw value of a client ID field.
@@ -297,7 +298,13 @@ def parse_client_id(value: str) -> int | None:
     code = mwparserfromhell.parse(value)
     for comment in code.filter_comments():
         code.replace(comment, " ")
-    return parse_integer(str(code).partition("<!--")[0], None)
+    kept = []
+    for node in code.nodes:
+        if isinstance(node, Text) and "<!--" in node.value:
+            kept.append(node.value.partition("<!--")[0])
+            break
+        kept.append(str(node))
+    return parse_integer("".join(kept), None)
 
 
 def parse_loot_statistics(value: str) -> tuple[int, list[Any]]:
