@@ -73,6 +73,11 @@ class TestUtils(unittest.TestCase):
         self.assertIsNone(parse_client_id("<!-- a --> <!-- 35"))
         self.assertEqual(35, parse_client_id("<nowiki><!-- note --></nowiki>35"))
         self.assertEqual(35, parse_client_id("<nowiki><!--</nowiki>35"))
+        self.assertIsNone(parse_client_id("<span><!-- 51952</span>"))
+        self.assertIsNone(parse_client_id("{{x|<!-- 51952}}"))
+        self.assertIsNone(parse_client_id("[[x|<!-- 51952]]"))
+        self.assertIsNone(parse_client_id("<span><!--</span>35"))
+        self.assertEqual(35, parse_client_id("<pre><!--</pre>35"))
         self.assertIsNone(parse_client_id("abc"))
         self.assertIsNone(parse_client_id(""))
 

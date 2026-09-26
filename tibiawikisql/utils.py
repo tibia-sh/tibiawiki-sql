@@ -10,7 +10,7 @@ from contextlib import contextmanager
 from typing import Any, Literal, TYPE_CHECKING, overload
 
 import mwparserfromhell
-from mwparserfromhell.nodes import Text
+from mwparserfromhell.nodes import Tag
 from mwparserfromhell.nodes.extras import Parameter
 from mwparserfromhell.wikicode import Wikicode
 
@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 min_max_pattern = re.compile(r"(\d+)-(\d+)")
 int_pattern = re.compile(r"[+-]?\d+")
 float_pattern = re.compile(r"[+-]?(\d*[.])?\d+")
+escaping_tags = frozenset(("nowiki", "pre"))
 
 
 class Elapsed:
@@ -285,8 +286,9 @@ def parse_client_id(value: str) -> int | None:
     """Parse a client ID, ignoring wiki comments.
 
     Each comment is replaced by a space, so digits on either side of it stay apart. As in MediaWiki, an unclosed
-    ``<!--`` hides the rest of the value, unless it is escaped, as inside ``<nowiki>``. A value that is only a comment,
-    such as ``<!-- objectID: 51952-->`` or ``<!-- 51952``, counts as absent.
+    ``<!--`` hides the rest of the value, even inside a tag, template or link, unless it is inside ``<nowiki>`` or
+    ``<pre>``, which show it as text. A value that is only a comment, such as ``<!-- objectID: 51952-->`` or
+    ``<!-- 51952``, counts as absent.
 
     Args:
         value: The raw value of a client ID field.
@@ -300,10 +302,14 @@ def parse_client_id(value: str) -> int | None:
         code.replace(comment, " ")
     kept = []
     for node in code.nodes:
-        if isinstance(node, Text) and "<!--" in node.value:
-            kept.append(node.value.partition("<!--")[0])
+        text = str(node)
+        if isinstance(node, Tag) and str(node.tag).strip().lower() in escaping_tags:
+            kept.append(text)
+            continue
+        before, cut, _ = text.partition("<!--")
+        kept.append(before)
+        if cut:
             break
-        kept.append(str(node))
     return parse_integer("".join(kept), None)
 
 
