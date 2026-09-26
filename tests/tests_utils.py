@@ -64,6 +64,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(35, parse_client_id("35"))
         self.assertEqual(35, parse_client_id(" 35 <!-- note -->"))
         self.assertEqual(644, parse_client_id("<!-- 7 -->644"))
+        self.assertEqual(35, parse_client_id("35<!-- note -->7"))
         self.assertIsNone(parse_client_id("<!-- objectID: 51952-->"))
         self.assertIsNone(parse_client_id("\n<!-- objectID: 51952-->\n"))
         self.assertIsNone(parse_client_id("abc"))
