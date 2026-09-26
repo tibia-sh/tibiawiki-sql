@@ -15,6 +15,10 @@ from pathlib import Path
 
 TITLE = "Upstream has new commits"
 UPSTREAM = "https://github.com/Galarzaa90/tibiawiki-sql"
+BOT_LOGIN = "app/github-actions"
+LIST_ISSUES = [
+    "issue", "list", "--state", "all", "--author", "github-actions[bot]", "--json", "number,title,state,author",
+]
 ISSUE_STATES = (None, "OPEN", "CLOSED")
 TILDE_RUN = re.compile(r"~{3,}")
 ZERO_WIDTH_SPACE = "\u200b"
@@ -81,18 +85,26 @@ def parse_commits(text: str) -> list[str]:
 
 
 def find_issue(issues: list[dict]) -> dict | None:
-    """Pick the managed issue by its exact title.
+    """Pick the managed issue by its exact title and the Actions bot as its author.
+
+    ``LIST_ISSUES`` already asks gh for the bot's issues only. An issue with the title by anyone else means gh's author
+    filter changed, so it fails instead of creating a second issue.
 
     Args:
-        issues: The issues from ``gh issue list --json number,title,state``.
+        issues: The issues from ``LIST_ISSUES``.
 
     Returns:
         The managed issue, or ``None`` when there is none.
 
     Raises:
-        ValueError: More than one issue has the title.
+        ValueError: An issue with the title has another author, or more than one issue has the title.
     """
     matches = [issue for issue in issues if issue["title"] == TITLE]
+    for issue in matches:
+        author = issue["author"]
+        if author.get("is_bot") is not True or author.get("login") != BOT_LOGIN:
+            msg = f"issue #{issue['number']} is titled {TITLE!r} but its author is {author!r}, not {BOT_LOGIN}"
+            raise ValueError(msg)
     if len(matches) > 1:
         numbers = ", ".join(f"#{issue['number']}" for issue in matches)
         msg = f"more than one issue is titled {TITLE!r}: {numbers}"
@@ -150,10 +162,7 @@ def main(argv: list[str]) -> None:
         msg = "gh is not installed"
         raise SystemExit(msg)
     new_commits = parse_commits(Path(argv[0]).read_text(encoding="utf-8", errors="replace"))
-    listed = subprocess.run(  # noqa: S603 - fixed argument list, no shell
-        [gh, "issue", "list", "--state", "all", "--author", "app/github-actions", "--json", "number,title,state"],
-        check=True, capture_output=True, text=True,
-    )
+    listed = subprocess.run([gh, *LIST_ISSUES], check=True, capture_output=True, text=True)  # noqa: S603 - fixed list
     issue = find_issue(json.loads(listed.stdout))
     action = decide(new_commits, issue["state"] if issue else None)
     log.info("%d new upstream commit(s), issue %s: %s", len(new_commits),
