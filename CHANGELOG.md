@@ -11,6 +11,9 @@
   or `NULL` when there is none.
 - Ignore wiki comments in `creature.race_id`, `outfit.male_client_id`, `outfit.female_client_id` and
   `mount.client_id`. A value that is only a comment, like `<!-- objectID: 51952-->`, is stored as `NULL`.
+- Add a weekly upstream check. A scheduled workflow compares `Galarzaa90/tibiawiki-sql` with our `main`. When upstream
+  has commits our `main` lacks, it opens, updates or reopens one "Upstream has new commits" issue that lists them. When
+  there are none, it closes that issue.
 
 ## 9.0.0+tibiash.1
 
