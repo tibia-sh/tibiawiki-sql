@@ -300,9 +300,11 @@ def parse_client_id(value: str) -> int | None:
     code = mwparserfromhell.parse(value)
     for comment in code.filter_comments():
         code.replace(comment, " ")
-    # The parser leaves the contents of nowiki and pre unparsed, so no escaping tag is found inside another.
+    # The parser leaves the contents of nowiki and pre unparsed, but it parses their attributes, so an escaping tag can
+    # sit inside another one's attribute. Replacing the outer tag covers the inner one and takes it out of the tree.
     for tag in code.filter_tags(matches=lambda tag: str(tag.tag).strip().lower() in escaping_tags):
-        code.replace(tag, str(tag).replace("<!--", inert_comment_start))
+        if code.contains(tag):
+            code.replace(tag, str(tag).replace("<!--", inert_comment_start))
     return parse_integer(str(code).partition("<!--")[0], None)
 
 
