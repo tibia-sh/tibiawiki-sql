@@ -1,0 +1,25 @@
+{{Infobox NPC|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name         = Tarak
+| job          = Ferryman
+| location     = [[Sunken Quarter]] and [[Monument Tower]].
+| city         = Yalahar
+| posx         = 128.149
+| posy         = 121.223
+| posz         = 7
+| posx2        = 128.172
+| posy2        = 121.206
+| posz2        = 7
+| gender       = Male
+| race         = Human
+| buysell      = no
+| implemented  = 8.40
+| notes        = {{TransportList|discount=no
+ |{{TransportCell|Monument Tower|50}}
+ |{{TransportCell|Sunken Quarter|0}}
+}}
+| subarea      = Yalahar Sunken Quarter
+| subarea2     = Yalahar Sunken Quarter
+| city2        = Yalahar
+| geolabel     = Sunken Quarter
+| geolabel2    = Monument Tower
+}}

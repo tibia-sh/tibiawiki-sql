@@ -473,7 +473,7 @@ that doesn't form a range.
 | name   | `TEXT`    | The name of the place this NPC can take you to.                                                                                                                             |
 | price  | `INTEGER` | The price to travel to the destination with this NPC.                                                                                                                       |
 | notes  | `TEXT`    | Extra notes for this destination, like extra requirements or exceptions.                                                                                                    |
-| origin | `TEXT`    | Where this leg starts: the place named by a `From [[Place]]` note, otherwise the NPC's city. The city counts only if the NPC has a position in it whose city, subarea and geolabel all differ from the destination, ignoring case. `NULL` when no note names the start and no such position exists. |
+| origin | `TEXT`    | Where this leg starts: the place named by a `From [[Place]]` note. Without one, if the NPC is a shuttle, the other leg's destination, as that leg names it. An NPC is a shuttle when it has exactly two positions and exactly two destinations, and each position matches exactly one destination by city, subarea or geolabel, each destination by a different position. Otherwise the NPC's city, if the NPC has a position in it whose city, subarea and geolabel all differ from the destination. Comparisons ignore case. `NULL` when none of these applies. |
 
 
 
