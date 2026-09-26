@@ -42,7 +42,7 @@ jobs:
           BASE_REF: ${{ inputs.base_ref }}
         run: |
           ref="${BASE_REF:-origin/main}"
-          if [[ ! "$ref" =~ ^[A-Za-z0-9._/~^-]+$ || "$ref" == -* ]]; then
+          if [[ ! "$ref" =~ ^[A-Za-z0-9._/~^+-]+$ || "$ref" == -* ]]; then
             echo "::error::base_ref must be a ref or SHA"
             exit 1
           fi
