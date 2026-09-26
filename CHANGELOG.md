@@ -1,6 +1,11 @@
 <!-- Changed by tibia.sh in 2026. See "About this copy" in README.md. -->
 # Changelog
 
+## Unreleased
+
+- Drop everything after an unclosed `<!--` in `creature.race_id`, `outfit.male_client_id`, `outfit.female_client_id`
+  and `mount.client_id`, as MediaWiki hides it. A value like `<!-- 51952` is now stored as `NULL`.
+
 ## 9.0.0+tibiash.2
 
 - Start each leg of a shuttle NPC at the other leg's destination when no `From [[Place]]` note names the start. An NPC
