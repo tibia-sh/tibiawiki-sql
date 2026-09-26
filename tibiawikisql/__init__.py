@@ -5,4 +5,4 @@ __author__ = "Allan Galarza"
 __copyright__ = "Copyright 2026 Allan Galarza"
 
 __license__ = "Apache 2.0"
-__version__ = "9.0.0+tibiash.1"
+__version__ = "9.0.0+tibiash.2"

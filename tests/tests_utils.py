@@ -143,4 +143,4 @@ class TestUtils(unittest.TestCase):
         self.assertEqual("+1 Axe Fighting", tables["Sanguine 1H Axe"][1][0]["effect"])
 
     def test_version_is_tibia_sh_build(self):
-        self.assertEqual("9.0.0+tibiash.1", tibiawikisql.__version__)
+        self.assertEqual("9.0.0+tibiash.2", tibiawikisql.__version__)
