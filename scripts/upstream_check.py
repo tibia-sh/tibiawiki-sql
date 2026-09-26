@@ -18,8 +18,10 @@ from pathlib import Path
 TITLE = "Upstream has new commits"
 UPSTREAM = "https://github.com/Galarzaa90/tibiawiki-sql"
 BOT_LOGIN = "app/github-actions"
+LIST_LIMIT = 100
 LIST_ISSUES = [
     "issue", "list", "--state", "all", "--author", "github-actions[bot]", "--json", "number,title,state,author",
+    "--limit", str(LIST_LIMIT),
 ]
 ISSUE_STATES = (None, "OPEN", "CLOSED")
 MAX_LINE = 200
@@ -143,7 +145,8 @@ def find_issue(issues: list[dict]) -> dict | None:
     """Pick the managed issue by its exact title and the Actions bot as its author.
 
     ``LIST_ISSUES`` already asks gh for the bot's issues only. An issue with the title by anyone else means gh's author
-    filter changed, so it fails instead of creating a second issue.
+    filter changed, so it fails instead of creating a second issue. A list of ``LIST_LIMIT`` issues may be cut short
+    and miss the managed issue, so it fails too.
 
     Args:
         issues: The issues from ``LIST_ISSUES``.
@@ -152,8 +155,12 @@ def find_issue(issues: list[dict]) -> dict | None:
         The managed issue, or ``None`` when there is none.
 
     Raises:
-        ValueError: An issue with the title has another author, or more than one issue has the title.
+        ValueError: The list reached ``LIST_LIMIT``, an issue with the title has another author, or more than one issue
+            has the title.
     """
+    if len(issues) >= LIST_LIMIT:
+        msg = f"gh listed {len(issues)} issues, the limit of {LIST_LIMIT}, so the managed issue may be missing"
+        raise ValueError(msg)
     matches = [issue for issue in issues if issue["title"] == TITLE]
     for issue in matches:
         author = issue["author"]
