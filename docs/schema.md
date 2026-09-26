@@ -170,7 +170,7 @@ The generated database has the following tables.
 | walks_through       | `TEXT`                | The type of fields the creature will walk through.                                                                                      |
 | walks_around        | `TEXT`                | The type of fields the creature will walk around to avoid when possible.                                                                |
 | location            | `TEXT`                | The locations where the creature can be found.                                                                                          |
-| race_id             | `INTEGER`             | The client race ID of the creature, `NULL` if missing or malformed.                                                                     |
+| race_id             | `INTEGER`             | The client race ID of the creature, the first integer in the value after wiki comments are removed, `NULL` when there is none.          |
 | version             | `TEXT`                | The client version this creature was introduced to the game.                                                                            |
 | image               | `BLOB`                | The creature’s image bytes.                                                                                                             |
 | status              | `TEXT`                | The status of the creature in game.                                                                                                     |
@@ -425,23 +425,23 @@ that doesn't form a range.
 
 ### mount
 
-|    Column     |         Type          |                               Description                               |
-| ------------- | --------------------- | ----------------------------------------------------------------------- |
-| article_id    | `INTEGER` / `PRIMARY` | The id of the article containing this mount.                            |
-| title         | `TEXT`                | The title of the article containing the mount.                          |
-| name          | `TEXT`                | The name of the mount.                                                  |
-| speed         | `INTEGER`             | The speed given by the mount.                                           |
-| taming_method | `TEXT`                | A brief description on how the mount is obtained.                       |
-| is_buyable    | `BOOLEAN`             | Whether the mount can be bought from the store or not.                  |
-| price         | `INTEGER`             | The price in Tibia coins to buy the mount.                              |
-| achievement   | `TEXT`                | The achievement obtained for obtaining this mount.                      |
-| light_color   | `INTEGER`             | The color of the light emitted by this mount, if any.                   |
-| light_radius  | `INTEGER`             | The radius of the light emitted by this mount, if any.                  |
-| client_id     | `INTEGER`             | The client ID (look type) of the mount, `NULL` if missing or malformed. |
-| version       | `TEXT`                | The client version where this mount was introduced to the game.         |
-| image         | `BLOB`                | The mount's image bytes.                                                |
-| status        | `TEXT`                | The status of the mount in game.                                        |
-| timestamp     | `TIMESTAMP`           | ISO 8601 timestamp of the article's last edit.                          |
+|    Column     |         Type          |                                                            Description                                                             |
+| ------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| article_id    | `INTEGER` / `PRIMARY` | The id of the article containing this mount.                                                                                       |
+| title         | `TEXT`                | The title of the article containing the mount.                                                                                     |
+| name          | `TEXT`                | The name of the mount.                                                                                                             |
+| speed         | `INTEGER`             | The speed given by the mount.                                                                                                      |
+| taming_method | `TEXT`                | A brief description on how the mount is obtained.                                                                                  |
+| is_buyable    | `BOOLEAN`             | Whether the mount can be bought from the store or not.                                                                             |
+| price         | `INTEGER`             | The price in Tibia coins to buy the mount.                                                                                         |
+| achievement   | `TEXT`                | The achievement obtained for obtaining this mount.                                                                                 |
+| light_color   | `INTEGER`             | The color of the light emitted by this mount, if any.                                                                              |
+| light_radius  | `INTEGER`             | The radius of the light emitted by this mount, if any.                                                                             |
+| client_id     | `INTEGER`             | The client ID (look type) of the mount, the first integer in the value after wiki comments are removed, `NULL` when there is none. |
+| version       | `TEXT`                | The client version where this mount was introduced to the game.                                                                    |
+| image         | `BLOB`                | The mount's image bytes.                                                                                                           |
+| status        | `TEXT`                | The status of the mount in game.                                                                                                   |
+| timestamp     | `TIMESTAMP`           | ISO 8601 timestamp of the article's last edit.                                                                                     |
 
 
 
@@ -536,22 +536,22 @@ that doesn't form a range.
 
 ### outfit
 
-|      Column      |         Type          |                                   Description                                   |
-| ---------------- | --------------------- | ------------------------------------------------------------------------------- |
-| article_id       | `INTEGER` / `PRIMARY` | The id of the article containing this outfit.                                   |
-| title            | `TEXT`                | The title of the article containing the outfit.                                 |
-| name             | `TEXT`                | The name of the outfit.                                                         |
-| outfit_type      | `TEXT`                | The type of outfit. Basic, Quest, Special, Premium.                             |
-| is_premium       | `BOOLEAN`             | Whether this outfit is requires a premium account or not.                       |
-| is_bought        | `BOOLEAN`             | Whether the outfit can be bought from the Store or not.                         |
-| is_tournament    | `BOOLEAN`             | Whether the outfit can be bought with Tournament coins or not.                  |
-| full_price       | `INTEGER`             | The price of the full outfit in Tibia Coins.                                    |
-| achievement      | `TEXT`                | The achievement obtained by getting this full outfit.                           |
-| male_client_id   | `INTEGER`             | The client ID (look type) of the male outfit, `NULL` if missing or malformed.   |
-| female_client_id | `INTEGER`             | The client ID (look type) of the female outfit, `NULL` if missing or malformed. |
-| version          | `TEXT`                | Client version where this outfit was implemented.                               |
-| status           | `TEXT`                | The status of the outfit in game.                                               |
-| timestamp        | `TIMESTAMP`           | ISO 8601 timestamp of the article's last edit.                                  |
+|      Column      |         Type          |                                                                Description                                                                 |
+| ---------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| article_id       | `INTEGER` / `PRIMARY` | The id of the article containing this outfit.                                                                                              |
+| title            | `TEXT`                | The title of the article containing the outfit.                                                                                            |
+| name             | `TEXT`                | The name of the outfit.                                                                                                                    |
+| outfit_type      | `TEXT`                | The type of outfit. Basic, Quest, Special, Premium.                                                                                        |
+| is_premium       | `BOOLEAN`             | Whether this outfit is requires a premium account or not.                                                                                  |
+| is_bought        | `BOOLEAN`             | Whether the outfit can be bought from the Store or not.                                                                                    |
+| is_tournament    | `BOOLEAN`             | Whether the outfit can be bought with Tournament coins or not.                                                                             |
+| full_price       | `INTEGER`             | The price of the full outfit in Tibia Coins.                                                                                               |
+| achievement      | `TEXT`                | The achievement obtained by getting this full outfit.                                                                                      |
+| male_client_id   | `INTEGER`             | The client ID (look type) of the male outfit, the first integer in the value after wiki comments are removed, `NULL` when there is none.   |
+| female_client_id | `INTEGER`             | The client ID (look type) of the female outfit, the first integer in the value after wiki comments are removed, `NULL` when there is none. |
+| version          | `TEXT`                | Client version where this outfit was implemented.                                                                                          |
+| status           | `TEXT`                | The status of the outfit in game.                                                                                                          |
+| timestamp        | `TIMESTAMP`           | ISO 8601 timestamp of the article's last edit.                                                                                             |
 
 
 

@@ -283,18 +283,19 @@ def parse_integer(value: str, default: int = 0) -> int:
 def parse_client_id(value: str) -> int | None:
     """Parse a client ID, ignoring wiki comments.
 
-    A value that is only a comment, such as ``<!-- objectID: 51952-->``, counts as absent.
+    Each comment is replaced by a space, so digits on either side of it stay apart. A value that is only a comment,
+    such as ``<!-- objectID: 51952-->``, counts as absent.
 
     Args:
         value: The raw value of a client ID field.
 
     Returns:
-        The first integer outside comments, or ``None`` if there is none.
+        The first integer in the value after comments are removed, or ``None`` if there is none.
 
     """
     code = mwparserfromhell.parse(value)
     for comment in code.filter_comments():
-        code.remove(comment)
+        code.replace(comment, " ")
     return parse_integer(str(code), None)
 
 
