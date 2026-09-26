@@ -86,6 +86,7 @@ class CreatureTable(Table):
     walks_through = Column(Text)
     walks_around = Column(Text)
     location = Column(Text)
+    race_id = Column(Integer)
     version = Column(Text, index=True)
     image = Column(Blob)
     status = Column(Text, default="active", nullable=False)

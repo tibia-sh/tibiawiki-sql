@@ -1,5 +1,10 @@
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
+import datetime
 import unittest
 
+from tests import load_resource
+from tibiawikisql.api import Article
+from tibiawikisql.models import Creature
 from tibiawikisql.parsers.creature import CreatureParser, parse_abilities, parse_maximum_damage
 
 
@@ -89,3 +94,41 @@ class TestCreatureParser(unittest.TestCase):
         result = parse_maximum_damage(max_damage_content)
 
         self.assertEqual({}, result)
+
+
+class TestCreatureParserRaceId(unittest.TestCase):
+    def _parse(self, content: str) -> Creature:
+        article = Article(
+            article_id=1,
+            title="Demon",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=content,
+        )
+
+        return CreatureParser.from_article(article)
+
+    def _edited(self, old: str, new: str) -> str:
+        content = load_resource("content_creature.txt")
+        self.assertIn(old, content)
+        return content.replace(old, new)
+
+    def test_creature_race_id(self):
+        creature = self._parse(load_resource("content_creature.txt"))
+
+        self.assertEqual(35, creature.race_id)
+
+    def test_creature_race_id_none_without_line(self):
+        creature = self._parse(self._edited("| race_id        = 35\n", ""))
+
+        self.assertIsNone(creature.race_id)
+
+    def test_creature_race_id_none_when_empty(self):
+        creature = self._parse(self._edited("| race_id        = 35", "| race_id        ="))
+
+        self.assertIsNone(creature.race_id)
+        self.assertEqual(128, creature.speed)
+
+    def test_creature_race_id_none_when_not_numeric(self):
+        creature = self._parse(self._edited("| race_id        = 35", "| race_id        = abc"))
+
+        self.assertIsNone(creature.race_id)

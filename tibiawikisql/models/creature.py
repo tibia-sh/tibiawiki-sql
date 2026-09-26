@@ -1,3 +1,4 @@
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
 import contextlib
 import sqlite3
 from sqlite3 import Connection, Cursor
@@ -238,6 +239,8 @@ class Creature(WikiEntry, WithStatus, WithVersion, WithImage, RowModel, table=Cr
     """The "sounds" made by the creature."""
     location: str | None
     """The locations where the creature can be found."""
+    race_id: int | None = None
+    """The client race ID of the creature."""
     loot: list[CreatureDrop] = Field([])
     """The items dropped by this creature."""
 

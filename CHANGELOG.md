@@ -7,6 +7,8 @@
   is a shuttle when it has exactly two positions and exactly two destinations, and each position matches exactly one
   destination by city, subarea or geolabel, ignoring case, each destination by a different position. Harlow's and
   Tarak's legs now start at the other end of their route.
+- Add `creature.race_id`, the client race ID of a creature, parsed from the `race_id` field of its article. A missing
+  or malformed race ID is stored as `NULL`.
 
 ## 9.0.0+tibiash.1
 
