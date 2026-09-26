@@ -170,6 +170,7 @@ The generated database has the following tables.
 | walks_through       | `TEXT`                | The type of fields the creature will walk through.                                                                                      |
 | walks_around        | `TEXT`                | The type of fields the creature will walk around to avoid when possible.                                                                |
 | location            | `TEXT`                | The locations where the creature can be found.                                                                                          |
+| race_id             | `INTEGER`             | The client race ID of the creature, `NULL` if missing or malformed.                                                                     |
 | version             | `TEXT`                | The client version this creature was introduced to the game.                                                                            |
 | image               | `BLOB`                | The creature’s image bytes.                                                                                                             |
 | status              | `TEXT`                | The status of the creature in game.                                                                                                     |
