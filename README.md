@@ -39,6 +39,14 @@ gh attestation verify <file> --repo tibia-sh/tibiawiki-sql --signer-workflow tib
 
 This ties the file you downloaded to a tagged release run of this workflow.
 
+Every Monday, the upstream check workflow compares upstream's `main` with this copy's `main`. When upstream has commits
+that `main` lacks, it opens an issue titled `Upstream has new commits` that lists them. Once `main` has them all, it
+closes the issue. To merge them, add the remote once with
+`git remote add upstream https://github.com/Galarzaa90/tibiawiki-sql.git`. Then run `git fetch upstream`, merge
+`upstream/main` into a branch and open a pull request. Keep the change notice in every file this copy changes. GitHub
+turns off a scheduled workflow after 60 days without activity in the repository. If that happens, you can turn it back
+on from the Actions tab.
+
 Every upstream file this copy changes carries this line at the top, in the file's comment syntax:
 
 ```

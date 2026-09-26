@@ -1,0 +1,59 @@
+name: Upstream check
+
+on:
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+    inputs:
+      base_ref:
+        description: Ref or SHA to compare upstream with, instead of origin/main
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: upstream-check
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: List upstream commits missing from main
+        env:
+          BASE_REF: ${{ inputs.base_ref }}
+        run: |
+          ref="${BASE_REF:-origin/main}"
+          if [[ ! "$ref" =~ ^[A-Za-z0-9._/~^-]+$ || "$ref" == -* ]]; then
+            echo "::error::base_ref must be a ref or SHA"
+            exit 1
+          fi
+          if ! base="$(git rev-parse --verify --quiet --end-of-options "${ref}^{commit}")"; then
+            echo "::error::base_ref does not name a commit"
+            exit 1
+          fi
+          git fetch --no-tags https://github.com/Galarzaa90/tibiawiki-sql.git main
+          git log --format='%h %s' --end-of-options "${base}..FETCH_HEAD" > "$RUNNER_TEMP/upstream-commits.txt"
+          echo "Comparing with $base: $(wc -l < "$RUNNER_TEMP/upstream-commits.txt") upstream commit(s) missing"
+      - name: Open, update or close the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: python3 scripts/upstream_check.py "$RUNNER_TEMP/upstream-commits.txt"
