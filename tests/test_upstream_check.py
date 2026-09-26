@@ -1,10 +1,11 @@
 import re
 import unittest
 
-from scripts.upstream_check import TITLE, build_body, decide, find_issue, gh_commands, parse_commits
+from scripts.upstream_check import LIST_ISSUES, TITLE, build_body, decide, find_issue, gh_commands, parse_commits
 
 COMMITS = ["abc1234 Fix creature parsing", "def5678 Add mounts"]
 FENCE = re.compile(r"^ {0,3}(~{3,}|`{3,})")
+BOT = {"is_bot": True, "login": "app/github-actions"}
 
 
 class TestDecide(unittest.TestCase):
@@ -73,24 +74,41 @@ class TestParseCommits(unittest.TestCase):
 
 
 class TestFindIssue(unittest.TestCase):
+    def test_list_command_filters_by_the_actions_bot(self):
+        self.assertEqual(
+            ["issue", "list", "--state", "all", "--author", "github-actions[bot]",
+             "--json", "number,title,state,author"],
+            LIST_ISSUES,
+        )
+
     def test_matches_exact_title_only(self):
         issues = [
-            {"number": 1, "title": TITLE + "!", "state": "OPEN"},
-            {"number": 2, "title": TITLE.lower(), "state": "OPEN"},
-            {"number": 3, "title": TITLE, "state": "CLOSED"},
+            {"number": 1, "title": TITLE + "!", "state": "OPEN", "author": BOT},
+            {"number": 2, "title": TITLE.lower(), "state": "OPEN", "author": BOT},
+            {"number": 3, "title": TITLE, "state": "CLOSED", "author": BOT},
         ]
-        self.assertEqual({"number": 3, "title": TITLE, "state": "CLOSED"}, find_issue(issues))
+        self.assertEqual(issues[2], find_issue(issues))
 
     def test_no_match_is_none(self):
-        self.assertIsNone(find_issue([{"number": 1, "title": "Other", "state": "OPEN"}]))
+        self.assertIsNone(find_issue([{"number": 1, "title": "Other", "state": "OPEN", "author": BOT}]))
 
     def test_two_matches_are_rejected(self):
         issues = [
-            {"number": 1, "title": TITLE, "state": "OPEN"},
-            {"number": 2, "title": TITLE, "state": "CLOSED"},
+            {"number": 1, "title": TITLE, "state": "OPEN", "author": BOT},
+            {"number": 2, "title": TITLE, "state": "CLOSED", "author": BOT},
         ]
         with self.assertRaises(ValueError):
             find_issue(issues)
+
+    def test_title_match_by_another_author_is_rejected(self):
+        for author in (
+            {"is_bot": False, "login": "app/github-actions"},
+            {"is_bot": True, "login": "app/dependabot"},
+            {"is_bot": True, "login": "github-actions"},
+            {"is_bot": False, "login": "someone"},
+        ):
+            with self.subTest(author=author), self.assertRaises(ValueError):
+                find_issue([{"number": 1, "title": TITLE, "state": "OPEN", "author": author}])
 
 
 class TestGhCommands(unittest.TestCase):
