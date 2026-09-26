@@ -19,6 +19,7 @@ from tibiawikisql.utils import (
     find_template,
     int_pattern,
     parse_boolean,
+    parse_client_id,
     parse_float,
     parse_integer,
     parse_min_max,
@@ -246,7 +247,7 @@ class CreatureParser(BaseParser):
         "walks_through": AttributeParser.optional("walksthrough", parse_monster_walks),
         "walks_around": AttributeParser.optional("walksaround", parse_monster_walks),
         "location": AttributeParser.optional("location", clean_links),
-        "race_id": AttributeParser.optional("race_id", lambda x: parse_integer(x, None)),
+        "race_id": AttributeParser.optional("race_id", parse_client_id),
         "version": AttributeParser.optional("implemented"),
         "status": AttributeParser.status(),
     }

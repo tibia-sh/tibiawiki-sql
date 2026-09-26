@@ -5,7 +5,7 @@ import tibiawikisql.schema
 from tibiawikisql.models.mount import Mount
 from tibiawikisql.parsers.base import AttributeParser
 from tibiawikisql.parsers import BaseParser
-from tibiawikisql.utils import clean_links, client_color_to_rgb, parse_boolean, parse_integer
+from tibiawikisql.utils import clean_links, client_color_to_rgb, parse_boolean, parse_client_id, parse_integer
 
 
 def remove_mount(name: str) -> str:
@@ -35,7 +35,7 @@ class MountParser(BaseParser):
         "achievement": AttributeParser.optional("achievement"),
         "light_color": AttributeParser.optional("lightcolor", lambda x: client_color_to_rgb(parse_integer(x))),
         "light_radius": AttributeParser.optional("lightradius", int),
-        "client_id": AttributeParser.optional("mount_id", lambda x: parse_integer(x, None)),
+        "client_id": AttributeParser.optional("mount_id", parse_client_id),
         "version": AttributeParser.version(),
         "status": AttributeParser.status(),
     }

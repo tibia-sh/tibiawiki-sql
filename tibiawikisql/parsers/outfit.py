@@ -7,7 +7,7 @@ from tibiawikisql.models.outfit import Outfit, UnlockQuest
 from tibiawikisql.parsers import BaseParser
 from tibiawikisql.parsers.base import AttributeParser
 from tibiawikisql.parsers.quest import parse_links
-from tibiawikisql.utils import parse_boolean, parse_integer
+from tibiawikisql.utils import parse_boolean, parse_client_id, parse_integer
 
 
 class OutfitParser(BaseParser):
@@ -24,8 +24,8 @@ class OutfitParser(BaseParser):
         "is_bought": AttributeParser.optional("bought", parse_boolean, False),
         "full_price": AttributeParser.optional("fulloutfitprice", parse_integer),
         "achievement": AttributeParser.optional("achievement"),
-        "male_client_id": AttributeParser.optional("male_id", lambda x: parse_integer(x, None)),
-        "female_client_id": AttributeParser.optional("female_id", lambda x: parse_integer(x, None)),
+        "male_client_id": AttributeParser.optional("male_id", parse_client_id),
+        "female_client_id": AttributeParser.optional("female_id", parse_client_id),
         "status": AttributeParser.status(),
         "version": AttributeParser.version(),
     }

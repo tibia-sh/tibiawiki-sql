@@ -132,3 +132,13 @@ class TestCreatureParserRaceId(unittest.TestCase):
         creature = self._parse(self._edited("| race_id        = 35", "| race_id        = abc"))
 
         self.assertIsNone(creature.race_id)
+
+    def test_creature_race_id_none_when_only_a_comment(self):
+        creature = self._parse(self._edited("| race_id        = 35", "| race_id        = <!-- objectID: 51952-->"))
+
+        self.assertIsNone(creature.race_id)
+
+    def test_creature_race_id_ignores_a_trailing_comment(self):
+        creature = self._parse(self._edited("| race_id        = 35", "| race_id        = 35 <!-- note -->"))
+
+        self.assertEqual(35, creature.race_id)

@@ -9,6 +9,8 @@
   Tarak's legs now start at the other end of their route.
 - Add `creature.race_id`, the client race ID of a creature, parsed from the `race_id` field of its article. A missing
   or malformed race ID is stored as `NULL`.
+- Ignore wiki comments in `creature.race_id`, `outfit.male_client_id`, `outfit.female_client_id` and
+  `mount.client_id`. A value that is only a comment, like `<!-- objectID: 51952-->`, is stored as `NULL`.
 
 ## 9.0.0+tibiash.1
 
