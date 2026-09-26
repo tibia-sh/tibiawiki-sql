@@ -1,6 +1,13 @@
 <!-- Changed by tibia.sh in 2026. See "About this copy" in README.md. -->
 # Changelog
 
+## 9.0.0+tibiash.2
+
+- Start each leg of a shuttle NPC at the other leg's destination when no `From [[Place]]` note names the start. An NPC
+  is a shuttle when it has exactly two positions and exactly two destinations, and each position matches exactly one
+  destination by city, subarea or geolabel, ignoring case, each destination by a different position. Harlow's and
+  Tarak's legs now start at the other end of their route.
+
 ## 9.0.0+tibiash.1
 
 - Add the `npc_location` table with every position of an NPC, numbered 1 to 7. Each position has its city, subarea,

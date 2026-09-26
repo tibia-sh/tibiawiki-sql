@@ -267,7 +267,7 @@ class TestNpcParser(unittest.TestCase):
 
         self.assertEqual([("liberty bay", 50, None)], [(d.name, d.price, d.origin) for d in npc.destinations])
 
-    def test_npc_destinations_origin_null_when_city_position_is_destination(self):
+    def test_npc_destinations_origin_shuttle_by_city_and_subarea(self):
         article = Article(
             article_id=1,
             title="Harlow",
@@ -278,7 +278,69 @@ class TestNpcParser(unittest.TestCase):
         npc = NpcParser.from_article(article)
 
         self.assertEqual(
-            [("Vengoth", 100, None), ("Yalahar", 50, "Farmine")],
+            [("Vengoth", 100, "Yalahar"), ("Yalahar", 50, "Vengoth")],
+            [(d.name, d.price, d.origin) for d in npc.destinations],
+        )
+
+    def test_npc_destinations_origin_shuttle_by_geolabel(self):
+        article = Article(
+            article_id=1,
+            title="Tarak",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource("content_npc_shuttle.txt"),
+        )
+
+        npc = NpcParser.from_article(article)
+
+        self.assertEqual(
+            [("Monument Tower", 50, "Sunken Quarter"), ("Sunken Quarter", 0, "Monument Tower")],
+            [(d.name, d.price, d.origin) for d in npc.destinations],
+        )
+
+    def test_npc_destinations_origin_not_shuttle_when_both_positions_match_one_destination(self):
+        npc = self._parse_inline_npc(
+            "Thais",
+            "{{TransportList|discount=no\n"
+            " |{{TransportCell|Carlin|110}}\n"
+            " |{{TransportCell|thais|110}}\n"
+            "}}",
+            "| city2        = Thais\n",
+        )
+
+        self.assertEqual(
+            [("Carlin", 110, "Thais"), ("thais", 110, None)],
+            [(d.name, d.price, d.origin) for d in npc.destinations],
+        )
+
+    def test_npc_destinations_origin_not_shuttle_when_a_position_matches_both_destinations(self):
+        npc = self._parse_inline_npc(
+            "Yalahar",
+            "{{TransportList|discount=no\n"
+            " |{{TransportCell|Vengoth|100}}\n"
+            " |{{TransportCell|Yalahar|50}}\n"
+            "}}",
+            "| subarea      = Vengoth\n"
+            "| city2        = Yalahar\n",
+        )
+
+        self.assertEqual(
+            [("Vengoth", 100, "Yalahar"), ("Yalahar", 50, None)],
+            [(d.name, d.price, d.origin) for d in npc.destinations],
+        )
+
+    def test_npc_destinations_origin_shuttle_note_wins(self):
+        npc = self._parse_inline_npc(
+            "Farmine",
+            "{{TransportList|discount=no\n"
+            " |{{TransportCell|Vengoth|100|From [[Trade Quarter]]}}\n"
+            " |{{TransportCell|Yalahar|50}}\n"
+            "}}",
+            "| subarea      = Vengoth\n"
+            "| city2        = Yalahar\n",
+        )
+
+        self.assertEqual(
+            [("Vengoth", 100, "Trade Quarter"), ("Yalahar", 50, "Vengoth")],
             [(d.name, d.price, d.origin) for d in npc.destinations],
         )
 

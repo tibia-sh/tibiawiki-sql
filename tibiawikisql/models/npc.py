@@ -40,6 +40,10 @@ class NpcDestination(BaseModel):
     origin: str | None = None
     """Where this leg starts: the place named by a ``From [[Place]]`` note, otherwise the NPC's city.
 
+    A shuttle NPC's leg without such a note starts at the other leg's destination instead. An NPC is a shuttle when
+    it has exactly two positions and exactly two destinations, and each position matches exactly one destination by
+    city, subarea or geolabel, each destination by a different position.
+
     The city counts only if the NPC has a position there that differs from the destination. Otherwise this is
     ``None``, meaning the leg starts at one of the NPC's other positions.
     """

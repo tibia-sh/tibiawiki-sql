@@ -45,8 +45,9 @@ class NpcParser(BaseParser):
         destinations = []
         if "notes" in raw_attributes and "{{Transport" in raw_attributes["notes"]:
             destinations.extend(cls._parse_destinations(raw_attributes["notes"]))
-        for destination, price, notes, raw_notes in destinations:
-            name = destination.strip()
+        names = [destination.strip() for destination, *_ in destinations]
+        shuttle_starts = cls._parse_shuttle_starts(names, row["locations"])
+        for name, shuttle_start, (_, price, notes, raw_notes) in zip(names, shuttle_starts, destinations, strict=True):
             clean_notes = clean_links(notes.strip())
             if not notes:
                 clean_notes = None
@@ -54,7 +55,7 @@ class NpcParser(BaseParser):
                 name=name,
                 price=price,
                 notes=clean_notes,
-                origin=cls._parse_origin(name, raw_notes, row["city"], row["locations"]),
+                origin=cls._parse_origin(name, raw_notes, row["city"], row["locations"], shuttle_start),
             ))
         return row
 
@@ -133,24 +134,64 @@ class NpcParser(BaseParser):
             return None
 
     @classmethod
+    def _parse_shuttle_starts(cls, destinations: list[str], locations: list[NpcLocation]) -> list[str | None]:
+        """Find where each leg of a shuttle NPC starts.
+
+        An NPC is a shuttle when it has exactly two positions and exactly two destinations, and each position
+        matches exactly one destination by city, subarea or geolabel, ignoring case, with each destination matched
+        by a different position. Each leg of a shuttle starts at the other leg's destination.
+
+        Args:
+            destinations: The stripped names of the NPC's destinations, in order.
+            locations: The NPC's parsed positions.
+
+        Returns:
+            For each destination, the other leg's destination if the NPC is a shuttle, otherwise ``None``.
+        """
+        starts: list[str | None] = [None] * len(destinations)
+        if len(destinations) != 2 or len(locations) != 2:
+            return starts
+        keys = [destination.lower() for destination in destinations]
+        matched = []
+        for location in locations:
+            places = {
+                place.strip().lower()
+                for place in (location.city, location.subarea, location.geolabel)
+                if place is not None
+            }
+            matches = [index for index, key in enumerate(keys) if key in places]
+            if len(matches) != 1:
+                return starts
+            matched.append(matches[0])
+        if matched[0] == matched[1]:
+            return starts
+        return [destinations[1], destinations[0]]
+
+    @classmethod
     def _parse_origin(
         cls,
         destination: str,
         raw_notes: str | None,
         city: str,
         locations: list[NpcLocation],
+        shuttle_start: str | None,
     ) -> str | None:
         """Determine where a travel leg starts.
 
-        A note that is only a ``From [[Place]]`` link names the start. Otherwise the leg starts in the NPC's city,
-        but only if the NPC has a position in that city whose city, subarea and geolabel all differ from the
-        destination. Without such a position the start is unknown. Comparisons ignore case.
+        A note that is only a ``From [[Place]]`` link names the start. Otherwise, if the NPC is a shuttle, the leg
+        starts at the other leg's destination, written as that leg's TransportCell names it. An NPC is a shuttle
+        when it has exactly two positions and exactly two destinations, and each position matches exactly one
+        destination by city, subarea or geolabel, with each destination matched by a different position.
+        Otherwise the leg starts in the NPC's city, but only if the NPC has a position in that city whose city,
+        subarea and geolabel all differ from the destination. Without such a position the start is unknown.
+        Comparisons ignore case.
 
         Args:
             destination: The stripped name of the destination.
             raw_notes: The unstripped notes of a TransportCell, or ``None`` for a legacy Transport entry.
             city: The NPC's city.
             locations: The NPC's parsed positions.
+            shuttle_start: The other leg's destination if the NPC is a shuttle, otherwise ``None``.
 
         Returns:
             The name of the place the leg starts from, or ``None`` if unknown.
@@ -159,6 +200,8 @@ class NpcParser(BaseParser):
             match = ORIGIN_NOTE_PATTERN.fullmatch(raw_notes)
             if match:
                 return match.group(1).strip()
+        if shuttle_start is not None:
+            return shuttle_start
         city_key = clean_links(city).strip().lower()
         destination_key = destination.strip().lower()
         for location in locations:
