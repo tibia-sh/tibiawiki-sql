@@ -82,6 +82,9 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(35, parse_client_id("<span><pre><!--</pre></span>35"))
         self.assertEqual(35, parse_client_id("<span><NOWIKI ><!--</NOWIKI ></span>35"))
         self.assertEqual(51952, parse_client_id("<span><nowiki><!-- 51952 --></nowiki></span>35"))
+        self.assertEqual(35, parse_client_id('<nowiki title="<pre>x</pre>">y</nowiki>35'))
+        self.assertEqual(35, parse_client_id('<pre title="<nowiki><!--</nowiki>">y</pre>35'))
+        self.assertEqual(35, parse_client_id('<pre title="<nowiki>x</nowiki>">35</pre>'))
         self.assertIsNone(parse_client_id("abc"))
         self.assertIsNone(parse_client_id(""))
 
