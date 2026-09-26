@@ -10,11 +10,14 @@ The copy adds this data to the database:
 
 * The `npc_location` table. It keeps every position of an NPC, numbered 1 to 7, with its city, subarea, geolabel and
   coordinates.
-* The `npc_destination.origin` column. It holds the place where each travel leg starts.
+* The `npc_destination.origin` column. It holds the place where each travel leg starts. When an NPC shuttles between
+  two places and no note names a leg's start, that leg starts where the other leg ends.
 * The item attributes `restores_hp_min`, `restores_hp_max`, `restores_mana_min` and `restores_mana_max`. They hold the
   ranges a potion restores.
 * The `outfit.male_client_id`, `outfit.female_client_id` and `mount.client_id` columns. They hold the client IDs (look
   types) of outfits and mounts.
+* The `creature.race_id` column. It holds the client race ID of a creature, `NULL` when the wiki has none or only a
+  comment.
 
 The [database schema](docs/schema.md) describes each of them.
 
