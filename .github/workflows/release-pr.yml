@@ -224,18 +224,11 @@ jobs:
       # tibiawikisql/__init__.py, as propose writes it, and fail turns the run red with its reason: the merge is not
       # exactly that release, or the version has no tag and no merged pull request was found, as for a release merge
       # GitHub did not list yet.
-      #
-      # The parent's script is 04c7dc6, from before the recompute, only for the merge that brings the recompute in.
-      # That copy cannot decide with these arguments, and that merge is no release, so it tags nothing.
       - name: Decide
         id: decide
         env:
           APP_LOGIN: ${{ vars.TIBIA_SH_APP_SLUG }}[bot]
         run: |
-          if [[ "$(git rev-parse HEAD^1:scripts/release_pr.py)" == 04c7dc69f1b60e51b1cfdd005733da900eae529a ]]; then
-            echo "main's scripts/release_pr.py before this push predates the recompute, so nothing is tagged."
-            exit 0
-          fi
           tags="$RUNNER_TEMP/tags.txt"
           changed="$RUNNER_TEMP/changed.txt"
           main="$RUNNER_TEMP/main"

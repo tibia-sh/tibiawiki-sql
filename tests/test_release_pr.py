@@ -749,10 +749,6 @@ concurrency:
         env:
           APP_LOGIN: ${{ vars.TIBIA_SH_APP_SLUG }}[bot]
         run: |
-          if [[ "$(git rev-parse HEAD^1:scripts/release_pr.py)" == 04c7dc69f1b60e51b1cfdd005733da900eae529a ]]; then
-            echo "main's scripts/release_pr.py before this push predates the recompute, so nothing is tagged."
-            exit 0
-          fi
           tags="$RUNNER_TEMP/tags.txt"
           changed="$RUNNER_TEMP/changed.txt"
           main="$RUNNER_TEMP/main"
@@ -787,9 +783,6 @@ concurrency:
         self.assertEqual(1, tag.count("python3 -I"))
         self.assertLess(tag.index('git worktree add --quiet --detach "$main" HEAD^1'),
                         tag.index('python3 -I "$main/scripts/release_pr.py" tag-decision'))
-        # The one exception, main's script from before the recompute, tags nothing and runs no script at all.
-        self.assertLess(tag.index('predates the recompute, so nothing is tagged."\n            exit 0\n'),
-                        tag.index("git worktree add"))
 
     def test_creates_the_tag_with_a_contents_token(self):
         self.assert_in_job("tag", """\
