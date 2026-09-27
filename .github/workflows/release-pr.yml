@@ -3,7 +3,8 @@ name: Release PR
 # Keeps one release pull request, chore: release <version>, open from release/next while CHANGELOG.md has entries
 # under ## Unreleased. scripts/release_pr.py renames that section to the next +tibiash.N version and sets __version__
 # to it. The tibia-sh App pushes the branch and opens the pull request, so the pull request's CI runs, which it would
-# not for one opened with GITHUB_TOKEN. Nothing merges it by itself: drptbl's merge is the release.
+# not for one opened with GITHUB_TOKEN. Nothing merges it by itself: drptbl's merge is the release. The tag job of that
+# merge's run tags v<version> on the merge commit, and the tag starts release.yml.
 on:
   push:
     branches:
@@ -153,3 +154,91 @@ jobs:
             timeout --kill-after=10 120 gh api "repos/{owner}/{repo}/pulls" --silent \
               -f head=release/next -f base=main -f title="$title" -F body=@"$RUNNER_TEMP/body.md"
           fi
+
+  # Tags the release that drptbl's merge of the release pull request made. The list of a commit's pull requests has no
+  # merged_by, so the job reads, with github.token, the pull request whose merge commit is the pushed commit on its
+  # own, and scripts/release_pr.py decides from it. Only the App's release/next pull request, merged by drptbl, tags
+  # v<version> at the merge commit. The same isolation as the propose job, and the App's token, which the release tags
+  # ruleset lets create v* tags, is minted only to create the tag. The tag's push starts release.yml.
+  tag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: release-trigger
+    permissions:
+      contents: read # the checkout and its tags
+      pull-requests: read # the pull request the pushed commit merged
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      # With no merged pull request, as for a direct push, the script is given null and skips.
+      - name: Read the merged pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          numbers="$(timeout --kill-after=10 120 gh api "repos/{owner}/{repo}/commits/$GITHUB_SHA/pulls" \
+            --jq '[.[] | select(.merge_commit_sha == env.GITHUB_SHA and .merged_at) | "\(.number)"] | join(" ")')"
+          if [[ -z $numbers ]]; then
+            echo null > "$RUNNER_TEMP/pr.json"
+          elif [[ $numbers =~ ^[0-9]+$ ]]; then
+            timeout --kill-after=10 120 gh api "repos/{owner}/{repo}/pulls/$numbers" > "$RUNNER_TEMP/pr.json"
+          else
+            echo "::error::More than one merged pull request has $GITHUB_SHA as its merge commit."
+            exit 1
+          fi
+      # fail turns the run red: the version is not x.y.z+tibiash.N, or its tag points at another commit.
+      - name: Decide
+        id: decide
+        env:
+          APP_LOGIN: ${{ vars.TIBIA_SH_APP_SLUG }}[bot]
+        run: |
+          tags="$RUNNER_TEMP/tags.txt"
+          git show-ref --tags --dereference > "$tags"
+          result="$(python3 -I scripts/release_pr.py tag-decision --tags "$tags" --pr "$RUNNER_TEMP/pr.json" \
+            --head "$GITHUB_SHA" --app-login "$APP_LOGIN")"
+          decision="$(sed -n 's/^decision=//p' <<< "$result")"
+          version="$(sed -n 's/^version=//p' <<< "$result")"
+          case $decision in
+            tag) echo "Tagging v$version at $GITHUB_SHA." ;;
+            noop) echo "v$version already points at $GITHUB_SHA." ;;
+            skip) echo "$GITHUB_SHA is not drptbl's merge of the App's release pull request, so nothing is tagged." ;;
+            fail)
+              echo "::error::v$version cannot be tagged at $GITHUB_SHA." \
+                "The version is not x.y.z+tibiash.N, or the tag points at another commit."
+              exit 1
+              ;;
+            *)
+              echo "::error::release_pr.py tag-decision printed an unknown decision."
+              exit 1
+              ;;
+          esac
+          echo "decision=$decision" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      # A token of the App for this repository alone, which expires within the hour: contents, to create the tag.
+      - id: tag_token
+        if: ${{ steps.decide.outputs.decision == 'tag' }}
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.TIBIA_SH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.TIBIA_SH_APP_PRIVATE_KEY }}
+          owner: tibia-sh
+          repositories: tibiawiki-sql
+          permission-contents: write
+      - name: Create the tag
+        if: ${{ steps.decide.outputs.decision == 'tag' }}
+        env:
+          GH_TOKEN: ${{ steps.tag_token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ steps.decide.outputs.version }}
+        run: |
+          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+\+tibiash\.[0-9]+$ || ! $GITHUB_SHA =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::The version is not x.y.z+tibiash.N, or the pushed commit is not a full SHA."
+            exit 1
+          fi
+          timeout --kill-after=10 120 gh api "repos/{owner}/{repo}/git/refs" --silent \
+            -f ref="refs/tags/v$VERSION" -f sha="$GITHUB_SHA"
+          echo "Tagged v$VERSION at $GITHUB_SHA."

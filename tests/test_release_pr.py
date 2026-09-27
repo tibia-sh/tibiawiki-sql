@@ -521,3 +521,175 @@ concurrency:
             sorted(re.findall(r"- id: (\w+_token)\n", text)),
         )
         self.assertNotIn("merge --auto", text)
+
+    def test_tag_job_runs_in_the_release_environment(self):
+        self.assert_in_job("tag", """\
+  tag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: release-trigger
+    permissions:
+      contents: read # the checkout and its tags
+      pull-requests: read # the pull request the pushed commit merged
+    steps:
+""" + self.CHECKOUT)
+
+    def test_reads_merged_by_from_the_pull_request_itself(self):
+        self.assert_in_job("tag", """\
+      - name: Read the merged pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          numbers="$(timeout --kill-after=10 120 gh api "repos/{owner}/{repo}/commits/$GITHUB_SHA/pulls" \\
+            --jq '[.[] | select(.merge_commit_sha == env.GITHUB_SHA and .merged_at) | "\\(.number)"] | join(" ")')"
+          if [[ -z $numbers ]]; then
+            echo null > "$RUNNER_TEMP/pr.json"
+          elif [[ $numbers =~ ^[0-9]+$ ]]; then
+            timeout --kill-after=10 120 gh api "repos/{owner}/{repo}/pulls/$numbers" > "$RUNNER_TEMP/pr.json"
+          else
+            echo "::error::More than one merged pull request has $GITHUB_SHA as its merge commit."
+            exit 1
+          fi
+""")
+
+    def test_decides_with_the_script_and_fails_red(self):
+        self.assert_in_job("tag", """\
+      - name: Decide
+        id: decide
+        env:
+          APP_LOGIN: ${{ vars.TIBIA_SH_APP_SLUG }}[bot]
+        run: |
+          tags="$RUNNER_TEMP/tags.txt"
+          git show-ref --tags --dereference > "$tags"
+          result="$(python3 -I scripts/release_pr.py tag-decision --tags "$tags" --pr "$RUNNER_TEMP/pr.json" \\
+            --head "$GITHUB_SHA" --app-login "$APP_LOGIN")"
+          decision="$(sed -n 's/^decision=//p' <<< "$result")"
+          version="$(sed -n 's/^version=//p' <<< "$result")"
+          case $decision in
+            tag) echo "Tagging v$version at $GITHUB_SHA." ;;
+            noop) echo "v$version already points at $GITHUB_SHA." ;;
+            skip) echo "$GITHUB_SHA is not drptbl's merge of the App's release pull request, so nothing is tagged." ;;
+            fail)
+              echo "::error::v$version cannot be tagged at $GITHUB_SHA." \\
+                "The version is not x.y.z+tibiash.N, or the tag points at another commit."
+              exit 1
+              ;;
+            *)
+              echo "::error::release_pr.py tag-decision printed an unknown decision."
+              exit 1
+              ;;
+          esac
+          echo "decision=$decision" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+""")
+
+    def test_creates_the_tag_with_a_contents_token(self):
+        self.assert_in_job("tag", """\
+      - id: tag_token
+        if: ${{ steps.decide.outputs.decision == 'tag' }}
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.TIBIA_SH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.TIBIA_SH_APP_PRIVATE_KEY }}
+          owner: tibia-sh
+          repositories: tibiawiki-sql
+          permission-contents: write
+      - name: Create the tag
+        if: ${{ steps.decide.outputs.decision == 'tag' }}
+        env:
+          GH_TOKEN: ${{ steps.tag_token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ steps.decide.outputs.version }}
+        run: |
+          if [[ ! $VERSION =~ ^[0-9]+\\.[0-9]+\\.[0-9]+\\+tibiash\\.[0-9]+$ || ! $GITHUB_SHA =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::The version is not x.y.z+tibiash.N, or the pushed commit is not a full SHA."
+            exit 1
+          fi
+          timeout --kill-after=10 120 gh api "repos/{owner}/{repo}/git/refs" --silent \\
+            -f ref="refs/tags/v$VERSION" -f sha="$GITHUB_SHA"
+          echo "Tagged v$VERSION at $GITHUB_SHA."
+""")
+
+
+class TestReleaseWorkflow(WorkflowTestCase):
+    WORKFLOW = "release.yml"
+
+    def test_publish_step_reports_published_after_the_upload(self):
+        self.assert_in_job("release", """\
+    outputs:
+      published: ${{ steps.publish.outputs.published }} # 'true' once the release and its assets are uploaded
+""")
+        self.assert_in_job("release", """\
+      - name: Create the release
+        id: publish
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          WHEEL: ${{ steps.build.outputs.wheel }}
+          SDIST: ${{ steps.build.outputs.sdist }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "$WHEEL" "$SDIST" dist/SHA256SUMS \\
+            --verify-tag --notes-file "$RUNNER_TEMP/notes.md"
+          echo "published=true" >> "$GITHUB_OUTPUT"
+""")
+        release = job(self.WORKFLOW, "release")
+        self.assertLess(release.index("uses: actions/attest-build-provenance@"), release.index("id: publish"))
+        self.assertEqual(1, self.text().count("published=true"))
+
+    def test_downstream_runs_only_after_a_tag_push_published(self):
+        # A dry run is a workflow_dispatch on main, which publishes nothing, so it has no downstream job.
+        self.assert_in_job("downstream", """\
+  downstream:
+    needs: [check, release]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') &&
+      needs.release.outputs.published == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    environment: release-trigger
+    permissions: {}
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+    steps:
+""")
+
+    def test_downstream_dispatches_with_a_contents_token(self):
+        self.assert_in_job("downstream", """\
+      - id: token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.TIBIA_SH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.TIBIA_SH_APP_PRIVATE_KEY }}
+          owner: tibia-sh
+          repositories: tibiawiki-mcp
+          permission-contents: write
+""")
+        self.assert_in_job("downstream", """\
+      - name: Tell tibiawiki-mcp about the release
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+        run: |
+          if [[ ! $VERSION =~ ^[0-9]+\\.[0-9]+\\.[0-9]+\\+tibiash\\.[0-9]+$ || $GITHUB_REF_NAME != "v$VERSION" ]]; then
+            echo "::error::The released version is not x.y.z+tibiash.N, or it is not the tag's."
+            exit 1
+          fi
+          # shellcheck disable=SC2016 # $version is jq's, not the shell's
+          payload='{event_type: "generator-release", client_payload: {version: $version}}'
+          body="$(jq -n --arg version "$VERSION" "$payload")"
+          for attempt in 1 2 3; do
+            if [ "$attempt" -gt 1 ]; then
+              sleep 30
+            fi
+            if timeout --kill-after=10 120 gh api repos/tibia-sh/tibiawiki-mcp/dispatches --input - <<< "$body"; then
+              echo "Told tibia-sh/tibiawiki-mcp about $VERSION in attempt $attempt."
+              exit 0
+            fi
+          done
+          echo "::error::Could not tell tibia-sh/tibiawiki-mcp about $VERSION in 3 attempts, 30 seconds apart." \\
+            "Run generator.yml there by hand with the version, as README.md describes."
+          exit 1
+""")
+        downstream = job(self.WORKFLOW, "downstream")
+        self.assertNotIn("checkout", downstream)
+        self.assertEqual(1, downstream.count("uses:"))

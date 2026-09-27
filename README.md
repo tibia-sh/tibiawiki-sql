@@ -32,15 +32,32 @@ version and opens or updates the pull request `chore: release <version>` from th
 version counts `+tibiash.N` up from the highest tagged `N` of the same upstream version, so `9.0.0+tibiash.2` is
 followed by `9.0.0+tibiash.3`, and an upstream `9.1.0` by `9.1.0+tibiash.1`. When the section is empty or gone, the
 workflow closes that pull request. The tibia-sh App, `tibia-sh-bot`, pushes the branch and opens the pull request, so
-its CI runs. Nothing merges it by itself. After the merge, push the tag `v<version>`, like `v9.0.0+tibiash.1`, on the
-merge commit.
+its CI runs. Nothing merges it by itself.
+
+The release is drptbl's merge of that pull request. The Release PR workflow's run for the merge tags `v<version>`,
+like `v9.0.0+tibiash.1`, on the merge commit, as the App, which the `release tags` ruleset lets create `v*` tags. A
+merge by anyone else, a pull request from another branch or author, and any other push to `main` tag nothing. The tag
+starts the release workflow.
 
 The release workflow checks that the tag matches the version and that the commit is on `main`. It runs the tests and
 checks an installed build of the wheel, both without write access. The publishing job then builds the wheel and the
 sdist with only the hashed build dependencies in `build-constraints.txt`, checks the wheel's version, writes
 `SHA256SUMS`, attests all three files and publishes them with the changelog section as the release notes. A running
-release is left to finish. A newer run for the same tag can still replace one that is waiting to start. Running the
-workflow by hand on `main` is a dry run: it skips the tag checks and the release. On any other branch it fails.
+release is left to finish. A newer run for the same tag can still replace one that is waiting to start. Once the
+release is published, the workflow sends `generator-release` with the version to tibia-sh/tibiawiki-mcp, whose
+generator workflow verifies the wheel's attestation and pins it. Running the workflow by hand on `main` is a dry run: it
+skips the tag checks, the release and the dispatch. On any other branch it fails.
+
+When a step fails:
+
+* The Release PR workflow's `tag` job failed: re-run that run. A run dispatched on `main` checks the newest commit of
+  `main`, not the merge commit. Until the version is tagged, the next proposal fails, so no version is proposed twice.
+* The release workflow's `downstream` job failed: the release is published, so don't re-run the release run. Run
+  `generator.yml` in tibia-sh/tibiawiki-mcp by hand with the version.
+
+The App's private key is the tibia-sh organization secret `TIBIA_SH_APP_PRIVATE_KEY`. If it leaks, generate a new key
+in the App's settings, put it in the secret and delete the leaked key. Then look for tags, releases, branches
+and pull requests the App made in tibia-sh's repositories that no workflow run explains, and delete them.
 
 To check a download, run `sha256sum -c SHA256SUMS` and this for each file:
 
