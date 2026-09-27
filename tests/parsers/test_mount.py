@@ -126,3 +126,33 @@ class TestMountPriceCurrency(unittest.TestCase):
         ))
 
         self.assertEqual("Event Points", mount.price_currency)
+
+    def _priced_in(self, currency: str) -> Mount:
+        return self._parse("Doombringer", self._edited("| price         = 780\n",
+                                                       f"| price         = 780\n| pricecurrency = {currency}\n"))
+
+    def test_price_currency_cleans_links(self):
+        mount = self._priced_in("[[Silver Token]]s")
+
+        self.assertEqual("Silver Tokens", mount.price_currency)
+
+    def test_price_currency_tibia_coins_template(self):
+        mount = self._priced_in("{{TC}}")
+
+        self.assertEqual("Tibia Coins", mount.price_currency)
+
+    def test_price_currency_tournament_coins_template(self):
+        mount = self._priced_in("{{TC3}}")
+
+        self.assertEqual("Tournament Coins", mount.price_currency)
+
+    def test_price_currency_template_first_letter_any_case(self):
+        mount = self._priced_in("{{tC}}")
+
+        self.assertEqual("Tibia Coins", mount.price_currency)
+
+    def test_price_currency_kept_for_zero_price(self):
+        mount = self._parse("Doombringer", self._edited("| price         = 780\n", "| price         = 0\n"))
+
+        self.assertEqual(0, mount.price)
+        self.assertEqual("Tibia Coins", mount.price_currency)
