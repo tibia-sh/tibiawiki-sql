@@ -10,7 +10,9 @@ output of ``git show-ref --tags --dereference`` in a file.
 
 ``tag-decision`` prints ``decision=<skip|noop|fail|tag>``, ``version=<__version__>`` and ``reason=<why it fails>``
 for a push to main, given the ``pulls/{number}`` response of the pull request that the pushed commit merged, or
-``null``, and the files the pushed commit changes relative to its first parent, one per line.
+``null``, the files the pushed commit changes relative to its first parent, one per line, and a checkout of that
+parent. The workflow runs that checkout's copy of this script, so a release pull request cannot change the rules that
+tag it.
 """
 from __future__ import annotations
 
@@ -19,6 +21,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 GENERATOR_VERSION = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+\+tibiash\.[0-9]+")
 UPSTREAM_VERSION = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+")
@@ -32,8 +35,17 @@ RELEASE_BRANCH = "release/next"
 NO_ENTRIES_EXIT = 3
 CHANGELOG = Path("CHANGELOG.md")
 INIT = Path("tibiawikisql/__init__.py")
-# The files propose writes, and the only ones a release merge may change.
+# The files propose writes, and the only ones a release merge changes.
 RELEASE_FILES = frozenset({CHANGELOG.as_posix(), INIT.as_posix()})
+
+
+class Release(NamedTuple):
+    """What ``propose`` writes for a release."""
+
+    version: str
+    init: str
+    changelog: str
+    entries: str
 
 
 class NoUnreleasedEntriesError(ValueError):
@@ -200,6 +212,25 @@ def set_version(init_text: str, version: str) -> str:
     return "".join(lines)
 
 
+def release(init_text: str, changelog_text: str, tags: list[str]) -> Release:
+    """Work out the next release from main's ``tibiawikisql/__init__.py`` and ``CHANGELOG.md``.
+
+    Args:
+        init_text: The text of ``tibiawikisql/__init__.py``.
+        changelog_text: The changelog.
+        tags: The names of the repository's tags.
+
+    Returns:
+        The version from :func:`next_version`, both files with the release written into them and the released entries.
+
+    Raises:
+        ValueError: As :func:`next_version`, :func:`release_changelog` and :func:`set_version`.
+    """
+    version = next_version(read_version(init_text), tags)
+    changelog, entries = release_changelog(changelog_text, version)
+    return Release(version, set_version(init_text, version), changelog, entries)
+
+
 def _release_merge(merged_pr: dict | None, head: str, app_login: str) -> bool:
     """Tell whether a pull request is the App's release pull request, merged at ``head`` by the App or the approver.
 
@@ -229,22 +260,50 @@ def _release_merge(merged_pr: dict | None, head: str, app_login: str) -> bool:
     )
 
 
-def _release_files_problem(changed_files: list[str]) -> str:
-    """Tell what is wrong with the files a release merge changes.
+def _release_problem(
+    version: str,
+    tags: dict[str, str],
+    head: str,
+    *,
+    changed_files: list[str],
+    base: dict[str, str],
+    merged: dict[str, bytes],
+) -> str:
+    """Tell what is wrong with a release merge, against the release ``propose`` makes from main before it.
 
     Args:
+        version: ``__version__`` at the merge commit.
+        tags: The commit of each tag, from :func:`parse_tags`.
+        head: The merge commit.
         changed_files: The files the merge commit changes relative to its first parent.
+        base: The text of each file of ``RELEASE_FILES`` at the first parent, main before the merge.
+        merged: The bytes of each file of ``RELEASE_FILES`` at the merge commit.
 
     Returns:
-        Why the merge must not be tagged, in one line: it changes no files, or files outside ``RELEASE_FILES``, which
-        it names. Empty when it changes only files of ``RELEASE_FILES``.
+        Why the merge must not be tagged, in one line, or an empty string. The merge must change exactly the files of
+        ``RELEASE_FILES``, its version must be the next release of main before it, and both files must be byte for
+        byte what ``propose`` writes from main's. Tags at ``head`` are left out of the next version, so a re-run after
+        tagging agrees.
     """
-    if not changed_files:
-        return "the release merge changes no files."
     extra = sorted(set(changed_files) - RELEASE_FILES)
-    if extra:
-        allowed = " and ".join(sorted(RELEASE_FILES))
-        return f"a release merge may change only {allowed}, and this one also changes {', '.join(extra)}."
+    missing = sorted(RELEASE_FILES - set(changed_files))
+    if extra or missing:
+        found = [f"also changes {', '.join(extra)}"] if extra else []
+        found += [f"does not change {', '.join(missing)}"] if missing else []
+        names = " and ".join(sorted(RELEASE_FILES))
+        return f"a release merge changes exactly {names}, and this one {' and '.join(found)}."
+    try:
+        expected = release(
+            base[INIT.as_posix()], base[CHANGELOG.as_posix()], [name for name, sha in tags.items() if sha != head],
+        )
+    except ValueError as error:
+        return f"main before the merge has no release to make: {error}."
+    if version != expected.version:
+        return f"the merge releases {version}, but main's next release is {expected.version}."
+    written = {INIT.as_posix(): expected.init, CHANGELOG.as_posix(): expected.changelog}
+    different = sorted(name for name, text in written.items() if merged[name] != text.encode("utf-8"))
+    if different:
+        return f"{', '.join(different)} at the merge is not what propose writes from main before it."
     return ""
 
 
@@ -256,6 +315,8 @@ def decide_tag(
     app_login: str,
     *,
     changed_files: list[str],
+    base: dict[str, str],
+    merged: dict[str, bytes],
 ) -> tuple[str, str]:
     """Choose what to do with the tag ``v<version>`` after a push to main.
 
@@ -267,16 +328,18 @@ def decide_tag(
             list of a commit's pull requests has no ``merged_by``, so an entry of it never qualifies.
         app_login: The App's login, ``<slug>[bot]``.
         changed_files: The files ``head`` changes relative to its first parent.
+        base: The text of each file of ``RELEASE_FILES`` at ``head``'s first parent, main before the merge.
+        merged: The bytes of each file of ``RELEASE_FILES`` at ``head``.
 
     Returns:
         The decision and, for ``fail``, the reason in one line, else an empty reason. With no merged pull request,
         ``fail`` when the version is ``x.y.z+tibiash.N`` and has no tag: a release merge that GitHub did not list yet,
         or a direct push, which would otherwise leave the release untagged unseen. Otherwise ``skip`` unless
         ``merged_pr`` is the App's ``release/next`` pull request, merged at ``head`` by the App or by the release
-        approver, a user; else ``fail`` when ``changed_files`` is empty or names a file outside ``RELEASE_FILES``, so
-        no release carries code that did not come through an ordinary pull request; else ``fail`` when the version is
-        not ``x.y.z+tibiash.N`` or its tag points at another commit; else ``noop`` when the tag points at ``head``;
-        else ``tag``.
+        approver, a user; else ``fail`` when the merge is not exactly the release ``propose`` makes from main before
+        it, as :func:`_release_problem` checks, so no release carries anything but the version and the changelog
+        heading; else ``noop`` when the tag points at ``head``; else ``tag``. The version is then main's next one, so
+        its tag, when there is one, points at ``head``.
     """
     tagged = tags.get(f"v{version}")
     if merged_pr is None and GENERATOR_VERSION.fullmatch(version) and tagged is None:
@@ -286,13 +349,9 @@ def decide_tag(
         )
     if not _release_merge(merged_pr, head, app_login):
         return "skip", ""
-    problem = _release_files_problem(changed_files)
+    problem = _release_problem(version, tags, head, changed_files=changed_files, base=base, merged=merged)
     if problem:
         return "fail", problem
-    if not GENERATOR_VERSION.fullmatch(version):
-        return "fail", f"the version {version!r} is not x.y.z+tibiash.N."
-    if tagged not in {None, head}:
-        return "fail", f"v{version} already points at {tagged}."
     return ("noop" if tagged == head else "tag"), ""
 
 
@@ -328,18 +387,17 @@ def _propose(tags_file: Path, body_file: Path) -> int:
         _unreleased_section(changelog.splitlines(keepends=True))
     except NoUnreleasedEntriesError:
         return NO_ENTRIES_EXIT
-    init = _read(INIT)
-    version = next_version(read_version(init), list(parse_tags(_read(tags_file))))
-    released, entries = release_changelog(changelog, version)
-    versioned = set_version(init, version)
-    _write(body_file, release_body(version, entries))
-    _write(CHANGELOG, released)
-    _write(INIT, versioned)
-    sys.stdout.write(f"{version}\n")
+    written = release(_read(INIT), changelog, list(parse_tags(_read(tags_file))))
+    _write(body_file, release_body(written.version, written.entries))
+    _write(CHANGELOG, written.changelog)
+    _write(INIT, written.init)
+    sys.stdout.write(f"{written.version}\n")
     return 0
 
 
-def _tag_decision(tags_file: Path, pr_file: Path, head: str, app_login: str, changed_file: Path) -> int:
+def _tag_decision(
+    tags_file: Path, pr_file: Path, head: str, app_login: str, *, changed_file: Path, base_dir: Path,
+) -> int:
     if not COMMIT_SHA.fullmatch(head):
         msg = f"--head must be a full commit SHA, got {head!r}"
         raise ValueError(msg)
@@ -351,9 +409,11 @@ def _tag_decision(tags_file: Path, pr_file: Path, head: str, app_login: str, cha
         msg = f"{pr_file} must hold a pull request object or null"
         raise ValueError(msg)
     version = read_version(_read(INIT))
-    changed_files = _read(changed_file).splitlines()
     decision, reason = decide_tag(
-        version, parse_tags(_read(tags_file)), head, merged_pr, app_login, changed_files=changed_files,
+        version, parse_tags(_read(tags_file)), head, merged_pr, app_login,
+        changed_files=_read(changed_file).splitlines(),
+        base={name: _read(base_dir / name) for name in RELEASE_FILES},
+        merged={name: Path(name).read_bytes() for name in RELEASE_FILES},
     )
     sys.stdout.write(f"decision={decision}\nversion={version}\nreason={reason}\n")
     return 0
@@ -383,11 +443,14 @@ def main(argv: list[str]) -> int:
     tag.add_argument("--app-login", required=True, help="the App's login, <slug>[bot]")
     tag.add_argument("--changed-files", required=True, type=Path,
                      help="the files the pushed commit changes relative to its first parent, one per line")
+    tag.add_argument("--base", required=True, type=Path, help="a checkout of the pushed commit's first parent")
     args = parser.parse_args(argv)
     try:
         if args.command == "propose":
             return _propose(args.tags, args.body)
-        return _tag_decision(args.tags, args.pr, args.head, args.app_login, args.changed_files)
+        return _tag_decision(
+            args.tags, args.pr, args.head, args.app_login, changed_file=args.changed_files, base_dir=args.base,
+        )
     except ValueError as error:
         msg = f"release_pr.py {args.command}: {error}"
         raise SystemExit(msg) from error

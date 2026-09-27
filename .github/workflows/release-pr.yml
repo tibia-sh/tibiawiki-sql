@@ -5,7 +5,7 @@ name: Release PR
 # to it. The tibia-sh App pushes the branch and opens the pull request, so the pull request's CI runs, which it would
 # not for one opened with GITHUB_TOKEN, and turns on its auto-merge, so it merges itself once its required checks pass.
 # drptbl can still merge it by hand. The tag job of that merge's run tags v<version> on the merge commit, provided the
-# merge changes only CHANGELOG.md and tibiawikisql/__init__.py, and the tag starts release.yml.
+# merge is exactly the release main before it proposes, and the tag starts release.yml.
 on:
   push:
     branches:
@@ -183,8 +183,8 @@ jobs:
   # Tags the release that the merge of the release pull request made. The list of a commit's pull requests has no
   # merged_by, so the job reads, with github.token, the pull request whose merge commit is the pushed commit on its
   # own, and scripts/release_pr.py decides from it. Only the App's release/next pull request, merged by the App's
-  # auto-merge or by drptbl, tags v<version> at the merge commit, and only when the merge changes CHANGELOG.md and
-  # tibiawikisql/__init__.py alone: generator code comes through ordinary pull requests, never the release one. The
+  # auto-merge or by drptbl, tags v<version> at the merge commit, and only when the merge is exactly the release that
+  # main before it proposes: generator code comes through ordinary pull requests, never the release one. The
   # same isolation as the propose job, and the App's token, which the release tags ruleset lets create v* tags, is
   # minted only to create the tag. The tag's push starts release.yml.
   tag:
@@ -218,21 +218,32 @@ jobs:
             echo "::error::More than one merged pull request has $GITHUB_SHA as its merge commit."
             exit 1
           fi
-      # The checkout has the whole history, so the pushed commit's first parent is there to diff against. fail turns
-      # the run red with the script's reason: the release merge changes a file besides CHANGELOG.md and
-      # tibiawikisql/__init__.py, or none, the version is not x.y.z+tibiash.N, its tag points at another commit, or it
-      # has no tag and no merged pull request was found, as for a release merge GitHub did not list yet.
+      # The checkout has the whole history, so the pushed commit's first parent, main before the push, is there. The
+      # decision runs that parent's scripts/release_pr.py from a worktree of the parent, so a release pull request
+      # cannot rewrite the rules that tag it. The script recomputes the release from the parent's CHANGELOG.md and
+      # tibiawikisql/__init__.py, as propose writes it, and fail turns the run red with its reason: the merge is not
+      # exactly that release, or the version has no tag and no merged pull request was found, as for a release merge
+      # GitHub did not list yet.
+      #
+      # The parent's script is 04c7dc6, from before the recompute, only for the merge that brings the recompute in.
+      # That copy cannot decide with these arguments, and that merge is no release, so it tags nothing.
       - name: Decide
         id: decide
         env:
           APP_LOGIN: ${{ vars.TIBIA_SH_APP_SLUG }}[bot]
         run: |
+          if [[ "$(git rev-parse HEAD^1:scripts/release_pr.py)" == 04c7dc69f1b60e51b1cfdd005733da900eae529a ]]; then
+            echo "main's scripts/release_pr.py before this push predates the recompute, so nothing is tagged."
+            exit 0
+          fi
           tags="$RUNNER_TEMP/tags.txt"
           changed="$RUNNER_TEMP/changed.txt"
+          main="$RUNNER_TEMP/main"
           git show-ref --tags --dereference > "$tags"
           git diff --name-only HEAD^1 HEAD > "$changed"
-          result="$(python3 -I scripts/release_pr.py tag-decision --tags "$tags" --pr "$RUNNER_TEMP/pr.json" \
-            --head "$GITHUB_SHA" --app-login "$APP_LOGIN" --changed-files "$changed")"
+          git worktree add --quiet --detach "$main" HEAD^1
+          result="$(python3 -I "$main/scripts/release_pr.py" tag-decision --tags "$tags" --pr "$RUNNER_TEMP/pr.json" \
+            --head "$GITHUB_SHA" --app-login "$APP_LOGIN" --changed-files "$changed" --base "$main")"
           decision="$(sed -n 's/^decision=//p' <<< "$result")"
           version="$(sed -n 's/^version=//p' <<< "$result")"
           reason="$(sed -n 's/^reason=//p' <<< "$result")"
