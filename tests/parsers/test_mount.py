@@ -136,6 +136,11 @@ class TestMountPriceCurrency(unittest.TestCase):
 
         self.assertEqual("Silver Token", mount.price_currency)
 
+    def test_price_currency_template_without_parameters(self):
+        mount = self._priced_in("{{Foo}}")
+
+        self.assertEqual("Foo", mount.price_currency)
+
     def test_price_currency_tibia_coins_template(self):
         mount = self._priced_in("{{TC}}")
 

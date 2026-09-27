@@ -136,6 +136,23 @@ class TestUtils(unittest.TestCase):
         self.assertIsNone(parse_currency("  "))
         self.assertIsNone(parse_currency("<!-- none -->"))
 
+    def test_parse_currency_skips_file_and_category_links(self):
+        self.assertEqual("Theons", parse_currency("[[File:Theons.gif]] [[Theons]]"))
+        self.assertEqual("Theons", parse_currency("[[image:Theons.gif|16px]] [[Theons]]"))
+        self.assertEqual("Theons", parse_currency("[[Category:Currencies]] [[Theons]]"))
+
+    def test_parse_currency_template_without_parameters(self):
+        self.assertEqual("Foo", parse_currency("{{Foo}}"))
+        self.assertEqual("Tibia Coins", parse_currency("{{ TC }}"))
+        self.assertEqual("Tournament Coins", parse_currency("{{ tC3 }}"))
+        self.assertEqual("about Tibia Coins", parse_currency("about {{TC}}"))
+
+    def test_parse_currency_nested_templates(self):
+        self.assertEqual("Bar", parse_currency("{{Foo|{{Bar}}}}"))
+        self.assertEqual("x", parse_currency("{{Foo|{{Bar|x}}}}"))
+        self.assertEqual("Bar", parse_currency("{{ {{Bar}} }}"))
+        self.assertEqual("A", parse_currency("[[a|{{b}}]]"))
+
     def test_parse_min_max(self):
         self.assertEqual(parse_min_max("5-20"), (5, 20))
         self.assertEqual(parse_min_max("50"), (0, 50))

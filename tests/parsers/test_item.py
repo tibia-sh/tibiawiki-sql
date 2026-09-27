@@ -176,6 +176,24 @@ class TestItemParserBuyCurrency(unittest.TestCase):
         self.assertEqual(7197, item.value_buy)
         self.assertEqual("Theons", item.value_buy_currency)
 
+    def test_item_value_buy_currency_template_without_parameters(self):
+        content = load_resource("content_item_25_years_backpack.txt")
+        self.assertIn("| pricecurrency = [[Theons]]\n", content)
+        item = self._parse_content("25 Years Backpack",
+                                   content.replace("| pricecurrency = [[Theons]]\n", "| pricecurrency = {{Foo}}\n"))
+
+        self.assertEqual(7197, item.value_buy)
+        self.assertEqual("Foo", item.value_buy_currency)
+
+    def test_item_value_buy_currency_template_in_npcprice(self):
+        content = load_resource("content_item_blade_of_mayhem.txt")
+        self.assertIn("| npcprice      = 50 [[Gold Token]]s\n", content)
+        item = self._parse_content("Blade of Mayhem",
+                                   content.replace("| npcprice      = 50 [[Gold Token]]s\n", "| npcprice      = 50 {{Foo}}\n"))
+
+        self.assertEqual(50, item.value_buy)
+        self.assertEqual("Foo", item.value_buy_currency)
+
     def test_item_value_buy_currency_link_target(self):
         item = self._parse("Amethyst Necklace", "content_item_amethyst_necklace.txt")
 

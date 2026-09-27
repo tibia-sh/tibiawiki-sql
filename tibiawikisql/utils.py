@@ -33,8 +33,11 @@ GOLD_COIN = "Gold Coin"
 CURRENCY_TEMPLATES = {"TC": TIBIA_COINS, "TC3": TOURNAMENT_COINS, "GP": GOLD_COIN}
 """The currency templates a price may be written in, by name."""
 
-currency_template_pattern = re.compile(r"\{\{([Tt]C3?|[Gg]P)\}\}")
-"""A value that is only a currency template. As in MediaWiki, only the first letter of the name ignores case."""
+currency_template_pattern = re.compile(r"[Tt]C3?|[Gg]P")
+"""The name of a currency template. As in MediaWiki, only the first letter of the name ignores case."""
+
+non_currency_link_pattern = re.compile(r"\s*:?\s*(?:File|Image|Category)\s*:", re.IGNORECASE)
+"""The target of a link that cannot name a currency: a file, an image or a category."""
 
 
 class Elapsed:
@@ -363,10 +366,12 @@ def parse_client_id(value: str) -> int | None:
 def parse_currency(value: str) -> str | None:
     """Parse the currency of a price, like the ``pricecurrency`` of an item or a mount.
 
-    A currency template like ``{{TC}}`` gives the currency it prints, and ``gp`` gives :data:`GOLD_COIN`. A value with a
-    link gives the link's target, the currency's page, so ``[[Silver Token]]s`` gives ``Silver Token``. When the target
-    is a section of a page, the link's text is used instead, so ``[[Task Board#Hunting Task Points]]`` gives
-    ``Hunting Task Points``. Any other value gives its text without links.
+    Templates are read first, innermost first. A currency template like ``{{TC}}`` gives the currency it prints, any
+    other template without parameters gives its name, so ``{{Foo}}`` gives ``Foo``, and a template with parameters gives
+    its first parameter. Then a value with a link gives the link's target, the currency's page, so ``[[Silver Token]]s``
+    gives ``Silver Token``. Links to files, images and categories are skipped. When the target is a section of a page,
+    the link's text is used instead, so ``[[Task Board#Hunting Task Points]]`` gives ``Hunting Task Points``. ``gp``
+    gives :data:`GOLD_COIN`, and any other value gives its text without links. It never raises.
 
     Args:
         value: The raw value of a currency field.
@@ -378,10 +383,13 @@ def parse_currency(value: str) -> str | None:
     value = value.strip()
     if not value:
         return None
-    template = currency_template_pattern.fullmatch(value)
-    if template:
-        return CURRENCY_TEMPLATES[template.group(1).upper()]
-    link = next(mwparserfromhell.parse(value).ifilter_wikilinks(), None)
+    if value == "gp":
+        return GOLD_COIN
+    code = mwparserfromhell.parse(value)
+    for template in reversed(code.filter_templates(recursive=True)):
+        code.replace(template, _template_text(template))
+    link = next((link for link in code.ifilter_wikilinks() if not non_currency_link_pattern.match(str(link.title))),
+                None)
     if link is not None:
         page, _, section = str(link.title).partition("#")
         if section:
@@ -389,9 +397,21 @@ def parse_currency(value: str) -> str | None:
             return text or section.strip()
         name = page.strip().replace("_", " ")
         return name[:1].upper() + name[1:]
-    if value == "gp":
-        return GOLD_COIN
-    return clean_links(value) or None
+    return clean_links(str(code)) or None
+
+
+def _template_text(template: Template) -> str:
+    """Get the text a template stands for in a currency.
+
+    That is the currency a currency template prints, the name of any other template without parameters, otherwise
+    the first parameter, as :func:`clean_links` reads it.
+    """
+    if template.params:
+        return str(template.params[0])
+    name = template.name.strip_code().strip()
+    if currency_template_pattern.fullmatch(name):
+        return CURRENCY_TEMPLATES[name.upper()]
+    return name
 
 
 def parse_loot_statistics(value: str) -> tuple[int, list[Any]]:
