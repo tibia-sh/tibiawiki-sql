@@ -138,6 +138,7 @@ class ItemTable(Table):
     is_immobile = Column(Boolean, default=True)
     value_sell = Column(Integer)
     value_buy = Column(Integer)
+    value_buy_currency = Column(Text)
     weight = Column(Real)
     item_class = Column(Text, index=True)
     item_type = Column(Text, index=True)

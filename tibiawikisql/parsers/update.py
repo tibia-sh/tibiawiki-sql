@@ -1,10 +1,11 @@
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
 from typing import ClassVar
 
 from tibiawikisql.models.update import Update
 from tibiawikisql.parsers import BaseParser
 from tibiawikisql.parsers.base import AttributeParser
 from tibiawikisql.schema import UpdateTable
-from tibiawikisql.utils import clean_links, parse_date, parse_integer
+from tibiawikisql.utils import clean_links, parse_date, parse_first_integer
 
 
 class UpdateParser(BaseParser):
@@ -17,7 +18,7 @@ class UpdateParser(BaseParser):
         "type_primary": AttributeParser.required("primarytype"),
         "type_secondary": AttributeParser.optional("secondarytype"),
         "release_date": AttributeParser.required("date", parse_date),
-        "news_id": AttributeParser.optional("newsid", parse_integer),
+        "news_id": AttributeParser.optional("newsid", parse_first_integer),
         "previous": AttributeParser.optional("previous"),
         "next": AttributeParser.optional("next"),
         "summary": AttributeParser.optional("summary", clean_links),

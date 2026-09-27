@@ -1,5 +1,4 @@
 # Changed by tibia.sh in 2026. See "About this copy" in README.md.
-import re
 from typing import Any, ClassVar
 
 import tibiawikisql.schema
@@ -7,16 +6,16 @@ from tibiawikisql.api import Article
 from tibiawikisql.models.mount import Mount
 from tibiawikisql.parsers.base import AttributeParser
 from tibiawikisql.parsers import BaseParser
-from tibiawikisql.utils import clean_links, client_color_to_rgb, parse_boolean, parse_client_id, parse_integer
-
-TIBIA_COINS = "Tibia Coins"
-TOURNAMENT_COINS = "Tournament Coins"
-
-CURRENCY_TEMPLATES = {"TC": TIBIA_COINS, "TC3": TOURNAMENT_COINS}
-"""The currency templates that `Template:Infobox Mount` prints, by name."""
-
-CURRENCY_TEMPLATE_PATTERN = re.compile(r"\{\{([Tt]C3?)\}\}")
-"""A value that is only `{{TC}}` or `{{TC3}}`. As in MediaWiki, only the first letter of the name ignores case."""
+from tibiawikisql.utils import (
+    TIBIA_COINS,
+    TOURNAMENT_COINS,
+    clean_links,
+    client_color_to_rgb,
+    parse_boolean,
+    parse_client_id,
+    parse_currency,
+    parse_integer,
+)
 
 
 def remove_mount(name: str) -> str:
@@ -57,7 +56,7 @@ class MountParser(BaseParser):
         raw_attributes = row["_raw_attributes"]
         row["price_currency"] = None
         if row["price"] is not None:
-            currency = cls._parse_currency(raw_attributes.get("pricecurrency", ""))
+            currency = parse_currency(raw_attributes.get("pricecurrency", ""))
             if currency:
                 row["price_currency"] = currency
             elif parse_boolean(raw_attributes.get("tournament", "")):
@@ -65,11 +64,3 @@ class MountParser(BaseParser):
             else:
                 row["price_currency"] = TIBIA_COINS
         return row
-
-    @staticmethod
-    def _parse_currency(value: str) -> str:
-        """Read `pricecurrency`: the currency that `{{TC}}` or `{{TC3}}` prints, otherwise the text without links."""
-        template = CURRENCY_TEMPLATE_PATTERN.fullmatch(value.strip())
-        if template:
-            return CURRENCY_TEMPLATES[template.group(1).upper()]
-        return clean_links(value)

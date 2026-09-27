@@ -1,0 +1,24 @@
+{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name          = Shallow Water
+| actualname    = shallow water
+| itemid        = 629,630,631,632,633,634
+| objectclass   = Flooring
+| primarytype   = Natural Tiles
+| implemented   = 1.0
+| immobile      = yes
+| walkable      = yes
+| pickupable    = no
+| mapcolor      = 51
+| location      = All around the land of [[Tibia]], rivers and water falls.
+| notes         = You can [[Fishing|fish]] from a pool of shallow water, and in some areas, swim in it too. [[Boots of Waterwalking]] exist, but their use is unknown. You can fill a water container eg. [[Trough]], [[Bucket]] or [[Bottle]] with water by using it with an above ground Shallow Water tile.
+
+There are also other variations:
+[[File:Shallow Water Tile (630).gif]]
+[[File:Shallow Water Tile (631).gif]]
+[[File:Shallow Water Tile (632).gif]]
+[[File:Shallow Water Tile (633).gif]]
+[[File:Shallow Water Tile (634).gif]]
+
+As well as [[Water (Tile)|underground version of water]]:
+[[File:Water (Tile).gif]]
+}}

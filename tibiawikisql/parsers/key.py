@@ -1,10 +1,11 @@
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
 from typing import ClassVar
 
 import tibiawikisql.schema
 from tibiawikisql.models.item import Key
 from tibiawikisql.parsers.base import AttributeParser
 from tibiawikisql.parsers import BaseParser
-from tibiawikisql.utils import clean_links, parse_integer
+from tibiawikisql.utils import clean_links, parse_first_integer
 
 
 class KeyParser(BaseParser):
@@ -14,7 +15,7 @@ class KeyParser(BaseParser):
     template_name = "Infobox_Key"
     attribute_map: ClassVar = {
         "name": AttributeParser.optional("aka", clean_links),
-        "number": AttributeParser.optional("number", parse_integer),
+        "number": AttributeParser.optional("number", parse_first_integer),
         "material": AttributeParser.optional("primarytype"),
         "location": AttributeParser.optional("location", clean_links),
         "notes": AttributeParser.optional("shortnotes", clean_links),

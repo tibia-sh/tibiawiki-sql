@@ -1,3 +1,4 @@
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
 from sqlite3 import Connection, Cursor
 from typing import Any
 
@@ -136,7 +137,9 @@ class Item(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=ItemTa
     value_sell: int | None
     """The highest price an NPC will buy this item for."""
     value_buy: int | None
-    """The lowest price an NPC will sell this item for."""
+    """The lowest price an NPC will sell this item for, in `value_buy_currency`."""
+    value_buy_currency: str | None = None
+    """The currency of `value_buy`, like `Gold Coin` or `Theons`. `None` when the item is not sold."""
     weight: float | None
     """The item's weight in ounces."""
     item_class: str | None

@@ -10,6 +10,7 @@ from contextlib import contextmanager
 from typing import Any, Literal, TYPE_CHECKING, overload
 
 import mwparserfromhell
+from mwparserfromhell.nodes import Text
 from mwparserfromhell.nodes.extras import Parameter
 from mwparserfromhell.wikicode import Wikicode
 
@@ -19,9 +20,25 @@ if TYPE_CHECKING:
 
 min_max_pattern = re.compile(r"(\d+)-(\d+)")
 int_pattern = re.compile(r"[+-]?\d+")
+number_pattern = re.compile(r"[+-]?\d{1,3}(?:,\d{3})+(?!\d)|[+-]?\d+")
+"""A number whose thousands may be grouped with commas, like ``50,000``. Other commas end the number."""
 float_pattern = re.compile(r"[+-]?(\d*[.])?\d+")
 escaping_tags = frozenset(("nowiki", "pre"))
 inert_comment_start = "<!\u200b--"
+
+TIBIA_COINS = "Tibia Coins"
+TOURNAMENT_COINS = "Tournament Coins"
+GOLD_COIN = "Gold Coin"
+"""The currency of a price in gold, named after its item."""
+
+CURRENCY_TEMPLATES = {"TC": TIBIA_COINS, "TC3": TOURNAMENT_COINS, "GP": GOLD_COIN}
+"""The currency templates a price may be written in, by name."""
+
+currency_template_pattern = re.compile(r"[Tt]C3?|[Gg]P")
+"""The name of a currency template. As in MediaWiki, only the first letter of the name ignores case."""
+
+non_currency_link_pattern = re.compile(r"\s*:?\s*(?:File|Image|Category)\s*:", re.IGNORECASE)
+"""The target of a link that cannot name a currency: a file, an image or a category."""
 
 
 class Elapsed:
@@ -265,8 +282,30 @@ def parse_float(value: str, default: float = 0.0) -> float:
     return default
 
 
-def parse_integer(value: str, default: int = 0) -> int:
-    """Parse an integer from a string. Extra characters are ignored.
+def parse_integer(value: str, default: int | None = 0) -> int | None:
+    """Parse the first number from a string. Extra characters are ignored.
+
+    Thousands may be grouped with commas, so ``50,000`` is 50000. A comma that does not start a group of exactly three
+    digits ends the number, so ``12,34`` is 12.
+
+    Args:
+        value: The string containing an integer.
+        default: The value to return if no integer is found.
+
+    Returns:
+        The numeric value found, or the default value provided.
+
+    """
+    match = number_pattern.search(value)
+    if match:
+        return int(match.group(0).replace(",", ""))
+    return default
+
+
+def parse_first_integer(value: str, default: int | None = 0) -> int | None:
+    """Parse the first run of digits from a string. Extra characters are ignored.
+
+    Commas are not read as thousands separators, so an ID list like ``629,630,631`` gives its first ID, 629.
 
     Args:
         value: The string containing an integer.
@@ -310,7 +349,8 @@ def parse_client_id(value: str) -> int | None:
         value: The raw value of a client ID field.
 
     Returns:
-        The first integer in the value after comments are removed, or ``None`` if there is none.
+        The first integer in the value after comments are removed, or ``None`` if there is none. In a list of IDs like
+        ``421,437,438,747``, that is the first ID.
 
     """
     code = mwparserfromhell.parse(value)
@@ -321,7 +361,67 @@ def parse_client_id(value: str) -> int | None:
     for tag in code.filter_tags(matches=lambda tag: str(tag.tag).strip().lower() in escaping_tags):
         if code.contains(tag):
             code.replace(tag, str(tag).replace("<!--", inert_comment_start))
-    return parse_integer(str(code).partition("<!--")[0], None)
+    return parse_first_integer(str(code).partition("<!--")[0], None)
+
+
+def parse_currency(value: str) -> str | None:
+    """Parse the currency of a price, like the ``pricecurrency`` of an item or a mount.
+
+    The value is parsed once, and every step works on that parsed code. It never raises.
+
+    1. Templates are read innermost first. A currency template like ``{{TC}}`` gives the currency it prints, any
+       other template without parameters gives its name, so ``{{Foo}}`` gives ``Foo``, and a template with
+       parameters gives the value of its first parameter.
+    2. Links to files, images and categories are removed.
+    3. A value with a remaining link gives the first link's target, the currency's page, so ``[[Silver Token]]s``
+       gives ``Silver Token``. When the target is a section of a page, the link's text is used instead, so
+       ``[[Task Board#Hunting Task Points]]`` gives ``Hunting Task Points``. A link that names nothing, like ``[[]]``,
+       gives ``None``.
+    4. Otherwise the text is read without HTML tags and comments. ``gp`` gives :data:`GOLD_COIN`, and ``?`` or no text
+       gives ``None``. Any other text is the currency. The contents of ``<nowiki>`` are text, so
+       ``<nowiki>{{Foo}}</nowiki>`` gives ``{{Foo}}``.
+
+    Args:
+        value: The raw value of a currency field.
+
+    Returns:
+        The name of the currency, or ``None`` if the value names none.
+
+    """
+    code = mwparserfromhell.parse(value)
+    for template in reversed(code.filter_templates(recursive=True)):
+        code.replace(template, _template_code(template))
+    for link in reversed(code.filter_wikilinks(recursive=True)):
+        if non_currency_link_pattern.match(str(link.title)):
+            code.remove(link)
+    link = next(code.ifilter_wikilinks(), None)
+    if link is not None:
+        page, _, section = str(link.title).partition("#")
+        if section:
+            text = strip_code(link.text) if link.text is not None else ""
+            return text or section.strip() or None
+        name = page.replace("_", " ").strip()
+        return name[:1].upper() + name[1:] or None
+    text = code.strip_code().strip()
+    if text == "gp":
+        return GOLD_COIN
+    if text in ("", "?"):
+        return None
+    return text
+
+
+def _template_code(template: Template) -> Wikicode:
+    """Get the code a template stands for in a currency.
+
+    That is the currency a currency template prints, the name of any other template without parameters, otherwise
+    the value of the first parameter. It is returned as parsed code, so nothing is parsed again.
+    """
+    if template.params:
+        return template.params[0].value
+    name = template.name.strip_code().strip()
+    if currency_template_pattern.fullmatch(name):
+        name = CURRENCY_TEMPLATES[name.upper()]
+    return Wikicode([Text(name)])
 
 
 def parse_loot_statistics(value: str) -> tuple[int, list[Any]]:

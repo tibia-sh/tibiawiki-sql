@@ -17,7 +17,7 @@ from tibiawikisql.parsers.base import AttributeParser
 from tibiawikisql.utils import (
     clean_links,
     find_template,
-    int_pattern,
+    number_pattern,
     parse_boolean,
     parse_client_id,
     parse_float,
@@ -29,6 +29,8 @@ from tibiawikisql.utils import (
 
 if TYPE_CHECKING:
     from mwparserfromhell.nodes import Template
+
+range_hyphen_pattern = re.compile(r"(?<=\d)-(?=\d)")
 
 
 def parse_maximum_damage(value: str) -> dict[str, int]:
@@ -63,6 +65,9 @@ def parse_maximum_damage(value: str) -> dict[str, int]:
 def parse_maximum_integer(value: str) -> int | None:
     """From a string, finds the highest integer found.
 
+    Thousands may be grouped with commas, and a hyphen between two digits separates a range, so ``500-1,200`` gives
+    1200.
+
     Args:
         value: The string containing integers.
 
@@ -70,11 +75,8 @@ def parse_maximum_integer(value: str) -> int | None:
         The highest number found, or None if no number is found.
 
     """
-    matches = int_pattern.findall(value)
-    try:
-        return max(list(map(int, matches)))
-    except ValueError:
-        return None
+    matches = number_pattern.findall(range_hyphen_pattern.sub(" ", value))
+    return max((parse_integer(match) for match in matches), default=None)
 
 
 def parse_loot(value: str) -> list[tuple[str, str]]:

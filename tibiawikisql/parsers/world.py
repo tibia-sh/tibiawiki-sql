@@ -1,10 +1,11 @@
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
 from typing import ClassVar
 
 import tibiawikisql.schema
 from tibiawikisql.models.world import World
 from tibiawikisql.parsers.base import AttributeParser
 from tibiawikisql.parsers import BaseParser
-from tibiawikisql.utils import parse_boolean, parse_date, parse_integer
+from tibiawikisql.utils import parse_boolean, parse_date, parse_first_integer
 
 
 class WorldParser(BaseParser):
@@ -25,6 +26,6 @@ class WorldParser(BaseParser):
         "battleye": AttributeParser.optional("battleye", parse_boolean, False),
         "battleye_type": AttributeParser.optional("battleyetype"),
         "protected_since": AttributeParser.optional("protectedsince", parse_date),
-        "world_board": AttributeParser.optional("worldboardid", parse_integer),
-        "trade_board": AttributeParser.optional("tradeboardid", parse_integer),
+        "world_board": AttributeParser.optional("worldboardid", parse_first_integer),
+        "trade_board": AttributeParser.optional("tradeboardid", parse_first_integer),
     }

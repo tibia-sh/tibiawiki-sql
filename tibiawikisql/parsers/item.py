@@ -9,12 +9,16 @@ from tibiawikisql.parsers import BaseParser
 from tibiawikisql.parsers.base import AttributeParser
 from tibiawikisql.schema import ItemTable
 from tibiawikisql.utils import (
+    GOLD_COIN,
     clean_links,
     clean_question_mark,
     client_color_to_rgb,
     find_templates,
+    number_pattern,
     parse_boolean,
+    parse_currency,
     parse_float,
+    parse_first_integer,
     parse_integer,
     parse_sounds,
     strip_code,
@@ -44,6 +48,15 @@ RESTORES_PATTERN = re.compile(rf"restores\s+{RESTORE_CLAUSE}(?:,\s+and\s+{RESTOR
 BETWEEN_PATTERN = re.compile(r"\bbetween\b", re.IGNORECASE)
 """The word that starts a restore clause."""
 
+CURRENCY_START_PATTERN = re.compile(r"\[\[|\{\{|[^\W\d_]")
+"""The start of text that may name a currency: a link, a template or a letter."""
+
+MARKUP_PATTERN = re.compile(r"<!--.*?(?:-->|$)|</?[A-Za-z][^<>]*>", re.DOTALL)
+"""An HTML comment, which an unclosed ``<!--`` ends at the end of the text, or an HTML tag."""
+
+NOTE_PATTERN = re.compile(r"\([^()]*\)")
+"""A note in parentheses, without parentheses inside."""
+
 
 class ItemParser(BaseParser):
     """Parses items and objects."""
@@ -69,7 +82,7 @@ class ItemParser(BaseParser):
         "light_color": AttributeParser.optional("lightcolor", lambda x: client_color_to_rgb(parse_integer(x))),
         "light_radius": AttributeParser.optional("lightradius", parse_integer),
         "version": AttributeParser.optional("implemented"),
-        "client_id": AttributeParser.optional("itemid", parse_integer),
+        "client_id": AttributeParser.optional("itemid", parse_first_integer),
         "status": AttributeParser.status(),
     }
 
@@ -134,6 +147,7 @@ class ItemParser(BaseParser):
     @classmethod
     def parse_attributes(cls, article: Article) -> dict[str, Any]:
         row = super().parse_attributes(article)
+        cls.parse_value_buy_currency(row)
         row["attributes"] = []
         for name, attribute in cls.item_attributes.items():
             if attribute in row["_raw_attributes"] and row["_raw_attributes"][attribute]:
@@ -147,6 +161,37 @@ class ItemParser(BaseParser):
         cls.parse_sounds(row)
         cls.parse_store_value(row)
         return row
+
+    @classmethod
+    def parse_value_buy_currency(cls, row: dict[str, Any]) -> None:
+        """Set the currency of ``value_buy``, which is ``None`` unless the item is sold for a positive price.
+
+        The currency is the item's ``pricecurrency``, otherwise one written in ``npcprice`` after the price, like
+        ``50 [[Gold Token]]s``, otherwise :data:`GOLD_COIN`, the default of ``Template:Infobox Object``.
+        """
+        row["value_buy_currency"] = None
+        if row["value_buy"] is None or row["value_buy"] <= 0:
+            return
+        raw_attributes = row["_raw_attributes"]
+        currency = parse_currency(raw_attributes.get("pricecurrency", ""))
+        if currency is None:
+            currency = cls._parse_price_suffix_currency(raw_attributes["npcprice"])
+        row["value_buy_currency"] = currency or GOLD_COIN
+
+    @staticmethod
+    def _parse_price_suffix_currency(price: str) -> str | None:
+        """Get the currency written after the first number of a price, like ``50 [[Gold Token]]s``.
+
+        HTML tags, comments and notes in parentheses are removed from the text after the number. The rest names a
+        currency only when it starts with a link, a template or a letter, so ``50 - 60`` and ``50<br>60`` name none.
+        """
+        suffix = MARKUP_PATTERN.sub("", price[number_pattern.search(price).end():])
+        while (without_note := NOTE_PATTERN.sub("", suffix)) != suffix:
+            suffix = without_note
+        suffix = suffix.strip()
+        if CURRENCY_START_PATTERN.match(suffix):
+            return parse_currency(suffix)
+        return None
 
     @classmethod
     def parse_item_attributes(cls, row: dict[str, Any]):
