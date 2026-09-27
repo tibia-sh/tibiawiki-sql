@@ -385,3 +385,35 @@ class TestNpcParser(unittest.TestCase):
         npc = self._parse_inline_npc("Venore", "{{Transport|Carlin, 110; From [[Thais]]}}")
 
         self.assertEqual([("Carlin", 110, "Venore")], [(d.name, d.price, d.origin) for d in npc.destinations])
+
+    def test_npc_without_city(self):
+        article = Article(
+            article_id=1,
+            title="A Blue Stone",
+            timestamp=datetime.datetime.fromisoformat("2026-08-06T21:35:46+00:00"),
+            content=load_resource("content_npc_a_blue_stone.txt"),
+        )
+
+        npc = NpcParser.from_article(article)
+
+        self.assertIsNone(npc.city)
+        self.assertEqual("A Blue Stone", npc.name)
+
+    def test_origin_without_city(self):
+        self.assertIsNone(NpcParser._parse_origin("Thais", None, None, [], None))
+        self.assertEqual("Carlin", NpcParser._parse_origin("Thais", "From [[Carlin]]", None, [], None))
+
+    def test_npc_without_city_with_destinations(self):
+        npc = self._parse_inline_npc(
+            "",
+            "{{TransportList|discount=no\n"
+            " |{{TransportCell|Carlin|110|From [[Thais]]}}\n"
+            " |{{TransportCell|Venore|170}}\n"
+            "}}",
+        )
+
+        self.assertIsNone(npc.city)
+        self.assertEqual(
+            [("Carlin", 110, "Thais"), ("Venore", 170, None)],
+            [(d.name, d.price, d.origin) for d in npc.destinations],
+        )

@@ -25,7 +25,7 @@ class NpcParser(BaseParser):
         "gender": AttributeParser.optional("gender"),
         "location": AttributeParser.optional("location", clean_links),
         "subarea": AttributeParser.optional("subarea"),
-        "city": AttributeParser.required("city"),
+        "city": AttributeParser.optional("city"),
         "x": AttributeParser.optional("posx", convert_tibiawiki_position),
         "y": AttributeParser.optional("posy", convert_tibiawiki_position),
         "z": AttributeParser.optional("posz", int),
@@ -172,7 +172,7 @@ class NpcParser(BaseParser):
         cls,
         destination: str,
         raw_notes: str | None,
-        city: str,
+        city: str | None,
         locations: list[NpcLocation],
         shuttle_start: str | None,
     ) -> str | None:
@@ -183,13 +183,13 @@ class NpcParser(BaseParser):
         when it has exactly two positions and exactly two destinations, and each position matches exactly one
         destination by city, subarea or geolabel, with each destination matched by a different position.
         Otherwise the leg starts in the NPC's city, but only if the NPC has a position in that city whose city,
-        subarea and geolabel all differ from the destination. Without such a position the start is unknown.
+        subarea and geolabel all differ from the destination. Without a city or such a position the start is unknown.
         Comparisons ignore case.
 
         Args:
             destination: The stripped name of the destination.
             raw_notes: The unstripped notes of a TransportCell, or ``None`` for a legacy Transport entry.
-            city: The NPC's city.
+            city: The NPC's city, or ``None`` if it has none.
             locations: The NPC's parsed positions.
             shuttle_start: The other leg's destination if the NPC is a shuttle, otherwise ``None``.
 
@@ -202,6 +202,8 @@ class NpcParser(BaseParser):
                 return match.group(1).strip()
         if shuttle_start is not None:
             return shuttle_start
+        if city is None:
+            return None
         city_key = clean_links(city).strip().lower()
         destination_key = destination.strip().lower()
         for location in locations:
