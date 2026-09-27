@@ -1,7 +1,7 @@
 <!-- Changed by tibia.sh in 2026. See "About this copy" in README.md. -->
 # Changelog
 
-## Unreleased
+## 9.0.0+tibiash.5
 
 - Store `spell.effect`, `spell.spell_type`, `spell.group_spell`, `spell.level` and `spell.cooldown` as `NULL` when a
   spell's article has no such field, and `spell.cooldown` as `NULL` when it is not a whole number of seconds, like
