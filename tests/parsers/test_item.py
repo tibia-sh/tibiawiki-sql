@@ -132,3 +132,25 @@ class TestItemParserRestores(unittest.TestCase):
         restores = self._restores("Test Item", self._inline("It restores between 1 and 3 Hit Points."))
 
         self.assertEqual({"restores_hp_min": "1", "restores_hp_max": "3"}, restores)
+
+
+class TestItemParserNumbers(unittest.TestCase):
+    def _parse(self, title: str, resource: str):
+        article = Article(
+            article_id=1,
+            title=title,
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource(resource),
+        )
+
+        return ItemParser.from_article(article)
+
+    def test_item_client_id_keeps_first_of_list(self):
+        item = self._parse("Shallow Water", "content_item_shallow_water.txt")
+
+        self.assertEqual(629, item.client_id)
+
+    def test_item_value_buy_thousands_separator(self):
+        item = self._parse("Amethyst Necklace", "content_item_amethyst_necklace.txt")
+
+        self.assertEqual(4000, item.value_buy)

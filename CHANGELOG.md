@@ -1,6 +1,14 @@
 <!-- Changed by tibia.sh in 2026. See "About this copy" in README.md. -->
 # Changelog
 
+## Unreleased
+
+- Read numbers with commas as thousands separators, like `50,000`, as the whole number instead of the digits before
+  the first comma. This fixes creature `hitpoints` and `experience`, item `value_buy` and `value_sell`, outfit
+  `full_price` and other quantities. A comma not followed by exactly three digits still ends the number, and an ID list
+  like `itemid = 629,630,631` or `mount_id = 421,437,438,747` still gives its first ID. A creature's max damage
+  without a `{{Max Damage}}` template reads `1,300+` as 1300, and a range like `600-1000?` by its larger number.
+
 ## 9.0.0+tibiash.5
 
 - Store `spell.effect`, `spell.spell_type`, `spell.group_spell`, `spell.level` and `spell.cooldown` as `NULL` when a

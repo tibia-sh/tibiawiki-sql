@@ -5,8 +5,8 @@ import datetime
 
 import tibiawikisql
 from tests import load_resource
-from tibiawikisql.utils import (clean_links, client_color_to_rgb, parse_boolean, parse_client_id, parse_float,
-                                parse_integer,
+from tibiawikisql.utils import (clean_links, client_color_to_rgb, parse_boolean, parse_client_id, parse_first_integer,
+                                parse_float, parse_integer,
                                 parse_date, parse_loot_statistics, parse_min_max, parse_sounds,
                                 parse_weapon_proficiency_name, parse_weapon_proficiency_tables)
 
@@ -60,10 +60,29 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(parse_integer("10056"), 10056)
         self.assertEqual(parse_integer("--"), 0)
 
+    def test_parse_integer_thousands_separator(self):
+        self.assertEqual(50000, parse_integer("50,000"))
+        self.assertEqual(1000000, parse_integer("1,000,000"))
+        self.assertEqual(4000, parse_integer("4,000 gp"))
+        self.assertEqual(12500, parse_integer("12,500"))
+        self.assertEqual(-1000, parse_integer("-1,000"))
+
+    def test_parse_integer_not_thousands_separator(self):
+        self.assertEqual(12, parse_integer("12,34"))
+        self.assertEqual(1, parse_integer("1,2345"))
+        self.assertIsNone(parse_integer("Negotiable", None))
+
+    def test_parse_first_integer(self):
+        self.assertEqual(629, parse_first_integer("629,630,631"))
+        self.assertEqual(-5, parse_first_integer("-5 and 7"))
+        self.assertEqual(0, parse_first_integer("--"))
+        self.assertIsNone(parse_first_integer("--", None))
+
     def test_parse_client_id(self):
         self.assertEqual(35, parse_client_id("35"))
         self.assertEqual(35, parse_client_id(" 35 <!-- note -->"))
         self.assertEqual(644, parse_client_id("<!-- 7 -->644"))
+        self.assertEqual(421, parse_client_id("421,437,438,747"))
         self.assertEqual(35, parse_client_id("35<!-- note -->7"))
         self.assertIsNone(parse_client_id("<!-- objectID: 51952-->"))
         self.assertIsNone(parse_client_id("\n<!-- objectID: 51952-->\n"))

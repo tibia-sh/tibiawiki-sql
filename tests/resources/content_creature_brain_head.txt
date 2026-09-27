@@ -1,0 +1,73 @@
+{{Infobox Creature|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name            = Brain Head
+| actualname      = Brain Head
+| hp              = 230,000
+| exp             = 50,000
+| armor           = ?
+| summon          = --
+| convince        = --
+| illusionable    = no
+| creatureclass   = The Undead
+| primarytype     = Undead Humanoids
+| spawntype       = Triggered
+| isboss          = yes
+| abilities       = {{Ability List| {{Melee|?}} }}
+| maxdmg          = 1,000+
+| pushable        = no
+| pushobjects     = no
+| walksaround     = --
+| walksthrough    = --
+| paraimmune      = yes
+| senseinvis      = yes
+| physicalDmgMod  = 100%?
+| earthDmgMod     = 100%
+| fireDmgMod      = 30%
+| deathDmgMod     = 80%?
+| energyDmgMod    = -1000%
+| holyDmgMod      = 100%?
+| iceDmgMod       = 150%?
+| hpDrainDmgMod   = 100%?
+| drownDmgMod     = 100%?
+| healMod         = 100%
+| sounds          = {{Sound List|}}
+| implemented     = 12.30.9287
+| race_id	  = 1862
+| behaviour       = 
+| bosstiaryclass  = Archfoe
+| cooldown        = 20
+| maxbattlelength = 300
+| runsat          = 0
+| speed           = ?
+| strategy        = Do not use energy and fire, as these damage types will heal the boss.
+Part of the [[Feaster of Souls Quest]].
+| location        = [[Netherworld]]
+| loot            = {{Loot Table
+ |{{Loot Item|2|Crystal Coin}}
+ |{{Loot Item|1-2|White Gem}}
+ |{{Loot Item|2|Green Gem}}
+ |{{Loot Item|6|Supreme Health Potion}}
+ |{{Loot Item|6|Ultimate Spirit Potion}}
+ |{{Loot Item|6|Ultimate Mana Potion}}
+ |{{Loot Item|Diamond}}
+ |{{Loot Item|10|Berserk Potion}}
+ |{{Loot Item|10|Bullseye Potion}}
+ |{{Loot Item|10|Mastermind Potion}}
+ |{{Loot Item|Moonstone}}
+ |{{Loot Item|Death Toll}}
+ |{{Loot Item|Ivory Comb}}
+ |{{Loot Item|Angel Figurine}}
+ |{{Loot Item|Cursed Bone}}
+ |{{Loot Item|Giant Topaz}}
+ |{{Loot Item|Silver Hand Mirror}}
+ |{{Loot Item|Ghost Claw}}
+ |{{Loot Item|Ring of Souls}}
+ |{{Loot Item|Phantasmal Axe}}
+ |{{Loot Item|Brain Head's Giant Neuron}}
+ |{{Loot Item|Brain Head's Left Hemisphere}}
+ |{{Loot Item|Brain Head's Right Hemisphere}}
+ |{{Loot Item|Pair of Old Bracers}}
+ |{{Loot Item|Giant Amethyst}}
+ |{{Loot Item|Spooky Hood}}
+}}
+| bestiaryname     = brainhead
+}}

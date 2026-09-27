@@ -81,6 +81,15 @@ class TestCreatureParser(unittest.TestCase):
         self.assertIsInstance(result, dict)
         self.assertEqual(2000, result["total"])
 
+    def test_parse_max_damage_thousands_separator(self):
+        self.assertEqual({"total": 1000}, parse_maximum_damage("1,000"))
+        self.assertEqual({"total": 1300}, parse_maximum_damage("1,300+"))
+
+    def test_parse_max_damage_range(self):
+        self.assertEqual({"total": 1200}, parse_maximum_damage("500-1,200"))
+        self.assertEqual({"total": 100}, parse_maximum_damage("50-100"))
+        self.assertEqual({"total": 1000}, parse_maximum_damage("600-1000?"))
+
     def test_parse_max_damage_no_template_no_number(self):
         max_damage_content = "Unknown."
 
@@ -94,6 +103,22 @@ class TestCreatureParser(unittest.TestCase):
         result = parse_maximum_damage(max_damage_content)
 
         self.assertEqual({}, result)
+
+
+class TestCreatureParserNumbers(unittest.TestCase):
+    def test_creature_thousands_separator(self):
+        article = Article(
+            article_id=1,
+            title="Brain Head",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource("content_creature_brain_head.txt"),
+        )
+
+        creature = CreatureParser.from_article(article)
+
+        self.assertEqual(50000, creature.experience)
+        self.assertEqual(230000, creature.hitpoints)
+        self.assertEqual(1000, creature.max_damage.total)
 
 
 class TestCreatureParserRaceId(unittest.TestCase):

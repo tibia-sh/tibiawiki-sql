@@ -19,6 +19,8 @@ if TYPE_CHECKING:
 
 min_max_pattern = re.compile(r"(\d+)-(\d+)")
 int_pattern = re.compile(r"[+-]?\d+")
+number_pattern = re.compile(r"[+-]?\d{1,3}(?:,\d{3})+(?!\d)|[+-]?\d+")
+"""A number whose thousands may be grouped with commas, like ``50,000``. Other commas end the number."""
 float_pattern = re.compile(r"[+-]?(\d*[.])?\d+")
 escaping_tags = frozenset(("nowiki", "pre"))
 inert_comment_start = "<!\u200b--"
@@ -265,8 +267,30 @@ def parse_float(value: str, default: float = 0.0) -> float:
     return default
 
 
-def parse_integer(value: str, default: int = 0) -> int:
-    """Parse an integer from a string. Extra characters are ignored.
+def parse_integer(value: str, default: int | None = 0) -> int | None:
+    """Parse the first number from a string. Extra characters are ignored.
+
+    Thousands may be grouped with commas, so ``50,000`` is 50000. A comma that does not start a group of exactly three
+    digits ends the number, so ``12,34`` is 12.
+
+    Args:
+        value: The string containing an integer.
+        default: The value to return if no integer is found.
+
+    Returns:
+        The numeric value found, or the default value provided.
+
+    """
+    match = number_pattern.search(value)
+    if match:
+        return int(match.group(0).replace(",", ""))
+    return default
+
+
+def parse_first_integer(value: str, default: int | None = 0) -> int | None:
+    """Parse the first run of digits from a string. Extra characters are ignored.
+
+    Commas are not read as thousands separators, so an ID list like ``629,630,631`` gives its first ID, 629.
 
     Args:
         value: The string containing an integer.
@@ -310,7 +334,8 @@ def parse_client_id(value: str) -> int | None:
         value: The raw value of a client ID field.
 
     Returns:
-        The first integer in the value after comments are removed, or ``None`` if there is none.
+        The first integer in the value after comments are removed, or ``None`` if there is none. In a list of IDs like
+        ``421,437,438,747``, that is the first ID.
 
     """
     code = mwparserfromhell.parse(value)
@@ -321,7 +346,7 @@ def parse_client_id(value: str) -> int | None:
     for tag in code.filter_tags(matches=lambda tag: str(tag.tag).strip().lower() in escaping_tags):
         if code.contains(tag):
             code.replace(tag, str(tag).replace("<!--", inert_comment_start))
-    return parse_integer(str(code).partition("<!--")[0], None)
+    return parse_first_integer(str(code).partition("<!--")[0], None)
 
 
 def parse_loot_statistics(value: str) -> tuple[int, list[Any]]:

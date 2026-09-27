@@ -1,0 +1,28 @@
+{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name          = Amethyst Necklace
+| article       = an
+| actualname    = amethyst necklace
+| plural        = amethyst necklaces
+| itemid        = 35609
+| objectclass   = Body Equipment
+| primarytype   = Amulets and Necklaces
+| slot          = Neck
+| flavortext    = 
+| implemented   = 12.60.10463
+| lightradius   = 4
+| lightcolor    = 123
+| immobile      = no
+| walkable      = yes
+| pickupable    = yes
+| usable        = no
+| weight        = 4.30
+| marketable    = yes
+| droppedby     = {{Dropped By|}}
+| value         = Negotiable
+| npcvalue      = 0
+| npcprice      = 4,000
+| pricecurrency = [[Trust Point]]s
+| buyfrom       = --
+| sellto        = --
+| notes         = Someone can trade 4,000 trust points for this necklace with [[Tik'hi Tak'he]] in [[Rascacoon]].
+}}

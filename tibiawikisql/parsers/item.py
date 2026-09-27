@@ -15,6 +15,7 @@ from tibiawikisql.utils import (
     find_templates,
     parse_boolean,
     parse_float,
+    parse_first_integer,
     parse_integer,
     parse_sounds,
     strip_code,
@@ -69,7 +70,7 @@ class ItemParser(BaseParser):
         "light_color": AttributeParser.optional("lightcolor", lambda x: client_color_to_rgb(parse_integer(x))),
         "light_radius": AttributeParser.optional("lightradius", parse_integer),
         "version": AttributeParser.optional("implemented"),
-        "client_id": AttributeParser.optional("itemid", parse_integer),
+        "client_id": AttributeParser.optional("itemid", parse_first_integer),
         "status": AttributeParser.status(),
     }
 
