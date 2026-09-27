@@ -54,7 +54,11 @@ When a step fails:
   `main`, not the merge commit. Until the version is tagged, the next proposal fails, so no version is proposed twice.
   When the error says the version has no tag and no merged pull request was found, GitHub had not listed the release
   merge yet. Re-run the run once the pull request shows as merged, or dispatch the workflow on `main` while the merge
-  commit is still its newest commit. A direct push of an untagged version fails the same way.
+  commit is still its newest commit. A direct push of an untagged version fails the same way. The job creates the tag
+  with a token that has contents write only, and GitHub refuses a ref at a commit whose `.github/workflows` tree
+  matches no branch tip unless the token has workflow scope. So re-run a failed `tag` job before any workflow change
+  lands on `main`. If one already has, a maintainer creates the tag by hand and pushes it over SSH. The tag's push runs
+  the release workflow, as a dispatch would only run a dry run.
 * The release workflow's `downstream` job failed: the release is published, so don't re-run the release run. Run
   `generator.yml` in tibia-sh/tibiawiki-mcp by hand with the version.
 
