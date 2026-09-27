@@ -4,7 +4,7 @@ from typing import ClassVar
 from tibiawikisql.models.achievement import Achievement
 from tibiawikisql.parsers.base import AttributeParser, BaseParser
 from tibiawikisql.schema import AchievementTable
-from tibiawikisql.utils import clean_links, parse_boolean, parse_integer
+from tibiawikisql.utils import clean_links, parse_boolean, parse_first_integer, parse_integer
 
 
 class AchievementParser(BaseParser):
@@ -21,7 +21,7 @@ class AchievementParser(BaseParser):
         "is_secret": AttributeParser.optional("secret", parse_boolean, False),
         "description": AttributeParser.optional("description", clean_links),
         "spoiler": AttributeParser.optional("spoiler", clean_links),
-        "achievement_id": AttributeParser.optional("achievementid", parse_integer),
+        "achievement_id": AttributeParser.optional("achievementid", parse_first_integer),
         "version": AttributeParser.optional("implemented"),
         "status": AttributeParser.status(),
     }

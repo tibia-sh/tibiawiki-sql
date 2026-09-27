@@ -1,10 +1,11 @@
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
 from typing import ClassVar
 
 import tibiawikisql.schema
 from tibiawikisql.models.house import House
 from tibiawikisql.parsers.base import AttributeParser
 from tibiawikisql.parsers import BaseParser
-from tibiawikisql.utils import clean_links, convert_tibiawiki_position, parse_integer
+from tibiawikisql.utils import clean_links, convert_tibiawiki_position, parse_first_integer, parse_integer
 
 
 class HouseParser(BaseParser):
@@ -13,7 +14,7 @@ class HouseParser(BaseParser):
     table = tibiawikisql.schema.HouseTable
     template_name = "Infobox_Building"
     attribute_map: ClassVar = {
-        "house_id": AttributeParser.required("houseid", parse_integer),
+        "house_id": AttributeParser.required("houseid", parse_first_integer),
         "name": AttributeParser.required("name"),
         "is_guildhall": AttributeParser.required("type", lambda x: x is not None and "guildhall" in x.lower()),
         "city": AttributeParser.required("city"),

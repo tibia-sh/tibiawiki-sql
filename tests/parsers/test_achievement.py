@@ -69,6 +69,11 @@ class TestAchievementParser(unittest.TestCase):
 
         self.assertEqual("Demonic Barkeeper", achievement.name)
 
+    def test_achievement_id_keeps_first_number(self):
+        achievement = self._parse(self._edited("| achievementid = 111", "| achievementid = 12,345"))
+
+        self.assertEqual(12, achievement.achievement_id)
+
     def test_achievement_name_without_actualname(self):
         achievement = self._parse(load_resource("content_achievement.txt"))
 

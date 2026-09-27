@@ -90,6 +90,9 @@ class TestCreatureParser(unittest.TestCase):
         self.assertEqual({"total": 100}, parse_maximum_damage("50-100"))
         self.assertEqual({"total": 1000}, parse_maximum_damage("600-1000?"))
 
+    def test_parse_max_damage_leading_minus_is_a_sign(self):
+        self.assertEqual({"total": 1000}, parse_maximum_damage("-1500 or 1000"))
+
     def test_parse_max_damage_no_template_no_number(self):
         max_damage_content = "Unknown."
 

@@ -8,6 +8,9 @@
   `full_price` and other quantities. A comma not followed by exactly three digits still ends the number, and an ID list
   like `itemid = 629,630,631` or `mount_id = 421,437,438,747` still gives its first ID. A creature's max damage
   without a `{{Max Damage}}` template reads `1,300+` as 1300, and a range like `600-1000?` by its larger number.
+- Keep the first number of every ID field, like the client IDs, so `achievementid = 12,345` gives 12, not 12345. This
+  covers `house.house_id`, `achievement.achievement_id`, `world.world_board`, `world.trade_board`, `game_update.news_id`
+  and `item_key.number`. No current value changes.
 
 ## 9.0.0+tibiash.5
 

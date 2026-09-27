@@ -113,6 +113,7 @@ class TestUtils(unittest.TestCase):
     def test_parse_min_max(self):
         self.assertEqual(parse_min_max("5-20"), (5, 20))
         self.assertEqual(parse_min_max("50"), (0, 50))
+        self.assertEqual((0, 1000), parse_min_max("1,000"))
 
     def test_parse_sounds(self):
         sound_string = "{{Sound List|Sound 1|Sound 2|Sound 3}}"
@@ -126,6 +127,9 @@ class TestUtils(unittest.TestCase):
         kills, loot_statistics = parse_loot_statistics(content)
         self.assertEqual(36488, kills)
         self.assertEqual(34, len(loot_statistics))
+
+        kills, _ = parse_loot_statistics(content.replace("|kills=36488", "|kills=1,234"))
+        self.assertEqual(1234, kills)
 
         kills, loot_statistics = parse_loot_statistics("Something else")
         self.assertEqual(kills, 0)
