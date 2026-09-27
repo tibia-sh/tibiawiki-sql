@@ -425,23 +425,24 @@ that doesn't form a range.
 
 ### mount
 
-|    Column     |         Type          |                                                            Description                                                             |
-| ------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| article_id    | `INTEGER` / `PRIMARY` | The id of the article containing this mount.                                                                                       |
-| title         | `TEXT`                | The title of the article containing the mount.                                                                                     |
-| name          | `TEXT`                | The name of the mount.                                                                                                             |
-| speed         | `INTEGER`             | The speed given by the mount.                                                                                                      |
-| taming_method | `TEXT`                | A brief description on how the mount is obtained.                                                                                  |
-| is_buyable    | `BOOLEAN`             | Whether the mount can be bought from the store or not.                                                                             |
-| price         | `INTEGER`             | The price in Tibia coins to buy the mount.                                                                                         |
-| achievement   | `TEXT`                | The achievement obtained for obtaining this mount.                                                                                 |
-| light_color   | `INTEGER`             | The color of the light emitted by this mount, if any.                                                                              |
-| light_radius  | `INTEGER`             | The radius of the light emitted by this mount, if any.                                                                             |
-| client_id     | `INTEGER`             | The client ID (look type) of the mount, the first integer in the value after wiki comments are removed, `NULL` when there is none. |
-| version       | `TEXT`                | The client version where this mount was introduced to the game.                                                                    |
-| image         | `BLOB`                | The mount's image bytes.                                                                                                           |
-| status        | `TEXT`                | The status of the mount in game.                                                                                                   |
-| timestamp     | `TIMESTAMP`           | ISO 8601 timestamp of the article's last edit.                                                                                     |
+|     Column     |         Type          |                                                                            Description                                                                             |
+| -------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| article_id     | `INTEGER` / `PRIMARY` | The id of the article containing this mount.                                                                                                                       |
+| title          | `TEXT`                | The title of the article containing the mount.                                                                                                                     |
+| name           | `TEXT`                | The name of the mount.                                                                                                                                             |
+| speed          | `INTEGER`             | The speed given by the mount.                                                                                                                                      |
+| taming_method  | `TEXT`                | A brief description on how the mount is obtained.                                                                                                                  |
+| is_buyable     | `BOOLEAN`             | Whether the mount can be bought from the store or not.                                                                                                             |
+| price          | `INTEGER`             | The price to buy the mount, in `price_currency`.                                                                                                                   |
+| price_currency | `TEXT`                | The currency of the price: the article's `pricecurrency`, otherwise Tournament Coins for a tournament mount, otherwise Tibia Coins. `NULL` when there is no price. |
+| achievement    | `TEXT`                | The achievement obtained for obtaining this mount.                                                                                                                 |
+| light_color    | `INTEGER`             | The color of the light emitted by this mount, if any.                                                                                                              |
+| light_radius   | `INTEGER`             | The radius of the light emitted by this mount, if any.                                                                                                             |
+| client_id      | `INTEGER`             | The client ID (look type) of the mount, the first integer in the value after wiki comments are removed, `NULL` when there is none.                                 |
+| version        | `TEXT`                | The client version where this mount was introduced to the game.                                                                                                    |
+| image          | `BLOB`                | The mount's image bytes.                                                                                                                                           |
+| status         | `TEXT`                | The status of the mount in game.                                                                                                                                   |
+| timestamp      | `TIMESTAMP`           | ISO 8601 timestamp of the article's last edit.                                                                                                                     |
 
 
 

@@ -75,3 +75,54 @@ class TestMountParserMissingFields(unittest.TestCase):
 
         self.assertEqual("Buying it on Tibia.com or via the Store.", mount.taming_method)
         self.assertEqual("10.56", mount.version)
+
+
+class TestMountPriceCurrency(unittest.TestCase):
+    def _parse(self, title: str, content: str) -> Mount:
+        article = Article(
+            article_id=1,
+            title=title,
+            timestamp=datetime.datetime.fromisoformat("2026-08-06T21:35:46+00:00"),
+            content=content,
+        )
+
+        return MountParser.from_article(article)
+
+    def _edited(self, old: str, new: str) -> str:
+        content = load_resource("content_mount.txt")
+        self.assertIn(old, content)
+        return content.replace(old, new)
+
+    def test_price_currency_from_pricecurrency(self):
+        mount = self._parse("Landsailer", load_resource("content_mount_landsailer.txt"))
+
+        self.assertEqual(140, mount.price)
+        self.assertEqual("Event Points", mount.price_currency)
+
+    def test_price_currency_defaults_to_tibia_coins(self):
+        mount = self._parse("Doombringer", load_resource("content_mount.txt"))
+
+        self.assertEqual(780, mount.price)
+        self.assertEqual("Tibia Coins", mount.price_currency)
+
+    def test_price_currency_tournament_coins(self):
+        mount = self._parse("Doombringer", self._edited("| price         = 780\n",
+                                                        "| price         = 780\n| tournament    = yes\n"))
+
+        self.assertEqual(780, mount.price)
+        self.assertEqual("Tournament Coins", mount.price_currency)
+
+    def test_price_currency_none_without_price(self):
+        mount = self._parse("Doombringer", self._edited("| price         = 780\n",
+                                                        "| pricecurrency = Event Points\n"))
+
+        self.assertIsNone(mount.price)
+        self.assertIsNone(mount.price_currency)
+
+    def test_pricecurrency_wins_over_tournament(self):
+        mount = self._parse("Doombringer", self._edited(
+            "| price         = 780\n",
+            "| price         = 780\n| pricecurrency = Event Points\n| tournament    = yes\n",
+        ))
+
+        self.assertEqual("Event Points", mount.price_currency)

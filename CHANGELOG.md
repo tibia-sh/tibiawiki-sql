@@ -14,6 +14,9 @@
   is now kept.
 - Store `achievement.name` and `achievement.description` as `NULL` when an achievement's article has no such field,
   instead of dropping the achievement. `achievement.description` is now nullable. Achievement 563 is now kept.
+- Add the `mount.price_currency` column. It holds the article's `pricecurrency`, otherwise `Tournament Coins` for a
+  tournament mount, otherwise `Tibia Coins`, and `NULL` when the mount has no price. Landsailer's price of 140 is now
+  in `Event Points`, not Tibia Coins.
 
 ## 9.0.0+tibiash.4
 

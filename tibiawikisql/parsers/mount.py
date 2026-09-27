@@ -1,7 +1,8 @@
 # Changed by tibia.sh in 2026. See "About this copy" in README.md.
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import tibiawikisql.schema
+from tibiawikisql.api import Article
 from tibiawikisql.models.mount import Mount
 from tibiawikisql.parsers.base import AttributeParser
 from tibiawikisql.parsers import BaseParser
@@ -39,3 +40,18 @@ class MountParser(BaseParser):
         "version": AttributeParser.version(),
         "status": AttributeParser.status(),
     }
+
+    @classmethod
+    def parse_attributes(cls, article: Article) -> dict[str, Any]:
+        row = super().parse_attributes(article)
+        raw_attributes = row["_raw_attributes"]
+        row["price_currency"] = None
+        if row["price"] is not None:
+            currency = clean_links(raw_attributes.get("pricecurrency", ""))
+            if currency:
+                row["price_currency"] = currency
+            elif parse_boolean(raw_attributes.get("tournament", "")):
+                row["price_currency"] = "Tournament Coins"
+            else:
+                row["price_currency"] = "Tibia Coins"
+        return row

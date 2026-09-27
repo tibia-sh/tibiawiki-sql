@@ -703,6 +703,7 @@ class MountTable(Table):
     taming_method = Column(Text)
     is_buyable = Column(Boolean, default=False)
     price = Column(Integer)
+    price_currency = Column(Text)
     achievement = Column(Text)
     light_color = Column(Integer)
     light_radius = Column(Integer)
