@@ -1,0 +1,23 @@
+{{Infobox Mount
+| name           = Landsailer
+| image          = 
+| speed          = 10
+| achievement    = 
+| premium        = yes
+| colourisable   = yes
+| bought         = no
+| price          = 140
+| pricecurrency  = Event Points
+| event          = The Great Expedition
+| implementation = 15.32
+| notes          = Obtained during the reward phase of The Great Expedition world quest for 140 Event Points.
+}}
+
+The '''Landsailer''' is a mount that can be obtained as a reward from [[The Great Expedition]] world quest.
+
+== Obtaining ==
+Players can purchase this mount from [[Proprietor Piers]] south of [[Fibula]] during the reward phase (August 12–18) for '''140 Event Points''', provided their server successfully completed the preparation phase.
+
+== See Also ==
+* [[Mounts]]
+* [[The Great Expedition]]

@@ -1,6 +1,14 @@
 <!-- Changed by tibia.sh in 2026. See "About this copy" in README.md. -->
 # Changelog
 
+## Unreleased
+
+- Store `version` as `NULL` in `game_update`, `house`, `outfit` and `mount` when an article has no `implemented`
+  field, instead of dropping the article. A misspelled field like `implementation` is not read, as the wiki does not
+  show it.
+- Store `mount.taming_method` as `NULL` when a mount's article has no `taming_method` field, instead of dropping the
+  mount. Landsailer is now kept.
+
 ## 9.0.0+tibiash.3
 
 - Drop everything after an unclosed `<!--` in `creature.race_id`, `outfit.male_client_id`, `outfit.female_client_id`
