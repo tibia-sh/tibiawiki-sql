@@ -48,3 +48,30 @@ class TestMountParserClientId(unittest.TestCase):
         mount = self._parse(self._edited("| mount_id\t= 644", "| mount_id\t= <!-- objectID: 51952-->"))
 
         self.assertIsNone(mount.client_id)
+
+
+class TestMountParserMissingFields(unittest.TestCase):
+    def _parse(self, title: str, resource: str) -> Mount:
+        article = Article(
+            article_id=1,
+            title=title,
+            timestamp=datetime.datetime.fromisoformat("2026-08-06T21:35:46+00:00"),
+            content=load_resource(resource),
+        )
+
+        return MountParser.from_article(article)
+
+    def test_mount_without_taming_method_or_version(self):
+        mount = self._parse("Landsailer", "content_mount_landsailer.txt")
+
+        self.assertIsNone(mount.taming_method)
+        self.assertIsNone(mount.version)
+        self.assertEqual(10, mount.speed)
+        self.assertEqual(140, mount.price)
+        self.assertIsNone(mount.client_id)
+
+    def test_mount_with_taming_method_and_version(self):
+        mount = self._parse("Doombringer", "content_mount.txt")
+
+        self.assertEqual("Buying it on Tibia.com or via the Store.", mount.taming_method)
+        self.assertEqual("10.56", mount.version)

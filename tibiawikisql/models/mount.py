@@ -12,7 +12,7 @@ class Mount(WikiEntry, WithStatus, WithVersion, WithImage, RowModel, table=Mount
     """The name of the mount."""
     speed: int
     """The speed given by the mount."""
-    taming_method: str
+    taming_method: str | None = None
     """A brief description on how the mount is obtained."""
     is_buyable: bool
     """Whether the mount can be bought from the store or not."""

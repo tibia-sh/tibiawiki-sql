@@ -29,7 +29,7 @@ class MountParser(BaseParser):
     attribute_map: ClassVar = {
         "name": AttributeParser.required("name", remove_mount),
         "speed": AttributeParser.required("speed", int),
-        "taming_method": AttributeParser.required("taming_method", clean_links),
+        "taming_method": AttributeParser.optional("taming_method", clean_links),
         "is_buyable": AttributeParser.optional("bought", parse_boolean, False),
         "price": AttributeParser.optional("price", parse_integer),
         "achievement": AttributeParser.optional("achievement"),
