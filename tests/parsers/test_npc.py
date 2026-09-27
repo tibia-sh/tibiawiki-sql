@@ -417,3 +417,27 @@ class TestNpcParser(unittest.TestCase):
             [("Carlin", 110, "Thais"), ("Venore", 170, None)],
             [(d.name, d.price, d.origin) for d in npc.destinations],
         )
+
+    def test_npc_without_city_shuttle(self):
+        npc = self._parse_inline_npc(
+            "",
+            "{{TransportList|discount=no\n"
+            " |{{TransportCell|Monument Tower|50}}\n"
+            " |{{TransportCell|Sunken Quarter|0}}\n"
+            "}}",
+            "| geolabel     = Monument Tower\n"
+            "| posx         = 126.100\n"
+            "| posy         = 125.50\n"
+            "| posz         = 7\n"
+            "| geolabel2    = Sunken Quarter\n"
+            "| posx2        = 127.10\n"
+            "| posy2        = 128.20\n"
+            "| posz2        = 7\n",
+        )
+
+        self.assertIsNone(npc.city)
+        self.assertEqual(2, len(npc.locations))
+        self.assertEqual(
+            [("Monument Tower", 50, "Sunken Quarter"), ("Sunken Quarter", 0, "Monument Tower")],
+            [(d.name, d.price, d.origin) for d in npc.destinations],
+        )
