@@ -3,8 +3,9 @@ name: Release PR
 # Keeps one release pull request, chore: release <version>, open from release/next while CHANGELOG.md has entries
 # under ## Unreleased. scripts/release_pr.py renames that section to the next +tibiash.N version and sets __version__
 # to it. The tibia-sh App pushes the branch and opens the pull request, so the pull request's CI runs, which it would
-# not for one opened with GITHUB_TOKEN. Nothing merges it by itself: drptbl's merge is the release. The tag job of that
-# merge's run tags v<version> on the merge commit, and the tag starts release.yml.
+# not for one opened with GITHUB_TOKEN, and turns on its auto-merge, so it merges itself once its required checks pass.
+# drptbl can still merge it by hand. The tag job of that merge's run tags v<version> on the merge commit, provided the
+# merge is exactly the release main before it proposes, and the tag starts release.yml.
 on:
   push:
     branches:
@@ -132,9 +133,10 @@ jobs:
           permission-contents: write
           permission-pull-requests: write
       # Force-pushes release/next, which replaces the previous proposal, then opens the pull request or updates the open
-      # one. The token reaches git through a credential helper that reads it from the environment, so it is never
-      # written to .git/config and never appears on a command line. Auto-merge stays off.
+      # one, and hands its number on. The token reaches git through a credential helper that reads it from the
+      # environment, so it is never written to .git/config and never appears on a command line.
       - name: Push release/next and open or update its pull request
+        id: push
         if: ${{ steps.propose.outputs.version != '' }}
         env:
           GH_TOKEN: ${{ steps.push_token.outputs.token }}
@@ -150,16 +152,41 @@ jobs:
           if [[ -n $PR ]]; then
             timeout --kill-after=10 120 gh api --method PATCH "repos/{owner}/{repo}/pulls/$PR" --silent \
               -f title="$title" -F body=@"$RUNNER_TEMP/body.md"
+            number="$PR"
           else
-            timeout --kill-after=10 120 gh api "repos/{owner}/{repo}/pulls" --silent \
-              -f head=release/next -f base=main -f title="$title" -F body=@"$RUNNER_TEMP/body.md"
+            number="$(timeout --kill-after=10 120 gh api "repos/{owner}/{repo}/pulls" --jq .number \
+              -f head=release/next -f base=main -f title="$title" -F body=@"$RUNNER_TEMP/body.md")"
+          fi
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+      # GitHub merges the release pull request once its required checks pass, with a merge commit, the one merge method
+      # this repository allows, and records the App, which turned auto-merge on, as the merger. A step output is data,
+      # so only a number whose text is digits alone reaches gh. Auto-merge is turned on only when it is off, which it
+      # is for a new pull request, or when GitHub turned it off.
+      - name: Turn on auto-merge for the release pull request
+        if: ${{ steps.propose.outputs.version != '' }}
+        env:
+          GH_TOKEN: ${{ steps.push_token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ steps.push.outputs.number }}
+        run: |
+          if [[ ! $PR =~ ^[0-9]+$ ]]; then
+            echo "::error::The release pull request has no plain number, so its auto-merge was not turned on."
+            exit 1
+          fi
+          auto_merge="$(timeout --kill-after=10 120 gh api "repos/{owner}/{repo}/pulls/$PR" --jq .auto_merge)"
+          if [[ -z $auto_merge ]]; then
+            timeout --kill-after=10 120 gh pr merge "$PR" --auto --merge
+          else
+            echo "Auto-merge is already on for pull request $PR."
           fi
 
-  # Tags the release that drptbl's merge of the release pull request made. The list of a commit's pull requests has no
+  # Tags the release that the merge of the release pull request made. The list of a commit's pull requests has no
   # merged_by, so the job reads, with github.token, the pull request whose merge commit is the pushed commit on its
-  # own, and scripts/release_pr.py decides from it. Only the App's release/next pull request, merged by drptbl, tags
-  # v<version> at the merge commit. The same isolation as the propose job, and the App's token, which the release tags
-  # ruleset lets create v* tags, is minted only to create the tag. The tag's push starts release.yml.
+  # own, and scripts/release_pr.py decides from it. Only the App's release/next pull request, merged by the App's
+  # auto-merge or by drptbl, tags v<version> at the merge commit, and only when the merge is exactly the release that
+  # main before it proposes: generator code comes through ordinary pull requests, never the release one. The
+  # same isolation as the propose job, and the App's token, which the release tags ruleset lets create v* tags, is
+  # minted only to create the tag. The tag's push starts release.yml.
   tag:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -191,27 +218,41 @@ jobs:
             echo "::error::More than one merged pull request has $GITHUB_SHA as its merge commit."
             exit 1
           fi
-      # fail turns the run red: the version is not x.y.z+tibiash.N, its tag points at another commit, or it has no
-      # tag and no merged pull request was found, as for a release merge GitHub did not list yet.
+      # The checkout has the whole history, so the pushed commit's first parent, main before the push, is there. The
+      # decision runs that parent's scripts/release_pr.py from a worktree of the parent, so a release pull request
+      # cannot rewrite the rules that tag it. The script recomputes the release from the parent's CHANGELOG.md and
+      # tibiawikisql/__init__.py, as propose writes it, and fail turns the run red with its reason: the merge is not
+      # exactly that release, or the version has no tag and no merged pull request was found, as for a release merge
+      # GitHub did not list yet.
+      #
+      # The parent's script is 04c7dc6, from before the recompute, only for the merge that brings the recompute in.
+      # That copy cannot decide with these arguments, and that merge is no release, so it tags nothing.
       - name: Decide
         id: decide
         env:
           APP_LOGIN: ${{ vars.TIBIA_SH_APP_SLUG }}[bot]
         run: |
+          if [[ "$(git rev-parse HEAD^1:scripts/release_pr.py)" == 04c7dc69f1b60e51b1cfdd005733da900eae529a ]]; then
+            echo "main's scripts/release_pr.py before this push predates the recompute, so nothing is tagged."
+            exit 0
+          fi
           tags="$RUNNER_TEMP/tags.txt"
+          changed="$RUNNER_TEMP/changed.txt"
+          main="$RUNNER_TEMP/main"
           git show-ref --tags --dereference > "$tags"
-          result="$(python3 -I scripts/release_pr.py tag-decision --tags "$tags" --pr "$RUNNER_TEMP/pr.json" \
-            --head "$GITHUB_SHA" --app-login "$APP_LOGIN")"
+          git diff --name-only HEAD^1 HEAD > "$changed"
+          git worktree add --quiet --detach "$main" HEAD^1
+          result="$(python3 -I "$main/scripts/release_pr.py" tag-decision --tags "$tags" --pr "$RUNNER_TEMP/pr.json" \
+            --head "$GITHUB_SHA" --app-login "$APP_LOGIN" --changed-files "$changed" --base "$main")"
           decision="$(sed -n 's/^decision=//p' <<< "$result")"
           version="$(sed -n 's/^version=//p' <<< "$result")"
+          reason="$(sed -n 's/^reason=//p' <<< "$result")"
           case $decision in
             tag) echo "Tagging v$version at $GITHUB_SHA." ;;
             noop) echo "v$version already points at $GITHUB_SHA." ;;
-            skip) echo "$GITHUB_SHA is not drptbl's merge of the App's release pull request, so nothing is tagged." ;;
+            skip) echo "$GITHUB_SHA is not a release merge by the App or drptbl, so nothing is tagged." ;;
             fail)
-              echo "::error::v$version cannot be tagged at $GITHUB_SHA. The version is not x.y.z+tibiash.N," \
-                "its tag points at another commit, or it has no tag and no merged pull request was found." \
-                "For a release merge, re-run this run once the pull request shows as merged."
+              echo "::error::v$version cannot be tagged at $GITHUB_SHA: $reason"
               exit 1
               ;;
             *)
