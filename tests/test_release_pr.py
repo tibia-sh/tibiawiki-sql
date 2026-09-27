@@ -12,6 +12,7 @@ from scripts.release_pr import (
     NO_ENTRIES_EXIT,
     RELEASE_APPROVER,
     RELEASE_BRANCH,
+    RELEASE_FILES,
     decide_tag,
     main,
     next_version,
@@ -25,6 +26,7 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 APP = "tibia-sh-bot[bot]"
 HEAD = "a" * 40
 OLD = "b" * 40
+CHANGED = ["CHANGELOG.md", "tibiawikisql/__init__.py"]
 CHANGELOG = """<!-- Changed by tibia.sh in 2026. See "About this copy" in README.md. -->
 # Changelog
 
@@ -171,18 +173,62 @@ class TestDecideTag(unittest.TestCase):
     VERSION = "9.0.0+tibiash.3"
     TAGS: ClassVar[dict[str, str]] = {"v9.0.0+tibiash.2": OLD}
 
-    def decide(self, pr: dict | None, tags: dict[str, str] | None = None, version: str = VERSION) -> str:
-        return decide_tag(version, self.TAGS if tags is None else tags, HEAD, pr, APP)
+    def decide(self, pr: dict | None, tags: dict[str, str] | None = None, version: str = VERSION,
+               changed_files: list[str] = CHANGED) -> str:
+        return self.decide_with_reason(pr, tags, version, changed_files)[0]
 
-    def test_tags_the_approved_release_merge(self):
-        self.assertEqual("tag", self.decide(merged_pr()))
+    def decide_with_reason(self, pr: dict | None, tags: dict[str, str] | None = None, version: str = VERSION,
+                           changed_files: list[str] = CHANGED) -> tuple[str, str]:
+        return decide_tag(version, self.TAGS if tags is None else tags, HEAD, pr, APP, changed_files=changed_files)
+
+    def test_tags_the_release_merge_by_the_approver(self):
+        self.assertEqual(("tag", ""), self.decide_with_reason(merged_pr()))
+
+    def test_tags_the_auto_merge_by_the_app(self):
+        self.assertEqual(("tag", ""), self.decide_with_reason(merged_pr(merged_by={"login": APP, "type": "Bot"})))
+
+    def test_release_files_are_what_propose_writes(self):
+        self.assertEqual(frozenset(CHANGED), RELEASE_FILES)
+
+    def test_tags_a_release_merge_of_only_the_release_files(self):
+        for changed in [CHANGED, list(reversed(CHANGED))]:
+            with self.subTest(changed=changed):
+                self.assertEqual("tag", self.decide(merged_pr(), changed_files=changed))
+
+    def test_fails_a_release_merge_that_changes_another_file(self):
+        decision, reason = self.decide_with_reason(merged_pr(), changed_files=[*CHANGED, "tibiawikisql/api.py"])
+        self.assertEqual("fail", decision)
+        self.assertIn("tibiawikisql/api.py", reason)
+        self.assertNotIn("CHANGELOG.md,", reason)
+
+    def test_names_every_extra_file_in_order(self):
+        changed = ["setup.py", "CHANGELOG.md", ".github/workflows/ci.yml"]
+        decision, reason = self.decide_with_reason(merged_pr(), changed_files=changed)
+        self.assertEqual("fail", decision)
+        self.assertIn(".github/workflows/ci.yml, setup.py", reason)
+
+    def test_fails_a_release_merge_that_changes_no_files(self):
+        decision, reason = self.decide_with_reason(merged_pr(), changed_files=[])
+        self.assertEqual("fail", decision)
+        self.assertIn("changes no files", reason)
+
+    def test_fails_an_extra_file_even_when_already_tagged(self):
+        tags = {**self.TAGS, "v9.0.0+tibiash.3": HEAD}
+        self.assertEqual("fail", self.decide(merged_pr(), tags, changed_files=[*CHANGED, "setup.py"]))
+
+    def test_skips_an_ordinary_merge_whatever_it_changes(self):
+        ordinary = merged_pr(head={"ref": "fix/parser", "sha": "c" * 40}, user={"login": "someone", "type": "User"})
+        tags = {"v9.0.0+tibiash.3": OLD}
+        self.assertEqual("skip", self.decide(ordinary, tags, changed_files=["tibiawikisql/api.py"]))
 
     def test_skips_an_ordinary_push_after_a_tagged_release(self):
         self.assertEqual("skip", self.decide(None, {"v9.0.0+tibiash.3": OLD}))
 
     def test_fails_an_untagged_version_with_no_merged_pr(self):
         # A release merge that commits/{sha}/pulls did not list yet, or a direct push of an untagged version.
-        self.assertEqual("fail", self.decide(None))
+        decision, reason = self.decide_with_reason(None)
+        self.assertEqual("fail", decision)
+        self.assertIn("no merged pull request", reason)
 
     def test_fails_an_untagged_version_with_no_merged_pr_and_no_tags(self):
         self.assertEqual("fail", self.decide(None, {}))
@@ -194,14 +240,22 @@ class TestDecideTag(unittest.TestCase):
     def test_skips_an_upstream_version(self):
         self.assertEqual("skip", self.decide(None, version="9.1.0"))
 
-    def test_skips_a_merge_by_the_app(self):
-        self.assertEqual("skip", self.decide(merged_pr(merged_by={"login": APP, "type": "Bot"})))
+    def test_skips_a_merge_by_another_bot(self):
+        for login in ["dependabot[bot]", "github-actions[bot]", "other-app[bot]"]:
+            with self.subTest(login=login):
+                self.assertEqual("skip", self.decide(merged_pr(merged_by={"login": login, "type": "Bot"})))
 
     def test_skips_a_merge_by_another_user(self):
         self.assertEqual("skip", self.decide(merged_pr(merged_by={"login": "someone", "type": "User"})))
 
+    def test_skips_a_user_with_the_app_login(self):
+        self.assertEqual("skip", self.decide(merged_pr(merged_by={"login": APP, "type": "User"})))
+
     def test_skips_a_merge_by_a_bot_named_like_the_approver(self):
         self.assertEqual("skip", self.decide(merged_pr(merged_by={"login": RELEASE_APPROVER, "type": "Bot"})))
+
+    def test_skips_a_merger_without_a_type(self):
+        self.assertEqual("skip", self.decide(merged_pr(merged_by={"login": APP})))
 
     def test_skips_the_commit_pulls_list_entry_without_merged_by(self):
         entry = merged_pr()
@@ -227,7 +281,9 @@ class TestDecideTag(unittest.TestCase):
         self.assertEqual("noop", self.decide(merged_pr(), {**self.TAGS, "v9.0.0+tibiash.3": HEAD}))
 
     def test_fails_when_the_tag_is_elsewhere(self):
-        self.assertEqual("fail", self.decide(merged_pr(), {**self.TAGS, "v9.0.0+tibiash.3": OLD}))
+        decision, reason = self.decide_with_reason(merged_pr(), {**self.TAGS, "v9.0.0+tibiash.3": OLD})
+        self.assertEqual("fail", decision)
+        self.assertIn(OLD, reason)
 
     def test_fails_on_a_version_outside_the_generator_pattern(self):
         for version in ["9.1.0", "9.0.0+tibiash.3\n", "9.0.0+tibiash.x"]:
@@ -297,34 +353,55 @@ class TestProposeCli(CliTestCase):
 
 
 class TestTagDecisionCli(CliTestCase):
-    def tag_decision(self, pr: object) -> tuple[int, str]:
+    def tag_decision(self, pr: object, changed: str = "CHANGELOG.md\ntibiawikisql/__init__.py\n") -> tuple[int, str]:
         self.write("pr.json", json.dumps(pr))
+        self.write("changed.txt", changed)
         self.write("tibiawikisql/__init__.py", INIT.replace("9.0.0+tibiash.2", "9.0.0+tibiash.3"))
         return self.run_main("tag-decision", "--tags", "tags.txt", "--pr", "pr.json", "--head", HEAD,
-                             "--app-login", APP)
+                             "--app-login", APP, "--changed-files", "changed.txt")
 
-    def test_prints_the_decision_and_the_version(self):
-        self.assertEqual((0, "decision=tag\nversion=9.0.0+tibiash.3\n"), self.tag_decision(merged_pr()))
+    def test_prints_the_decision_the_version_and_the_reason(self):
+        self.assertEqual((0, "decision=tag\nversion=9.0.0+tibiash.3\nreason=\n"), self.tag_decision(merged_pr()))
+
+    def test_extra_file_fails_with_its_name(self):
+        code, out = self.tag_decision(merged_pr(), "CHANGELOG.md\nsetup.py\ntibiawikisql/__init__.py\n")
+        self.assertEqual(0, code)
+        self.assertRegex(out, r"\Adecision=fail\nversion=9\.0\.0\+tibiash\.3\nreason=[^\n]*setup\.py[^\n]*\n\Z")
+
+    def test_empty_changed_files_fails(self):
+        code, out = self.tag_decision(merged_pr(), "")
+        self.assertEqual(0, code)
+        self.assertRegex(out, r"\Adecision=fail\nversion=9\.0\.0\+tibiash\.3\nreason=[^\n]*no files[^\n]*\n\Z")
 
     def test_null_pr_with_an_untagged_version_fails(self):
-        self.assertEqual((0, "decision=fail\nversion=9.0.0+tibiash.3\n"), self.tag_decision(None))
+        code, out = self.tag_decision(None)
+        self.assertEqual(0, code)
+        self.assertRegex(out, r"\Adecision=fail\nversion=9\.0\.0\+tibiash\.3\nreason=[^\n]+\n\Z")
 
     def test_null_pr_with_a_tagged_version_skips(self):
         self.write("tags.txt", f"{OLD} refs/tags/v9.0.0+tibiash.3\n")
-        self.assertEqual((0, "decision=skip\nversion=9.0.0+tibiash.3\n"), self.tag_decision(None))
+        self.assertEqual((0, "decision=skip\nversion=9.0.0+tibiash.3\nreason=\n"), self.tag_decision(None))
 
     def test_head_must_be_a_full_sha(self):
         self.write("pr.json", "null")
+        self.write("changed.txt", "")
         with self.assertRaises(SystemExit):
             self.run_main("tag-decision", "--tags", "tags.txt", "--pr", "pr.json", "--head", "abc1234",
-                          "--app-login", APP)
+                          "--app-login", APP, "--changed-files", "changed.txt")
 
     def test_app_login_must_be_a_bot_login(self):
         self.write("pr.json", "null")
+        self.write("changed.txt", "")
         for login in ["[bot]", "tibia-sh-bot", "drptbl"]:
             with self.subTest(login=login), self.assertRaises(SystemExit):
                 self.run_main("tag-decision", "--tags", "tags.txt", "--pr", "pr.json", "--head", HEAD,
-                              "--app-login", login)
+                              "--app-login", login, "--changed-files", "changed.txt")
+
+    def test_changed_files_are_required(self):
+        self.write("pr.json", "null")
+        with self.assertRaises(SystemExit):
+            self.run_main("tag-decision", "--tags", "tags.txt", "--pr", "pr.json", "--head", HEAD,
+                          "--app-login", APP)
 
     def test_pr_must_be_an_object_or_null(self):
         with self.assertRaises(SystemExit):
@@ -505,6 +582,7 @@ concurrency:
 """)
         self.assert_in_job("propose", """\
       - name: Push release/next and open or update its pull request
+        id: push
         if: ${{ steps.propose.outputs.version != '' }}
         env:
           GH_TOKEN: ${{ steps.push_token.outputs.token }}
@@ -520,19 +598,43 @@ concurrency:
           if [[ -n $PR ]]; then
             timeout --kill-after=10 120 gh api --method PATCH "repos/{owner}/{repo}/pulls/$PR" --silent \\
               -f title="$title" -F body=@"$RUNNER_TEMP/body.md"
+            number="$PR"
           else
-            timeout --kill-after=10 120 gh api "repos/{owner}/{repo}/pulls" --silent \\
-              -f head=release/next -f base=main -f title="$title" -F body=@"$RUNNER_TEMP/body.md"
+            number="$(timeout --kill-after=10 120 gh api "repos/{owner}/{repo}/pulls" --jq .number \\
+              -f head=release/next -f base=main -f title="$title" -F body=@"$RUNNER_TEMP/body.md")"
+          fi
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+""")
+
+    def test_arms_auto_merge_with_the_app_token_when_it_is_off(self):
+        self.assert_in_job("propose", """\
+      - name: Turn on auto-merge for the release pull request
+        if: ${{ steps.propose.outputs.version != '' }}
+        env:
+          GH_TOKEN: ${{ steps.push_token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ steps.push.outputs.number }}
+        run: |
+          if [[ ! $PR =~ ^[0-9]+$ ]]; then
+            echo "::error::The release pull request has no plain number, so its auto-merge was not turned on."
+            exit 1
+          fi
+          auto_merge="$(timeout --kill-after=10 120 gh api "repos/{owner}/{repo}/pulls/$PR" --jq .auto_merge)"
+          if [[ -z $auto_merge ]]; then
+            timeout --kill-after=10 120 gh pr merge "$PR" --auto --merge
+          else
+            echo "Auto-merge is already on for pull request $PR."
           fi
 """)
+        propose = job(self.WORKFLOW, "propose")
+        self.assertLess(propose.index("- name: Push release/next"), propose.index("- name: Turn on auto-merge"))
+        self.assertEqual(1, self.text().count("gh pr merge"))
 
     def test_app_tokens_reach_only_the_writing_steps(self):
         text = self.text()
-        self.assertEqual(
-            sorted(re.findall(r"GH_TOKEN: \$\{\{ steps\.(\w+)\.outputs\.token \}\}", text)),
-            sorted(re.findall(r"- id: (\w+_token)\n", text)),
-        )
-        self.assertNotIn("merge --auto", text)
+        used = re.findall(r"GH_TOKEN: \$\{\{ steps\.(\w+)\.outputs\.token \}\}", text)
+        self.assertEqual(["close_token", "push_token", "push_token", "tag_token"], sorted(used))
+        self.assertEqual(["close_token", "push_token", "tag_token"], sorted(re.findall(r"- id: (\w+_token)\n", text)))
 
     def test_tag_job_runs_in_the_release_environment(self):
         self.assert_in_job("tag", """\
@@ -573,19 +675,20 @@ concurrency:
           APP_LOGIN: ${{ vars.TIBIA_SH_APP_SLUG }}[bot]
         run: |
           tags="$RUNNER_TEMP/tags.txt"
+          changed="$RUNNER_TEMP/changed.txt"
           git show-ref --tags --dereference > "$tags"
+          git diff --name-only HEAD^1 HEAD > "$changed"
           result="$(python3 -I scripts/release_pr.py tag-decision --tags "$tags" --pr "$RUNNER_TEMP/pr.json" \\
-            --head "$GITHUB_SHA" --app-login "$APP_LOGIN")"
+            --head "$GITHUB_SHA" --app-login "$APP_LOGIN" --changed-files "$changed")"
           decision="$(sed -n 's/^decision=//p' <<< "$result")"
           version="$(sed -n 's/^version=//p' <<< "$result")"
+          reason="$(sed -n 's/^reason=//p' <<< "$result")"
           case $decision in
             tag) echo "Tagging v$version at $GITHUB_SHA." ;;
             noop) echo "v$version already points at $GITHUB_SHA." ;;
-            skip) echo "$GITHUB_SHA is not drptbl's merge of the App's release pull request, so nothing is tagged." ;;
+            skip) echo "$GITHUB_SHA is not a release merge by the App or drptbl, so nothing is tagged." ;;
             fail)
-              echo "::error::v$version cannot be tagged at $GITHUB_SHA. The version is not x.y.z+tibiash.N," \\
-                "its tag points at another commit, or it has no tag and no merged pull request was found." \\
-                "For a release merge, re-run this run once the pull request shows as merged."
+              echo "::error::v$version cannot be tagged at $GITHUB_SHA: $reason"
               exit 1
               ;;
             *)
