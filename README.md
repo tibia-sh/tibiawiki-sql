@@ -20,6 +20,8 @@ The copy adds this data to the database:
   comment.
 * The `mount.price_currency` column. It holds the currency of a mount's price, like `Tibia Coins` or `Event Points`,
   `NULL` when the mount has no price.
+* The `item.value_buy_currency` column. It holds the currency of an item's NPC price, like `Gold Coin` or `Theons`,
+  `NULL` when NPCs do not sell the item.
 
 The [database schema](docs/schema.md) describes each of them.
 

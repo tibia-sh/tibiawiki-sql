@@ -154,3 +154,74 @@ class TestItemParserNumbers(unittest.TestCase):
         item = self._parse("Amethyst Necklace", "content_item_amethyst_necklace.txt")
 
         self.assertEqual(4000, item.value_buy)
+
+
+class TestItemParserBuyCurrency(unittest.TestCase):
+    def _parse_content(self, title: str, content: str):
+        article = Article(
+            article_id=1,
+            title=title,
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=content,
+        )
+
+        return ItemParser.from_article(article)
+
+    def _parse(self, title: str, resource: str):
+        return self._parse_content(title, load_resource(resource))
+
+    def test_item_value_buy_currency_from_pricecurrency(self):
+        item = self._parse("25 Years Backpack", "content_item_25_years_backpack.txt")
+
+        self.assertEqual(7197, item.value_buy)
+        self.assertEqual("Theons", item.value_buy_currency)
+
+    def test_item_value_buy_currency_link_target(self):
+        item = self._parse("Amethyst Necklace", "content_item_amethyst_necklace.txt")
+
+        self.assertEqual(4000, item.value_buy)
+        self.assertEqual("Trust Point", item.value_buy_currency)
+
+    def test_item_value_buy_currency_defaults_to_gold(self):
+        item = self._parse("Health Potion", "content_item_potion_health_potion.txt")
+
+        self.assertEqual(50, item.value_buy)
+        self.assertEqual("Gold Coin", item.value_buy_currency)
+
+    def test_item_value_buy_currency_link_in_npcprice(self):
+        item = self._parse("Blade of Mayhem", "content_item_blade_of_mayhem.txt")
+
+        self.assertEqual(50, item.value_buy)
+        self.assertEqual("Gold Token", item.value_buy_currency)
+
+    def test_item_value_buy_currency_text_in_npcprice(self):
+        item = self._parse("Frozen Crapace", "content_item_frozen_crapace.txt")
+
+        self.assertEqual(250, item.value_buy)
+        self.assertEqual("Christmas Token", item.value_buy_currency)
+
+    def test_item_value_buy_currency_gold_after_range(self):
+        content = load_resource("content_item_potion_health_potion.txt")
+        self.assertIn("| npcprice      = 50\n", content)
+        item = self._parse_content("Health Potion", content.replace("| npcprice      = 50\n", "| npcprice      = 50 - 60\n"))
+
+        self.assertEqual(50, item.value_buy)
+        self.assertEqual("Gold Coin", item.value_buy_currency)
+
+    def test_item_value_buy_currency_none_for_zero_range(self):
+        item = self._parse("Adventurer's Stone", "content_item_adventurers_stone.txt")
+
+        self.assertEqual(0, item.value_buy)
+        self.assertIsNone(item.value_buy_currency)
+
+    def test_item_value_buy_currency_none_when_not_sold(self):
+        item = self._parse("Fire Sword", "content_item.txt")
+
+        self.assertEqual(0, item.value_buy)
+        self.assertIsNone(item.value_buy_currency)
+
+    def test_item_value_buy_currency_none_without_npcprice(self):
+        item = self._parse("Shallow Water", "content_item_shallow_water.txt")
+
+        self.assertIsNone(item.value_buy)
+        self.assertIsNone(item.value_buy_currency)

@@ -1,0 +1,32 @@
+{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name          = 25 Years Backpack
+| article       = a
+| actualname    = 25 years backpack
+| itemid        = 39693
+| objectclass   = Other Items
+| primarytype   = Containers
+| slot          = Container
+| secondarytype = Party Items
+| tertiarytype  = Backpacks
+| flavortext    = It could be bought for Theons after the festivities of Tibia's 25th anniversary.
+| implemented   = 12.87.12038
+| volume        = 25
+| immobile      = no
+| walkable      = yes
+| pickupable    = yes
+| usable        = yes
+| imbueslots    = 1
+| weight        = 17.00
+| marketable    = yes
+| droppedby     = {{Dropped By|}}
+| value         = Negotiable
+| npcvalue      = 0
+| npcprice      = 7197
+| pricecurrency = [[Theons]]
+| buyfrom       = --
+| sellto        = --
+| notes         = See [[Backpacks]] for general information regarding backpacks.
+
+One can be obtained by characters who received at least 7,197 [[Theons]] during [[Tibia's 25th Anniversary]] and open their open {{ilink|Big Reward Box}} [[Big Reward Box]].
+| history       = This backpack originally cost 75,000 [[Theons]] but due to a bug with NPC [[Theodora]] CipSoft decided to {{OfficialNewsArchive|6764|reduce its price}} to 7,197 [[Theons]].
+}}

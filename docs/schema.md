@@ -318,32 +318,33 @@ The generated database has the following tables.
 
 ### item
 
-|     Column     |         Type          |                             Description                             |
-| -------------- | --------------------- | ------------------------------------------------------------------- |
-| article_id     | `INTEGER` / `PRIMARY` | The id of the article containing this item.                         |
-| title          | `TEXT`                | The title of the article containing this item.                      |
-| name           | `TEXT`                | The actual name of the item in-game.                                |
-| actual_name    | `TEXT`                | The name of the item as it appears in game when looked at.          |
-| plural         | `TEXT`                | The plural of the item's name.                                      |
-| article        | `TEXT`                | The article that goes before the name when looking at the item.     |
-| is_marketable  | `BOOLEAN`             | Whether this item can be traded in the market or not.               |
-| is_stackable   | `BOOLEAN`             | Whether this item is stackable or not.                              |
-| is_pickupable  | `BOOLEAN`             | Whether this item can be picked up or not.                          |
-| is_immobile    | `BOOLEAN`             | Whether the item can be moved around the map or not.                |
-| value_sell     | `INTEGER`             | The maximum value of this item when sold to NPCs                    |
-| value_buy      | `INTEGER`             | The maximum price of this item when bought from NPCs.               |
-| weight         | `REAL`                | The weight of this item in ounces.                                  |
-| item_class     | `TEXT`                | The class this item belongs to (e.g. `Body Equipment` , `Weapons`). |
-| item_type      | `TEXT`                | The category this item belongs to (e.g. `Helmets`, `Club Weapons`). |
-| type_secondary | `TEXT`                | A secondary type this item belongs to, if any.                      |
-| flavor_text    | `TEXT`                | The extra text that is displayed when some items are looked at.     |
-| light_color    | `INTEGER`             | The color of the light emitted by this item, if any.                |
-| light_radius   | `INTEGER`             | The radius of the light emitted by this item, if any.               |
-| version        | `TEXT`                | The client version this item was introduced to the game.            |
-| client_id      | `INTEGER`             | The client id of the item.                                          |
-| image          | `BLOB`                | The item’s image bytes.                                             |
-| status         | `TEXT`                | The status of the item in game.                                     |
-| timestamp      | `TIMESTAMP`           | ISO 8601 timestamp of the article's last edit.                      |
+|       Column       |         Type          |                                                                                                                                   Description                                                                                                                                   |
+| ------------------ | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| article_id         | `INTEGER` / `PRIMARY` | The id of the article containing this item.                                                                                                                                                                                                                                     |
+| title              | `TEXT`                | The title of the article containing this item.                                                                                                                                                                                                                                  |
+| name               | `TEXT`                | The actual name of the item in-game.                                                                                                                                                                                                                                            |
+| actual_name        | `TEXT`                | The name of the item as it appears in game when looked at.                                                                                                                                                                                                                      |
+| plural             | `TEXT`                | The plural of the item's name.                                                                                                                                                                                                                                                  |
+| article            | `TEXT`                | The article that goes before the name when looking at the item.                                                                                                                                                                                                                 |
+| is_marketable      | `BOOLEAN`             | Whether this item can be traded in the market or not.                                                                                                                                                                                                                           |
+| is_stackable       | `BOOLEAN`             | Whether this item is stackable or not.                                                                                                                                                                                                                                          |
+| is_pickupable      | `BOOLEAN`             | Whether this item can be picked up or not.                                                                                                                                                                                                                                      |
+| is_immobile        | `BOOLEAN`             | Whether the item can be moved around the map or not.                                                                                                                                                                                                                            |
+| value_sell         | `INTEGER`             | The maximum value of this item when sold to NPCs                                                                                                                                                                                                                                |
+| value_buy          | `INTEGER`             | The maximum price of this item when bought from NPCs, in `value_buy_currency`.                                                                                                                                                                                                  |
+| value_buy_currency | `TEXT`                | The currency of `value_buy`: the article's `pricecurrency`, otherwise a currency written after the price in `npcprice`, otherwise Gold Coin. A linked currency gives the page it links to, like `Silver Token` for `[[Silver Token]]s`. `NULL` when `value_buy` is `NULL` or 0. |
+| weight             | `REAL`                | The weight of this item in ounces.                                                                                                                                                                                                                                              |
+| item_class         | `TEXT`                | The class this item belongs to (e.g. `Body Equipment` , `Weapons`).                                                                                                                                                                                                             |
+| item_type          | `TEXT`                | The category this item belongs to (e.g. `Helmets`, `Club Weapons`).                                                                                                                                                                                                             |
+| type_secondary     | `TEXT`                | A secondary type this item belongs to, if any.                                                                                                                                                                                                                                  |
+| flavor_text        | `TEXT`                | The extra text that is displayed when some items are looked at.                                                                                                                                                                                                                 |
+| light_color        | `INTEGER`             | The color of the light emitted by this item, if any.                                                                                                                                                                                                                            |
+| light_radius       | `INTEGER`             | The radius of the light emitted by this item, if any.                                                                                                                                                                                                                           |
+| version            | `TEXT`                | The client version this item was introduced to the game.                                                                                                                                                                                                                        |
+| client_id          | `INTEGER`             | The client id of the item.                                                                                                                                                                                                                                                      |
+| image              | `BLOB`                | The item’s image bytes.                                                                                                                                                                                                                                                         |
+| status             | `TEXT`                | The status of the item in game.                                                                                                                                                                                                                                                 |
+| timestamp          | `TIMESTAMP`           | ISO 8601 timestamp of the article's last edit.                                                                                                                                                                                                                                  |
 
 
 

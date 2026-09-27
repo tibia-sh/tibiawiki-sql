@@ -131,10 +131,10 @@ class TestMountPriceCurrency(unittest.TestCase):
         return self._parse("Doombringer", self._edited("| price         = 780\n",
                                                        f"| price         = 780\n| pricecurrency = {currency}\n"))
 
-    def test_price_currency_cleans_links(self):
+    def test_price_currency_link_target(self):
         mount = self._priced_in("[[Silver Token]]s")
 
-        self.assertEqual("Silver Tokens", mount.price_currency)
+        self.assertEqual("Silver Token", mount.price_currency)
 
     def test_price_currency_tibia_coins_template(self):
         mount = self._priced_in("{{TC}}")

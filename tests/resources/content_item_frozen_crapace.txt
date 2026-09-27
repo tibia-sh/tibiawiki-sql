@@ -1,0 +1,18 @@
+{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name           = Frozen Crapace
+| itemid         = 52728
+| article        = a
+| actualname     = frozen crapace
+| implemented    = 15.20.7a5cc9
+| weight         = 10.00
+| primarytype    = Creature Products
+| objectclass    = Plants, Animal Products, Food and Drink
+| flavortext     = 
+| pickupable     = yes
+| droppedby      = {{Dropped By|}}
+| stackable      = yes
+| marketable     = yes
+| npcvalue       = 500000
+| npcprice       = 250 Christmas Token
+| sellto         = Yasir
+}}

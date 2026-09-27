@@ -5,8 +5,8 @@ import datetime
 
 import tibiawikisql
 from tests import load_resource
-from tibiawikisql.utils import (clean_links, client_color_to_rgb, parse_boolean, parse_client_id, parse_first_integer,
-                                parse_float, parse_integer,
+from tibiawikisql.utils import (clean_links, client_color_to_rgb, parse_boolean, parse_client_id, parse_currency,
+                                parse_first_integer, parse_float, parse_integer,
                                 parse_date, parse_loot_statistics, parse_min_max, parse_sounds,
                                 parse_weapon_proficiency_name, parse_weapon_proficiency_tables)
 
@@ -109,6 +109,32 @@ class TestUtils(unittest.TestCase):
 
     def test_parse_date_ignores_comma_separated_time(self):
         self.assertEqual(datetime.date(2026, 1, 27), parse_date("January 27, 2026, 16:00"))
+
+    def test_parse_currency_link_target(self):
+        self.assertEqual("Silver Token", parse_currency("[[Silver Token]]s"))
+        self.assertEqual("Hunting Task Points", parse_currency("{{Icon|Hunting Task Points}} [[Hunting Task Points]]"))
+        self.assertEqual("Theons", parse_currency("[[theons]]"))
+        self.assertEqual("Silver Token", parse_currency("[[Silver_Token|tokens]]"))
+
+    def test_parse_currency_section_link_display_text(self):
+        self.assertEqual("Hunting Task Points", parse_currency("[[Task Board#Hunting Task Points|Hunting Task Points]]"))
+        self.assertEqual("Hunting Task Points", parse_currency("[[Task Board#Hunting Task Points]]"))
+
+    def test_parse_currency_gold(self):
+        self.assertEqual("Gold Coin", parse_currency("gp"))
+        self.assertEqual("Gold Coin", parse_currency("{{GP}}"))
+
+    def test_parse_currency_plain_text(self):
+        self.assertEqual("Event Points", parse_currency("Event Points"))
+
+    def test_parse_currency_coin_templates(self):
+        self.assertEqual("Tibia Coins", parse_currency("{{TC}}"))
+        self.assertEqual("Tournament Coins", parse_currency("{{tC3}}"))
+
+    def test_parse_currency_empty(self):
+        self.assertIsNone(parse_currency(""))
+        self.assertIsNone(parse_currency("  "))
+        self.assertIsNone(parse_currency("<!-- none -->"))
 
     def test_parse_min_max(self):
         self.assertEqual(parse_min_max("5-20"), (5, 20))

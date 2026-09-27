@@ -1,7 +1,10 @@
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
 import datetime
+import sqlite3
 import unittest
 
 from tests import load_resource
+from tibiawikisql import schema
 from tibiawikisql.api import Article
 from tibiawikisql.models import Item
 from tibiawikisql.parsers import ItemParser
@@ -67,3 +70,24 @@ class TestItemParser(unittest.TestCase):
 
         self.assertIsInstance(item, Item)
         self.assertIn("damage_reflection", item.attributes_dict)
+
+
+class TestItem(unittest.TestCase):
+    def setUp(self):
+        self.conn = sqlite3.connect(":memory:")
+        self.conn.row_factory = sqlite3.Row
+        schema.create_tables(self.conn)
+
+    def test_item_value_buy_currency_round_trip(self):
+        article = Article(
+            article_id=1,
+            title="25 Years Backpack",
+            timestamp=datetime.datetime.fromisoformat("2025-12-08T17:54:57+00:00"),
+            content=load_resource("content_item_25_years_backpack.txt"),
+        )
+        ItemParser.from_article(article).insert(self.conn)
+
+        loaded = Item.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertEqual(7197, loaded.value_buy)
+        self.assertEqual("Theons", loaded.value_buy_currency)

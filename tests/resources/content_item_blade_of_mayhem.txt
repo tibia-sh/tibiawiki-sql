@@ -1,0 +1,41 @@
+{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name          = Blade of Mayhem
+| article       = a
+| actualname    = blade of mayhem
+| plural        = blades of mayhem
+| itemid        = 23223
+| objectclass   = Weapons
+| primarytype   = Sword Weapons
+| slot          = Weapon Hand
+| implemented   = 10.94
+| immobile      = no
+| walkable      = yes
+| pickupable    = yes
+| usable        = yes
+| levelrequired = 100
+| vocrequired   = knights
+| hands         = One
+| weapontype    = Sword
+| attack        = 50
+| defense       = 33
+| imbueslots    = 3
+| enchantable   = no
+| weight        = 50.00
+| stackable     = no
+| marketable    = yes
+| droppedby     = {{Dropped By|}}
+| value         = Negotiable
+| npcvalue      = 0
+| npcprice      = 50 [[Gold Token]]s
+| buyfrom       = Yana:50 [[Gold Token]]s
+| sellto        = --
+| notes         = [[Yana]] will trade you one for 50 [[Gold Token]]s.
+| history       = It could be charged with the [[Critical Hits]] bonus by asking Yana for it till [[Updates/11.40|Summer Update 2017]]. There were three levels of charging:
+*{{Ilink|Blade of Mayhem (Charged)}} [[Blade of Mayhem (Charged)]]
+*{{Ilink|Blade of Mayhem (Heavily Charged)}} [[Blade of Mayhem (Heavily Charged)]]
+*{{Ilink|Blade of Mayhem (Overcharged)}} [[Blade of Mayhem (Overcharged)]]
+On the same update, this weapon received 3 imbuing slots and its attack and defense values were adjusted to the to values of its heavily charged version.
+
+With the [[Updates/11.50|Winter Update 2017]], Blade of Carving, Blade of Mayhem and Blade of Remedy were merged into {{ilink|Blade of Destruction}} [[Blade of Destruction]].
+| status        = unavailable
+}}

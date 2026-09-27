@@ -11,6 +11,10 @@
 - Keep the first number of every ID field, like the client IDs, so `achievementid = 12,345` gives 12, not 12345. This
   covers `house.house_id`, `achievement.achievement_id`, `world.world_board`, `world.trade_board`, `game_update.news_id`
   and `item_key.number`. No current value changes.
+- Add the `item.value_buy_currency` column. It holds the article's `pricecurrency`, otherwise a currency written after
+  the price in `npcprice`, like `50 [[Gold Token]]s`, otherwise `Gold Coin`, and `NULL` when `value_buy` is `NULL` or 0.
+  A linked currency gives the page it links to, so `[[Silver Token]]s` gives `Silver Token`, and `mount.price_currency`
+  now reads links the same way. 25 Years Backpack's price of 7197 is now in `Theons`, not gold.
 
 ## 9.0.0+tibiash.5
 

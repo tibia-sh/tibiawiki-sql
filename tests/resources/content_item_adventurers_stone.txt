@@ -1,0 +1,26 @@
+{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name          = Adventurer's Stone
+| article       = an
+| actualname    = adventurer's stone
+| plural        = ?
+| itemid        = 16277
+| objectclass   = Other Items
+| primarytype   = Quest Items
+| flavortext    = Use it in a city temple to travel to the Adventurers Guild. A replacement is available at temples.
+| implemented   = 9.80
+| immobile      = no
+| walkable      = yes
+| pickupable    = yes
+| usable        = yes
+| weight        = 0.30
+| marketable    = no
+| droppedby     = {{Dropped By|}}
+| value         = 0
+| npcvalue      = 0
+| npcprice      = 0 - 30
+| npcvaluerook  = 0
+| npcpricerook  = 0
+| buyfrom       = --
+| sellto        = --
+| notes         = Teleports you to the [[Adventurer's Guild]] if used in a temple. To get an Adventurer's Stone, go to any [[Priest NPCs|temple NPC]] and say '''hi''', '''adventurer's stone''', '''yes'''. New players can also get this item from a [[chest]] on [[Island of Destiny]] and [[Dawnport]].
+}}

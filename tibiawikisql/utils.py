@@ -25,6 +25,17 @@ float_pattern = re.compile(r"[+-]?(\d*[.])?\d+")
 escaping_tags = frozenset(("nowiki", "pre"))
 inert_comment_start = "<!\u200b--"
 
+TIBIA_COINS = "Tibia Coins"
+TOURNAMENT_COINS = "Tournament Coins"
+GOLD_COIN = "Gold Coin"
+"""The currency of a price in gold, named after its item."""
+
+CURRENCY_TEMPLATES = {"TC": TIBIA_COINS, "TC3": TOURNAMENT_COINS, "GP": GOLD_COIN}
+"""The currency templates a price may be written in, by name."""
+
+currency_template_pattern = re.compile(r"\{\{([Tt]C3?|[Gg]P)\}\}")
+"""A value that is only a currency template. As in MediaWiki, only the first letter of the name ignores case."""
+
 
 class Elapsed:
     """Holds the elapsed time measured by the [tibiawikisql.utils.timed][timed] context manager.
@@ -347,6 +358,40 @@ def parse_client_id(value: str) -> int | None:
         if code.contains(tag):
             code.replace(tag, str(tag).replace("<!--", inert_comment_start))
     return parse_first_integer(str(code).partition("<!--")[0], None)
+
+
+def parse_currency(value: str) -> str | None:
+    """Parse the currency of a price, like the ``pricecurrency`` of an item or a mount.
+
+    A currency template like ``{{TC}}`` gives the currency it prints, and ``gp`` gives :data:`GOLD_COIN`. A value with a
+    link gives the link's target, the currency's page, so ``[[Silver Token]]s`` gives ``Silver Token``. When the target
+    is a section of a page, the link's text is used instead, so ``[[Task Board#Hunting Task Points]]`` gives
+    ``Hunting Task Points``. Any other value gives its text without links.
+
+    Args:
+        value: The raw value of a currency field.
+
+    Returns:
+        The name of the currency, or ``None`` if the value is empty.
+
+    """
+    value = value.strip()
+    if not value:
+        return None
+    template = currency_template_pattern.fullmatch(value)
+    if template:
+        return CURRENCY_TEMPLATES[template.group(1).upper()]
+    link = next(mwparserfromhell.parse(value).ifilter_wikilinks(), None)
+    if link is not None:
+        page, _, section = str(link.title).partition("#")
+        if section:
+            text = strip_code(link.text) if link.text is not None else ""
+            return text or section.strip()
+        name = page.strip().replace("_", " ")
+        return name[:1].upper() + name[1:]
+    if value == "gp":
+        return GOLD_COIN
+    return clean_links(value) or None
 
 
 def parse_loot_statistics(value: str) -> tuple[int, list[Any]]:
