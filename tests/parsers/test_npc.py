@@ -385,3 +385,59 @@ class TestNpcParser(unittest.TestCase):
         npc = self._parse_inline_npc("Venore", "{{Transport|Carlin, 110; From [[Thais]]}}")
 
         self.assertEqual([("Carlin", 110, "Venore")], [(d.name, d.price, d.origin) for d in npc.destinations])
+
+    def test_npc_without_city(self):
+        article = Article(
+            article_id=1,
+            title="A Blue Stone",
+            timestamp=datetime.datetime.fromisoformat("2026-08-06T21:35:46+00:00"),
+            content=load_resource("content_npc_a_blue_stone.txt"),
+        )
+
+        npc = NpcParser.from_article(article)
+
+        self.assertIsNone(npc.city)
+        self.assertEqual("A Blue Stone", npc.name)
+
+    def test_origin_without_city(self):
+        self.assertIsNone(NpcParser._parse_origin("Thais", None, None, [], None))
+        self.assertEqual("Carlin", NpcParser._parse_origin("Thais", "From [[Carlin]]", None, [], None))
+
+    def test_npc_without_city_with_destinations(self):
+        npc = self._parse_inline_npc(
+            "",
+            "{{TransportList|discount=no\n"
+            " |{{TransportCell|Carlin|110|From [[Thais]]}}\n"
+            " |{{TransportCell|Venore|170}}\n"
+            "}}",
+        )
+
+        self.assertIsNone(npc.city)
+        self.assertEqual(
+            [("Carlin", 110, "Thais"), ("Venore", 170, None)],
+            [(d.name, d.price, d.origin) for d in npc.destinations],
+        )
+
+    def test_npc_without_city_shuttle(self):
+        npc = self._parse_inline_npc(
+            "",
+            "{{TransportList|discount=no\n"
+            " |{{TransportCell|Monument Tower|50}}\n"
+            " |{{TransportCell|Sunken Quarter|0}}\n"
+            "}}",
+            "| geolabel     = Monument Tower\n"
+            "| posx         = 126.100\n"
+            "| posy         = 125.50\n"
+            "| posz         = 7\n"
+            "| geolabel2    = Sunken Quarter\n"
+            "| posx2        = 127.10\n"
+            "| posy2        = 128.20\n"
+            "| posz2        = 7\n",
+        )
+
+        self.assertIsNone(npc.city)
+        self.assertEqual(2, len(npc.locations))
+        self.assertEqual(
+            [("Monument Tower", 50, "Sunken Quarter"), ("Sunken Quarter", 0, "Monument Tower")],
+            [(d.name, d.price, d.origin) for d in npc.destinations],
+        )

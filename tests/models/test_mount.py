@@ -12,7 +12,7 @@ class TestMount(unittest.TestCase):
         self.conn.row_factory = sqlite3.Row
         schema.create_tables(self.conn)
 
-    def _mount(self, client_id: int | None) -> Mount:
+    def _mount(self, client_id: int | None, price_currency: str | None = "Tibia Coins") -> Mount:
         return Mount(
             article_id=1,
             title="Doombringer",
@@ -21,6 +21,7 @@ class TestMount(unittest.TestCase):
             taming_method="Buying it on Tibia.com or via the Store.",
             is_buyable=True,
             price=780,
+            price_currency=price_currency,
             achievement=None,
             light_color=None,
             light_radius=None,
@@ -43,3 +44,10 @@ class TestMount(unittest.TestCase):
         loaded = Mount.get_one_by_field(self.conn, "article_id", 1)
 
         self.assertIsNone(loaded.client_id)
+
+    def test_mount_price_currency_round_trip(self):
+        self._mount(644, "Event Points").insert(self.conn)
+
+        loaded = Mount.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertEqual("Event Points", loaded.price_currency)

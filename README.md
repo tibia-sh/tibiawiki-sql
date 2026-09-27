@@ -18,6 +18,8 @@ The copy adds this data to the database:
   types) of outfits and mounts.
 * The `creature.race_id` column. It holds the client race ID of a creature, `NULL` when the wiki has none or only a
   comment.
+* The `mount.price_currency` column. It holds the currency of a mount's price, like `Tibia Coins` or `Event Points`,
+  `NULL` when the mount has no price.
 
 The [database schema](docs/schema.md) describes each of them.
 

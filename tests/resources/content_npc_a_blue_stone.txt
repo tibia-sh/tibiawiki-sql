@@ -1,0 +1,9 @@
+{{Infobox NPC|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name           = A Blue Stone
+| implemented    = 15.30.a30dad
+| job            =
+| gender         = 
+| race           = 
+| location       =
+| notes          =
+}}

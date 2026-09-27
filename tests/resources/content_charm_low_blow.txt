@@ -1,0 +1,12 @@
+{{Infobox Charm|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name          = Low Blow
+| type          = Major
+| cost          = 800, 1200, 4000
+| effect        = Adds 4% / 8% / 9% critical hit chance to attacks with [[Critical Hits|critical hit]] weapons. 
+| implemented   = 11.50.6055
+| notes         = If a critical hit is dealt due to this additional chance, every charm creature affected by the attack will receive critical damage.
+| history       = On {{OfficialNewsArchive|5268|November 05, 2019}}, the charm was changed. Its old description was ''Adds 3% critical hit chance to attacks with [[Critical Hits|critical hit]] weapons'', and it did not affect all creatures of the same type when the charm was triggered. This change, however, was due to the fact that the charm was previously bugged (or its description had a typo) and providing a much higher bonus (13%) than the expected. 
+
+This charm is an exception from [[Vocation Adjustments 2026]] double proc removal, so it does activate on all targets of AoE [[Ammunition]], unlike for example [[Savage Blow]] which doesn't. As stated by [[Liamas]] [https://www.tibia.com/forum/?action=thread&postid=39596528#post39596528 in Auditorium post]: ''Based on our data, Low Blow is currently well balanced, so we did not want to reduce its effectiveness''.
+| status        = active
+}}

@@ -1,0 +1,42 @@
+{{Infobox Spell|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name           = Second Wind
+| spellid        = 
+| type           = Instant
+| subclass       = Support
+| words          = 
+| mana           = 
+| cooldown       = 120
+| cooldown2      = 
+| cooldown3      = 
+| cooldowngroup  = 6
+| cooldowngroup2 = 
+| levelrequired  = 200
+| premium        = yes
+| promotion      = 
+| soul           = 
+| voc            = 
+| implemented    = 
+| effect         = Depending on your remaining health, second wind allows you to increase your damage output in dangerous situations. The lower your remaining health, the higher the damage you will deal. This effect lasts for 60 seconds.
+| notes          = Second Wind was a spell created during the Spell Revamp launched with the [[Summer Update 2017]]. The spell was testing during a special [[Test Server]] that started on {{OfficialNewsArchive|4047|April 26}}, but due to player feedback it was not implemented in game. 
+
+Due to the differences between vocations, there would actually be three different spells, one for Druids and Sorcerers, one for Paladins and another for Knights. Each one of them was triggered based on different rules and had different manacosts. For each percent below the HP threshold, a certain amount of extra damage would be given to the character.
+
+Casting [[Magic Shield]] was not possible while this spell was active, and casting this spell would cancel an active [[Magic Shield]]. While the spell was active, the follow icon appear on the character's status bar: [[File:Second Wind Icon.gif|link=]]
+
+{{{!}} class="wikitable"
+{{!}}-
+! Vocation !! Words !! HP Threshold !! Extra Damage !! Mana Cost
+{{!}}-
+! Druids and<br/>Sorcerers 
+{{!}} uteta kor moe {{!}}{{!}} 100% {{!}}{{!}} 1% {{!}}{{!}} 1000
+{{!}}-
+! Paladins 
+{{!}} uteta kor sac	{{!}}{{!}} 50% {{!}}{{!}} 2% {{!}}{{!}} 750
+{{!}}-
+! Knights 
+{{!}} uteta kor eq {{!}}{{!}} 75% {{!}}{{!}} 4% {{!}}{{!}} 500
+{{!}}}
+| animation      = 
+| history        = 
+| status         = ts-only
+}}

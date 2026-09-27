@@ -17,7 +17,10 @@ class Mount(WikiEntry, WithStatus, WithVersion, WithImage, RowModel, table=Mount
     is_buyable: bool
     """Whether the mount can be bought from the store or not."""
     price: int | None
-    """The price in Tibia coins to buy the mount."""
+    """The price, in `price_currency`."""
+    price_currency: str | None = None
+    """The currency of the price: the article's `pricecurrency`, otherwise Tournament Coins for a tournament mount,
+    otherwise Tibia Coins, or `None` when there is no price."""
     achievement: str | None
     """The achievement obtained for obtaining this mount."""
     light_color: int | None

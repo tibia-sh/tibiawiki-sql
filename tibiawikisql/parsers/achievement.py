@@ -1,3 +1,4 @@
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
 from typing import ClassVar
 
 from tibiawikisql.models.achievement import Achievement
@@ -13,12 +14,12 @@ class AchievementParser(BaseParser):
     table = AchievementTable
     template_name = "Infobox_Achievement"
     attribute_map: ClassVar = {
-        "name": AttributeParser(lambda x: x.get("actualname") or x.get("name")),
+        "name": AttributeParser(lambda x: x.get("actualname") or x.get("name") or None),
         "grade": AttributeParser.optional("grade", parse_integer),
         "points": AttributeParser.optional("points", parse_integer),
         "is_premium": AttributeParser.optional("premium", parse_boolean, False),
         "is_secret": AttributeParser.optional("secret", parse_boolean, False),
-        "description": AttributeParser.required("description", clean_links),
+        "description": AttributeParser.optional("description", clean_links),
         "spoiler": AttributeParser.optional("spoiler", clean_links),
         "achievement_id": AttributeParser.optional("achievementid", parse_integer),
         "version": AttributeParser.optional("implemented"),

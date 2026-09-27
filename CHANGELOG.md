@@ -1,6 +1,23 @@
 <!-- Changed by tibia.sh in 2026. See "About this copy" in README.md. -->
 # Changelog
 
+## Unreleased
+
+- Store `spell.effect`, `spell.spell_type`, `spell.group_spell`, `spell.level` and `spell.cooldown` as `NULL` when a
+  spell's article has no such field, and `spell.cooldown` as `NULL` when it is not a whole number of seconds, like
+  `1-2s`, instead of dropping the spell. A spell with no `mana` field gets `0`, which means special conditions apply.
+  Force Strike, Broadcast, Poison Storm, Undead Legion, Sniper, Second Wind and Ultimate Explosion are now kept.
+- Read a charm's three costs split by commas, like `800, 1200, 4000`, when its `cost` field has no slash, instead of
+  dropping the charm. Low Blow is now kept.
+- Store `npc.city` as `NULL` when an NPC's article has no `city` field, instead of dropping the NPC. Such an NPC's
+  travel legs start where a `From [[Place]]` note or a shuttle names, and otherwise have a `NULL` origin. A Blue Stone
+  is now kept.
+- Store `achievement.name` and `achievement.description` as `NULL` when an achievement's article has no such field,
+  instead of dropping the achievement. `achievement.description` is now nullable. Achievement 563 is now kept.
+- Add the `mount.price_currency` column. It holds the article's `pricecurrency`, otherwise `Tournament Coins` for a
+  tournament mount, otherwise `Tibia Coins`, and `NULL` when the mount has no price. Landsailer's price of 140 is now
+  in `Event Points`, not Tibia Coins.
+
 ## 9.0.0+tibiash.4
 
 - Store `version` as `NULL` in `game_update`, `house`, `outfit` and `mount` when an article has no `implemented`

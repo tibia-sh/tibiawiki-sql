@@ -100,7 +100,7 @@ class Npc(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=NpcTabl
     """The location of the NPC."""
     subarea: str | None
     """A finer location of the NPC."""
-    city: str
+    city: str | None
     """The nearest city to where the NPC is located."""
     x: int | None
     """The x coordinates of the NPC."""

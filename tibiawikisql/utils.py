@@ -282,6 +282,22 @@ def parse_integer(value: str, default: int = 0) -> int:
     return default
 
 
+def parse_whole_number(value: str) -> int | None:
+    """Parse a string that is only a whole number, ignoring surrounding whitespace.
+
+    Args:
+        value: The string to parse.
+
+    Returns:
+        The number, or ``None`` if the stripped string is not only ASCII digits.
+
+    """
+    value = value.strip()
+    if value.isascii() and value.isdigit():
+        return int(value)
+    return None
+
+
 def parse_client_id(value: str) -> int | None:
     """Parse a client ID, ignoring wiki comments.
 

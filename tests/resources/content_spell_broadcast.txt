@@ -1,0 +1,36 @@
+{{Infobox Spell|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name           = Broadcast
+| spellid        = 
+| type           = 
+| subclass       = 
+| runegroup      = 
+| secondarygroup =
+| damagetype     = 
+| words          = exisa mas "message"
+| mana           = 90
+| cooldown       = 
+| cooldowngroup  = 
+| cooldowngroup2 = 
+| levelrequired  = 
+| premium        = no
+| promotion      = 
+| soul           = 
+| partyspell     = 
+| voc            = [[Druid]]s, [[Sorcerer]]s, [[Paladin]]s and [[Knight]]s
+| implemented    = Pre-6.0
+| effect         = A message would be sent to all online players.
+| notes          = This spell would broadcast a message that would appear in grey on the text console of all online players, similarly to messages broadcast by [[gamemaster]]s.
+
+This spell required [[Magic Level|magic level]] 4 to cast it.
+
+This spell is referenced in a [[Stuff They Took Away Excerpt (Book)|book]] found in [[Isle of the Kings]].
+| animation      = 
+| history        = Its original mana cost was only 30 mana. During the spam caused by the massive use of this spell, its mana cost was changed to 60 in {{OfficialNewsArchive|15|December 05, 2000}}. It was again necessary to change its mana cost, this time from 60 to 90 mana, some time between late 2001 and the first half of 2002 ([[Updates/6.4|Updates 6.4]] and {{Update|6.61-6.97}}).
+
+Before [[Updates/6.5|Update 6.5]], the broadcast message would appear on the [[Game Window]] of all online players.<br />
+This spell was removed on {{OfficialNewsArchive|149|August 21, 2002}}, shortly before the [[Updates/7.0|7.0 update]].
+<gallery captionalign="center" style="text-align:center" position="center" spacing="small" hideaddbutton="true" widths="300" heights="300" mode="nolines">
+Broadcast Screenshot.gif|A player broadcasting a message (Before {{Update|6.5}})
+</gallery>
+| status         = deprecated
+}}
