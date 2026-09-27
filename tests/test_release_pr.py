@@ -329,7 +329,7 @@ class TestProposeCli(CliTestCase):
         self.assertEqual(INIT.replace("9.0.0+tibiash.2", "9.0.0+tibiash.3"), self.read("tibiawikisql/__init__.py"))
         body = self.read("body.md")
         self.assertIn("`v9.0.0+tibiash.3`", body)
-        self.assertIn(RELEASE_APPROVER, body)
+        self.assertIn("merges itself once its checks pass", body)
         self.assertTrue(body.endswith("- Fix a thing.\n- Add another thing\n  over two lines.\n"))
 
     def test_no_entries_exits_3_before_asking_for_a_version(self):

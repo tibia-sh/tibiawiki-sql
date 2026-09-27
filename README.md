@@ -32,12 +32,16 @@ version and opens or updates the pull request `chore: release <version>` from th
 version counts `+tibiash.N` up from the highest tagged `N` of the same upstream version, so `9.0.0+tibiash.2` is
 followed by `9.0.0+tibiash.3`, and an upstream `9.1.0` by `9.1.0+tibiash.1`. When the section is empty or gone, the
 workflow closes that pull request. The tibia-sh App, `tibia-sh-bot`, pushes the branch and opens the pull request, so
-its CI runs. Nothing merges it by itself.
+its CI runs, and turns on its auto-merge.
 
-The release is drptbl's merge of that pull request. The Release PR workflow's run for the merge tags `v<version>`,
-like `v9.0.0+tibiash.1`, on the merge commit, as the App, which the `release tags` ruleset lets create `v*` tags. A
-merge by anyone else, a pull request from another branch or author, and any other push to `main` tag nothing. The tag
-starts the release workflow.
+The release pull request merges itself once its required checks pass. The maintainer, drptbl, can still merge it by
+hand. Until 2026-09-27 their merge was the release's one human gate. They removed it that day, so releases need no
+human step. The Release PR workflow's run for the merge tags `v<version>`, like `v9.0.0+tibiash.1`, on the merge
+commit, as the App, which the `release tags` ruleset lets create `v*` tags. It tags only a merge by the App's
+auto-merge or by drptbl. A merge by anyone else, a pull request from another branch or author, and any other push to
+`main` tag nothing. A release merge may change only `CHANGELOG.md` and `tibiawikisql/__init__.py`. When it changes any
+other file, the run fails and names the file, and nothing is tagged, so code reaches a release only through an
+ordinary pull request. The tag starts the release workflow.
 
 The release workflow checks that the tag matches the version and that the commit is on `main`. It runs the tests and
 checks an installed build of the wheel, both without write access. The publishing job then builds the wheel and the
@@ -58,7 +62,9 @@ When a step fails:
   with a token that has contents write only, and GitHub refuses a ref at a commit whose `.github/workflows` tree
   matches no branch tip unless the token has workflow scope. So re-run a failed `tag` job before any workflow change
   lands on `main`. If one already has, a maintainer creates the tag by hand and pushes it over SSH. The tag's push runs
-  the release workflow, as a dispatch would only run a dry run.
+  the release workflow, as a dispatch would only run a dry run. When the error names files besides `CHANGELOG.md` and
+  `tibiawikisql/__init__.py`, a re-run fails the same way. Find out how the release pull request came to carry them
+  before a maintainer tags the version by hand.
 * The release workflow's `downstream` job failed: the release is published, so don't re-run the release run. Run
   `generator.yml` in tibia-sh/tibiawiki-mcp by hand with the version.
 

@@ -307,8 +307,8 @@ def release_body(version: str, entries: str) -> str:
         The body as Markdown.
     """
     return (
-        f"Releases `{version}`. When {RELEASE_APPROVER} merges this pull request, the merge commit is tagged "
-        f"`v{version}`, and the tag publishes the release. A merge by anyone else tags nothing.\n\n{entries}\n"
+        f"Releases `{version}`. This pull request merges itself once its checks pass. Then the merge commit is tagged "
+        f"`v{version}`, and the tag publishes the release.\n\n{entries}\n"
     )
 
 
