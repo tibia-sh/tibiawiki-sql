@@ -1,7 +1,7 @@
 <!-- Changed by tibia.sh in 2026. See "About this copy" in README.md. -->
 # Changelog
 
-## Unreleased
+## 9.0.0+tibiash.6
 
 - Read numbers with commas as thousands separators, like `50,000`, as the whole number instead of the digits before
   the first comma. This fixes creature `hitpoints` and `experience`, item `value_buy` and `value_sell`, outfit
