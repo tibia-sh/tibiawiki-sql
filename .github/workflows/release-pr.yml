@@ -1,0 +1,155 @@
+name: Release PR
+
+# Keeps one release pull request, chore: release <version>, open from release/next while CHANGELOG.md has entries
+# under ## Unreleased. scripts/release_pr.py renames that section to the next +tibiash.N version and sets __version__
+# to it. The tibia-sh App pushes the branch and opens the pull request, so the pull request's CI runs, which it would
+# not for one opened with GITHUB_TOKEN. Nothing merges it by itself: drptbl's merge is the release.
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions: {}
+
+# Runs take turns, and a pending run is never replaced, so the run of every push to main, a release merge's included,
+# runs to the end.
+concurrency:
+  group: release-pr
+  cancel-in-progress: false
+  queue: max
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # Mints the App's token in the release-trigger environment, which deploys from main alone. The job installs
+  # nothing, restores no cache and runs no dependency code: only git, gh and the standard-library
+  # scripts/release_pr.py from its own checkout, under python3 -I. It commits only the two files the script wrote.
+  propose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: release-trigger
+    permissions:
+      contents: read # the checkout and its tags
+      pull-requests: read # the open release pull request
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+      # Exit 3 means CHANGELOG.md has no unreleased entries and nothing was written. The script checks that before it
+      # works out a version, so a release merge's run, whose version is not tagged yet, ends here green.
+      - name: Write the release
+        id: propose
+        run: |
+          tags="$RUNNER_TEMP/tags.txt"
+          git show-ref --tags --dereference > "$tags"
+          if version="$(python3 -I scripts/release_pr.py propose --tags "$tags" --body "$RUNNER_TEMP/body.md")"; then
+            if [[ ! $version =~ ^[0-9]+\.[0-9]+\.[0-9]+\+tibiash\.[0-9]+$ ]]; then
+              echo "::error::release_pr.py propose printed a version that is not x.y.z+tibiash.N."
+              exit 1
+            fi
+            echo "Proposing $version."
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+          else
+            status=$?
+            if [ "$status" -ne 3 ]; then
+              exit "$status"
+            fi
+            echo "CHANGELOG.md has no unreleased entries, so there is nothing to release."
+          fi
+      # With github.token. The App's login is its slug with [bot], as GitHub shows its pull requests.
+      - name: Find the open release pull request
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          APP_LOGIN: ${{ vars.TIBIA_SH_APP_SLUG }}[bot]
+        run: |
+          if [[ ! $APP_LOGIN =~ ^[a-z0-9-]+\[bot\]$ ]]; then
+            echo "::error::The App's login, from vars.TIBIA_SH_APP_SLUG, is not <slug>[bot]."
+            exit 1
+          fi
+          query="head=$GITHUB_REPOSITORY_OWNER:release/next&base=main&state=open"
+          number="$(timeout --kill-after=10 120 gh api "repos/{owner}/{repo}/pulls?$query" \
+            --jq 'map(select(.user.login == env.APP_LOGIN)) | .[0].number // empty')"
+          if [[ ! $number =~ ^[0-9]*$ ]]; then
+            echo "::error::The open release pull request has no plain number."
+            exit 1
+          fi
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+      # A token of the App for this repository alone, which expires within the hour: pull requests, to close the one
+      # that has nothing left to release.
+      - id: close_token
+        if: ${{ steps.propose.outputs.version == '' && steps.pr.outputs.number != '' }}
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.TIBIA_SH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.TIBIA_SH_APP_PRIVATE_KEY }}
+          owner: tibia-sh
+          repositories: tibiawiki-sql
+          permission-pull-requests: write
+      - name: Close the release pull request
+        if: ${{ steps.propose.outputs.version == '' && steps.pr.outputs.number != '' }}
+        env:
+          GH_TOKEN: ${{ steps.close_token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          timeout --kill-after=10 120 gh pr close "$PR" \
+            --comment "CHANGELOG.md on main has no unreleased entries, so there is nothing to release."
+      - name: Commit the release
+        if: ${{ steps.propose.outputs.version != '' }}
+        env:
+          VERSION: ${{ steps.propose.outputs.version }}
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        run: |
+          if [[ "$(git status --porcelain)" != $' M CHANGELOG.md\n M tibiawikisql/__init__.py' ]]; then
+            echo "::error::propose must change CHANGELOG.md and tibiawikisql/__init__.py, and nothing else."
+            exit 1
+          fi
+          git add CHANGELOG.md tibiawikisql/__init__.py
+          git commit --quiet -m "chore: release $VERSION"
+      # A token of the App for this repository alone, which expires within the hour: contents, to push release/next,
+      # and pull requests, to open or update its pull request. Minted after the release is committed, so nothing
+      # before this step runs with it.
+      - id: push_token
+        if: ${{ steps.propose.outputs.version != '' }}
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.TIBIA_SH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.TIBIA_SH_APP_PRIVATE_KEY }}
+          owner: tibia-sh
+          repositories: tibiawiki-sql
+          permission-contents: write
+          permission-pull-requests: write
+      # Force-pushes release/next, which replaces the previous proposal, then opens the pull request or updates the open
+      # one. The token reaches git through a credential helper that reads it from the environment, so it is never
+      # written to .git/config and never appears on a command line. Auto-merge stays off.
+      - name: Push release/next and open or update its pull request
+        if: ${{ steps.propose.outputs.version != '' }}
+        env:
+          GH_TOKEN: ${{ steps.push_token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ steps.propose.outputs.version }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          title="chore: release $VERSION"
+          # shellcheck disable=SC2016 # git's shell expands $GH_TOKEN when it runs the helper
+          timeout --kill-after=10 120 git -c credential.helper= \
+            -c 'credential.helper=!f() { echo username=x-access-token; echo "password=$GH_TOKEN"; }; f' \
+            push --force origin HEAD:refs/heads/release/next
+          if [[ -n $PR ]]; then
+            timeout --kill-after=10 120 gh api --method PATCH "repos/{owner}/{repo}/pulls/$PR" --silent \
+              -f title="$title" -F body=@"$RUNNER_TEMP/body.md"
+          else
+            timeout --kill-after=10 120 gh api "repos/{owner}/{repo}/pulls" --silent \
+              -f head=release/next -f base=main -f title="$title" -F body=@"$RUNNER_TEMP/body.md"
+          fi
