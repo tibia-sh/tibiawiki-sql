@@ -1,7 +1,7 @@
 <!-- Changed by tibia.sh in 2026. See "About this copy" in README.md. -->
 # Changelog
 
-## Unreleased
+## 9.0.0+tibiash.4
 
 - Store `version` as `NULL` in `game_update`, `house`, `outfit` and `mount` when an article has no `implemented`
   field, instead of dropping the article. A misspelled field like `implementation` is not read, as the wiki does not
