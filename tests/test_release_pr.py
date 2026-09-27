@@ -693,3 +693,58 @@ class TestReleaseWorkflow(WorkflowTestCase):
         downstream = job(self.WORKFLOW, "downstream")
         self.assertNotIn("checkout", downstream)
         self.assertEqual(1, downstream.count("uses:"))
+
+
+class TestAlertWorkflow(WorkflowTestCase):
+    WORKFLOW = "alert.yml"
+
+    def test_watches_the_automation_workflows_by_their_exact_names(self):
+        self.assertIn("""\
+on:
+  workflow_run:
+    workflows: [Release, Release PR, Upstream check]
+    types: [completed]
+
+permissions: {}
+""", self.text())
+        names = {path.name: re.search(r"^name: (.+)$", path.read_text(encoding="utf-8"), re.MULTILINE).group(1)
+                 for path in WORKFLOWS.glob("*.yml")}
+        self.assertEqual("Release", names["release.yml"])
+        self.assertEqual("Release PR", names["release-pr.yml"])
+        self.assertEqual("Upstream check", names["upstream.yml"])
+
+    def test_comments_on_one_issue_with_github_token(self):
+        self.assert_in_job("alert", """\
+  alert:
+    if: github.event.workflow_run.conclusion != 'success' &&
+      github.event.workflow_run.conclusion != 'skipped' &&
+      github.event.workflow_run.conclusion != 'neutral' &&
+      github.event.workflow_run.event != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    concurrency:
+      group: automation-alert
+      cancel-in-progress: false
+      queue: max
+""")
+        self.assert_in_job("alert", """\
+        run: |
+          title='Automation needs a look'
+          body="$WORKFLOW $CONCLUSION: $RUN_URL"
+          number=$(TITLE=$title gh issue list --state open --limit 1000 --json number,title \\
+            --jq 'map(select(.title == env.TITLE) | .number) | min // empty')
+          if [[ -n $number ]]; then
+            gh issue comment "$number" --body "$body"
+          else
+            gh issue create --title "$title" --assignee drptbl --body "$body"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          WORKFLOW: ${{ github.event.workflow_run.name }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+""")
+        self.assertNotIn("uses:", self.text())
