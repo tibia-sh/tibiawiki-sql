@@ -1,3 +1,4 @@
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
 from typing import ClassVar
 
 from tibiawikisql.schema import CharmTable
@@ -8,8 +9,11 @@ from tibiawikisql.utils import clean_links, parse_integer
 
 
 def parse_cost_level(cost: str, level: int) -> int:
-    """Extract a charm cost for a one-based level from the wiki value."""
-    costs = cost.split("/")
+    """Extract a charm cost for a one-based level from the wiki value.
+
+    The three costs are split by slashes, or by commas when the value has no slash.
+    """
+    costs = cost.split("/" if "/" in cost else ",")
     if len(costs) != 3:
         msg = f"Expected three charm costs, got {cost!r}"
         raise ValueError(msg)

@@ -7,6 +7,8 @@
   spell's article has no such field, and `spell.cooldown` as `NULL` when it is not a whole number of seconds, like
   `1-2s`, instead of dropping the spell. A spell with no `mana` field gets `0`, which means special conditions apply.
   Force Strike, Broadcast, Poison Storm, Undead Legion, Sniper, Second Wind and Ultimate Explosion are now kept.
+- Read a charm's three costs split by commas, like `800, 1200, 4000`, when its `cost` field has no slash, instead of
+  dropping the charm. Low Blow is now kept.
 
 ## 9.0.0+tibiash.4
 
