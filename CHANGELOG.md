@@ -1,6 +1,13 @@
 <!-- Changed by tibia.sh in 2026. See "About this copy" in README.md. -->
 # Changelog
 
+## Unreleased
+
+- Store `spell.effect`, `spell.spell_type`, `spell.group_spell`, `spell.level` and `spell.cooldown` as `NULL` when a
+  spell's article has no such field, and `spell.cooldown` as `NULL` when it is not a whole number of seconds, like
+  `1-2s`, instead of dropping the spell. A spell with no `mana` field gets `0`, which means special conditions apply.
+  Force Strike, Broadcast, Poison Storm, Undead Legion, Sniper, Second Wind and Ultimate Explosion are now kept.
+
 ## 9.0.0+tibiash.4
 
 - Store `version` as `NULL` in `game_update`, `house`, `outfit` and `mount` when an article has no `implemented`

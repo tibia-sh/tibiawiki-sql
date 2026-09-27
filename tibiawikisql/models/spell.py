@@ -1,3 +1,4 @@
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
 from pydantic import Field
 
 from tibiawikisql.api import WikiEntry
@@ -12,11 +13,11 @@ class Spell(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=Spell
     """The name of the spell."""
     words: str | None = Field(None)
     """The spell's invocation words."""
-    effect: str
+    effect: str | None = Field(None)
     """The effects of casting the spell."""
-    spell_type: str
+    spell_type: str | None = Field(None)
     """The spell's type."""
-    group_spell: str
+    group_spell: str | None = Field(None)
     """The spell's group."""
     group_secondary: str | None = Field(None)
     """The spell's secondary group."""
@@ -30,7 +31,7 @@ class Spell(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=Spell
     """The mana cost of the spell."""
     soul: int
     """The soul cost of the spell."""
-    cooldown: int
+    cooldown: int | None = Field(None)
     """The spell's individual cooldown in seconds."""
     cooldown2: int | None
     """The spell's individual cooldown for the level 2 perk of the Wheel of Destiny."""
@@ -40,7 +41,7 @@ class Spell(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=Spell
     """The spell's group cooldown in seconds. The time you have to wait before casting another spell in the same group."""
     cooldown_group_secondary: int | None = Field(None)
     """The spell's secondary group cooldown."""
-    level: int
+    level: int | None = Field(None)
     """The level required to use the spell."""
     is_premium: bool
     """Whether the spell is premium only or not."""

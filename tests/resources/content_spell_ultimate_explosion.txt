@@ -1,0 +1,23 @@
+{{Infobox Spell|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name           = Ultimate Explosion
+| spellid        = 24
+| type           = Instant
+| subclass       = Attack
+| cooldowngroup  = 2
+| damagetype     = Physical
+| words          = exevo gran mas vis
+| premium        = yes
+| mana           = 1200 
+| levelrequired  = 60
+| voc            = [[Sorcerer]]s
+| implemented    = 6.4
+| effect         = [[File:Physical Damage Icon.gif]] Makes a big explosion around the caster.
+| animation      = Ultimate explosion1.gif
+| status         = Deprecated
+| notes          = This spell dealt a lot of damage over a large area surrounding the caster. This spell was dangerous in [[PvP]] worlds, because it had such a large area of effect and could easily lead to a [[Red Skull]] or a [[Banishment]]. Caused damage on a total of 73 squares (including the one character is standing on).
+
+Depending upon the caster's [[Magic Level]] and [[Level]], this spell could kill strong creatures in one strike.
+
+This spell was replaced by [[Hell's Core]] and [[Rage of the Skies]] spells in the [[Updates/8.1|Winter Update 2007]].
+| history        = One of the older spells, back in the days you could get it by using the corresponding spell scroll. It only required 800 [[mana]] to cast until the [[Updates/7.6|Winter Update 2005]]. It was the most powerful spell until the [[Updates/8.1|Winter Update 2007]].
+|cooldown=1-2s}}
