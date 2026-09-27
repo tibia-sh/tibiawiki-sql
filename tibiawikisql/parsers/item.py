@@ -48,8 +48,14 @@ RESTORES_PATTERN = re.compile(rf"restores\s+{RESTORE_CLAUSE}(?:,\s+and\s+{RESTOR
 BETWEEN_PATTERN = re.compile(r"\bbetween\b", re.IGNORECASE)
 """The word that starts a restore clause."""
 
-CURRENCY_TEXT_PATTERN = re.compile(r"\[\[|[^\W\d_]")
-"""Text that may name a currency: a link or a letter."""
+CURRENCY_START_PATTERN = re.compile(r"\[\[|\{\{|[^\W\d_]")
+"""The start of text that may name a currency: a link, a template or a letter."""
+
+MARKUP_PATTERN = re.compile(r"<!--.*?(?:-->|$)|</?[A-Za-z][^<>]*>", re.DOTALL)
+"""An HTML comment, which an unclosed ``<!--`` ends at the end of the text, or an HTML tag."""
+
+NOTE_PATTERN = re.compile(r"\([^()]*\)")
+"""A note in parentheses, without parentheses inside."""
 
 
 class ItemParser(BaseParser):
@@ -169,11 +175,23 @@ class ItemParser(BaseParser):
         raw_attributes = row["_raw_attributes"]
         currency = parse_currency(raw_attributes.get("pricecurrency", ""))
         if currency is None:
-            price = raw_attributes["npcprice"]
-            rest = price[number_pattern.search(price).end():]
-            if CURRENCY_TEXT_PATTERN.search(rest):
-                currency = parse_currency(rest)
+            currency = cls._parse_price_suffix_currency(raw_attributes["npcprice"])
         row["value_buy_currency"] = currency or GOLD_COIN
+
+    @staticmethod
+    def _parse_price_suffix_currency(price: str) -> str | None:
+        """Get the currency written after the first number of a price, like ``50 [[Gold Token]]s``.
+
+        HTML tags, comments and notes in parentheses are removed from the text after the number. The rest names a
+        currency only when it starts with a link, a template or a letter, so ``50 - 60`` and ``50<br>60`` name none.
+        """
+        suffix = MARKUP_PATTERN.sub("", price[number_pattern.search(price).end():])
+        while (without_note := NOTE_PATTERN.sub("", suffix)) != suffix:
+            suffix = without_note
+        suffix = suffix.strip()
+        if CURRENCY_START_PATTERN.match(suffix):
+            return parse_currency(suffix)
+        return None
 
     @classmethod
     def parse_item_attributes(cls, row: dict[str, Any]):

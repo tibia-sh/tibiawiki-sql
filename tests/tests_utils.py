@@ -153,6 +153,31 @@ class TestUtils(unittest.TestCase):
         self.assertEqual("Bar", parse_currency("{{ {{Bar}} }}"))
         self.assertEqual("A", parse_currency("[[a|{{b}}]]"))
 
+    def test_parse_currency_never_raises(self):
+        for value in ("{{A|{}}{{B|{x}}}}", "{{A|{{}}{{B|x}}}}", "{{A|{{B|{}}{{C|{x}}}}}}", "{{A|{{B|{}}}}{{C|{x}}}}"):
+            with self.subTest(value=value):
+                # The braces left by the templates are text, not parsed again.
+                self.assertEqual("{{x}}", parse_currency(value))
+        self.assertIsNone(parse_currency("[[File:A|[[File:B]]]]"))
+        self.assertEqual("{{Foo}}", parse_currency("<nowiki>{{Foo}}</nowiki>"))
+
+    def test_parse_currency_none_for_empty_links(self):
+        for value in ("[[]]", "[[#]]", "[[|]]", "[[_]]", "[[#|]]", "[[Task Board# |]]"):
+            with self.subTest(value=value):
+                self.assertIsNone(parse_currency(value))
+
+    def test_parse_currency_none_with_only_skipped_links(self):
+        self.assertIsNone(parse_currency("[[Category:Currencies]]"))
+        self.assertIsNone(parse_currency("[[File:Theons.gif]]"))
+        self.assertIsNone(parse_currency("[[Image:Theons.gif]] <!-- x -->"))
+        self.assertEqual("Theons", parse_currency("[[File:Theons.gif]] Theons"))
+
+    def test_parse_currency_ignores_formatting(self):
+        self.assertEqual("Gold Coin", parse_currency("<span>gp</span>"))
+        self.assertEqual("Gold Coin", parse_currency("gp <!-- x -->"))
+        self.assertEqual("Gold Coin", parse_currency("<span>{{GP}}</span>"))
+        self.assertIsNone(parse_currency("?"))
+
     def test_parse_min_max(self):
         self.assertEqual(parse_min_max("5-20"), (5, 20))
         self.assertEqual(parse_min_max("50"), (0, 50))

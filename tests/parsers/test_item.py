@@ -218,13 +218,30 @@ class TestItemParserBuyCurrency(unittest.TestCase):
         self.assertEqual(250, item.value_buy)
         self.assertEqual("Christmas Token", item.value_buy_currency)
 
-    def test_item_value_buy_currency_gold_after_range(self):
+    def test_item_value_buy_currency_npcprice_suffix(self):
         content = load_resource("content_item_potion_health_potion.txt")
         self.assertIn("| npcprice      = 50\n", content)
-        item = self._parse_content("Health Potion", content.replace("| npcprice      = 50\n", "| npcprice      = 50 - 60\n"))
+        cases = [
+            ("<span>50</span>", 50, "Gold Coin"),
+            ("50<br>60", 50, "Gold Coin"),
+            ("50 - 60", 50, "Gold Coin"),
+            ("50 - 60 gp", 50, "Gold Coin"),
+            ("50 gp (from [[Sam]])", 50, "Gold Coin"),
+            ("50 (from [[Sam]]) [[Gold Token]]s", 50, "Gold Token"),
+            ("50 <!-- note --> [[Gold Token]]s", 50, "Gold Token"),
+            ("50 <small>[[Gold Token]]s</small>", 50, "Gold Token"),
+            ("50 [[Gold Token]]s", 50, "Gold Token"),
+            ("250 Christmas Token", 250, "Christmas Token"),
+            ("0 - 30", 0, None),
+        ]
+        for npcprice, value_buy, currency in cases:
+            with self.subTest(npcprice=npcprice):
+                item = self._parse_content(
+                    "Health Potion", content.replace("| npcprice      = 50\n", f"| npcprice      = {npcprice}\n"),
+                )
 
-        self.assertEqual(50, item.value_buy)
-        self.assertEqual("Gold Coin", item.value_buy_currency)
+                self.assertEqual(value_buy, item.value_buy)
+                self.assertEqual(currency, item.value_buy_currency)
 
     def test_item_value_buy_currency_none_for_zero_range(self):
         item = self._parse("Adventurer's Stone", "content_item_adventurers_stone.txt")
