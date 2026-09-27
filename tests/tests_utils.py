@@ -172,4 +172,5 @@ class TestUtils(unittest.TestCase):
         self.assertEqual("+1 Axe Fighting", tables["Sanguine 1H Axe"][1][0]["effect"])
 
     def test_version_is_tibia_sh_build(self):
-        self.assertEqual("9.0.0+tibiash.2", tibiawikisql.__version__)
+        # A release PR sets X.Y.Z+tibiash.N. An upstream sync takes upstream's bare X.Y.Z until the next release.
+        self.assertRegex(tibiawikisql.__version__, r"\A[0-9]+\.[0-9]+\.[0-9]+(\+tibiash\.[0-9]+)?\Z")
