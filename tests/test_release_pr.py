@@ -180,8 +180,16 @@ class TestDecideTag(unittest.TestCase):
     def test_skips_an_ordinary_push_after_a_tagged_release(self):
         self.assertEqual("skip", self.decide(None, {"v9.0.0+tibiash.3": OLD}))
 
-    def test_skips_a_direct_push(self):
-        self.assertEqual("skip", self.decide(None))
+    def test_fails_an_untagged_version_with_no_merged_pr(self):
+        # A release merge that commits/{sha}/pulls did not list yet, or a direct push of an untagged version.
+        self.assertEqual("fail", self.decide(None))
+
+    def test_fails_an_untagged_version_with_no_merged_pr_and_no_tags(self):
+        self.assertEqual("fail", self.decide(None, {}))
+
+    def test_skips_an_ordinary_merge_while_the_version_is_untagged(self):
+        ordinary = merged_pr(head={"ref": "fix/parser", "sha": "c" * 40}, user={"login": "someone", "type": "User"})
+        self.assertEqual("skip", self.decide(ordinary))
 
     def test_skips_an_upstream_version(self):
         self.assertEqual("skip", self.decide(None, version="9.1.0"))
@@ -298,7 +306,11 @@ class TestTagDecisionCli(CliTestCase):
     def test_prints_the_decision_and_the_version(self):
         self.assertEqual((0, "decision=tag\nversion=9.0.0+tibiash.3\n"), self.tag_decision(merged_pr()))
 
-    def test_null_pr_is_a_skip(self):
+    def test_null_pr_with_an_untagged_version_fails(self):
+        self.assertEqual((0, "decision=fail\nversion=9.0.0+tibiash.3\n"), self.tag_decision(None))
+
+    def test_null_pr_with_a_tagged_version_skips(self):
+        self.write("tags.txt", f"{OLD} refs/tags/v9.0.0+tibiash.3\n")
         self.assertEqual((0, "decision=skip\nversion=9.0.0+tibiash.3\n"), self.tag_decision(None))
 
     def test_head_must_be_a_full_sha(self):
@@ -571,8 +583,9 @@ concurrency:
             noop) echo "v$version already points at $GITHUB_SHA." ;;
             skip) echo "$GITHUB_SHA is not drptbl's merge of the App's release pull request, so nothing is tagged." ;;
             fail)
-              echo "::error::v$version cannot be tagged at $GITHUB_SHA." \\
-                "The version is not x.y.z+tibiash.N, or the tag points at another commit."
+              echo "::error::v$version cannot be tagged at $GITHUB_SHA. The version is not x.y.z+tibiash.N," \\
+                "its tag points at another commit, or it has no tag and no merged pull request was found." \\
+                "For a release merge, re-run this run once the pull request shows as merged."
               exit 1
               ;;
             *)

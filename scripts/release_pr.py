@@ -233,13 +233,17 @@ def decide_tag(version: str, tags: dict[str, str], head: str, merged_pr: dict | 
         app_login: The App's login, ``<slug>[bot]``.
 
     Returns:
-        ``skip`` unless ``merged_pr`` is the App's ``release/next`` pull request, merged at ``head`` by the release
-        approver, a user; else ``fail`` when the version is not ``x.y.z+tibiash.N`` or its tag points at another
-        commit; else ``noop`` when the tag points at ``head``; else ``tag``.
+        With no merged pull request, ``fail`` when the version is ``x.y.z+tibiash.N`` and has no tag: a release merge
+        that GitHub did not list yet, or a direct push, which would otherwise leave the release untagged unseen.
+        Otherwise ``skip`` unless ``merged_pr`` is the App's ``release/next`` pull request, merged at ``head`` by the
+        release approver, a user; else ``fail`` when the version is not ``x.y.z+tibiash.N`` or its tag points at
+        another commit; else ``noop`` when the tag points at ``head``; else ``tag``.
     """
+    tagged = tags.get(f"v{version}")
+    if merged_pr is None and GENERATOR_VERSION.fullmatch(version) and tagged is None:
+        return "fail"
     if not _approved_release_merge(merged_pr, head, app_login):
         return "skip"
-    tagged = tags.get(f"v{version}")
     if not GENERATOR_VERSION.fullmatch(version) or tagged not in {None, head}:
         return "fail"
     return "noop" if tagged == head else "tag"

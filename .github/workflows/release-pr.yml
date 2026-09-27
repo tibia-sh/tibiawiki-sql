@@ -174,7 +174,8 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
-      # With no merged pull request, as for a direct push, the script is given null and skips.
+      # With no merged pull request, as for a direct push, the script is given null. It fails when the version is
+      # untagged, and skips otherwise.
       - name: Read the merged pull request
         env:
           GH_TOKEN: ${{ github.token }}
@@ -190,7 +191,8 @@ jobs:
             echo "::error::More than one merged pull request has $GITHUB_SHA as its merge commit."
             exit 1
           fi
-      # fail turns the run red: the version is not x.y.z+tibiash.N, or its tag points at another commit.
+      # fail turns the run red: the version is not x.y.z+tibiash.N, its tag points at another commit, or it has no
+      # tag and no merged pull request was found, as for a release merge GitHub did not list yet.
       - name: Decide
         id: decide
         env:
@@ -207,8 +209,9 @@ jobs:
             noop) echo "v$version already points at $GITHUB_SHA." ;;
             skip) echo "$GITHUB_SHA is not drptbl's merge of the App's release pull request, so nothing is tagged." ;;
             fail)
-              echo "::error::v$version cannot be tagged at $GITHUB_SHA." \
-                "The version is not x.y.z+tibiash.N, or the tag points at another commit."
+              echo "::error::v$version cannot be tagged at $GITHUB_SHA. The version is not x.y.z+tibiash.N," \
+                "its tag points at another commit, or it has no tag and no merged pull request was found." \
+                "For a release merge, re-run this run once the pull request shows as merged."
               exit 1
               ;;
             *)
