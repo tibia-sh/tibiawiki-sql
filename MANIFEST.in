@@ -7,3 +7,4 @@ recursive-include tibiawikisql
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 exclude tests/test_upstream_check.py
+exclude tests/test_release_pr.py

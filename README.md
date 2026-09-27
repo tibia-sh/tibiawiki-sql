@@ -25,14 +25,46 @@ Releases are wheels on this repository's [GitHub releases](https://github.com/ti
 on PyPI. Their versions end in `+tibiash.N`, like `9.0.0+tibiash.1`. To install one, download the wheel from a release
 and run `pip install` on it. The PyPI package and the install steps below are upstream's.
 
-To release a version, set `__version__` in `tibiawikisql/__init__.py`, add a `## <version>` section to `CHANGELOG.md`
-and merge both to `main`. Then push the tag `v<version>`, like `v9.0.0+tibiash.1`, on that commit. The release
-workflow checks that the tag matches the version and that the commit is on `main`. It runs the tests and checks an
-installed build of the wheel, both without write access. The publishing job then builds the wheel and the sdist with
-only the hashed build dependencies in `build-constraints.txt`, checks the wheel's version, writes `SHA256SUMS`, attests
-all three files and publishes them with the changelog section as the release notes. A running release is left to
-finish. A newer run for the same tag can still replace one that is waiting to start. Running the workflow by hand on
-`main` is a dry run: it skips the tag checks and the release. On any other branch it fails.
+Releases come from `CHANGELOG.md`. A change that should be released adds an entry, a line starting with `- `, under
+`## Unreleased` at the top of `CHANGELOG.md`. On every push to `main`, the Release PR workflow reads that section. When
+it has entries, the workflow renames it to the next version, sets `__version__` in `tibiawikisql/__init__.py` to that
+version and opens or updates the pull request `chore: release <version>` from the branch `release/next`. The next
+version counts `+tibiash.N` up from the highest tagged `N` of the same upstream version, so `9.0.0+tibiash.2` is
+followed by `9.0.0+tibiash.3`, and an upstream `9.1.0` by `9.1.0+tibiash.1`. When the section is empty or gone, the
+workflow closes that pull request. The tibia-sh App, `tibia-sh-bot`, pushes the branch and opens the pull request, so
+its CI runs. Nothing merges it by itself.
+
+The release is drptbl's merge of that pull request. The Release PR workflow's run for the merge tags `v<version>`,
+like `v9.0.0+tibiash.1`, on the merge commit, as the App, which the `release tags` ruleset lets create `v*` tags. A
+merge by anyone else, a pull request from another branch or author, and any other push to `main` tag nothing. The tag
+starts the release workflow.
+
+The release workflow checks that the tag matches the version and that the commit is on `main`. It runs the tests and
+checks an installed build of the wheel, both without write access. The publishing job then builds the wheel and the
+sdist with only the hashed build dependencies in `build-constraints.txt`, checks the wheel's version, writes
+`SHA256SUMS`, attests all three files and publishes them with the changelog section as the release notes. A running
+release is left to finish. A newer run for the same tag can still replace one that is waiting to start. Once the
+release is published, the workflow sends `generator-release` with the version to tibia-sh/tibiawiki-mcp, whose
+generator workflow verifies the wheel's attestation and pins it. Running the workflow by hand on `main` is a dry run: it
+skips the tag checks, the release and the dispatch. On any other branch it fails.
+
+When a step fails:
+
+* The Release PR workflow's `tag` job failed: re-run that run. A run dispatched on `main` checks the newest commit of
+  `main`, not the merge commit. Until the version is tagged, the next proposal fails, so no version is proposed twice.
+  When the error says the version has no tag and no merged pull request was found, GitHub had not listed the release
+  merge yet. Re-run the run once the pull request shows as merged, or dispatch the workflow on `main` while the merge
+  commit is still its newest commit. A direct push of an untagged version fails the same way. The job creates the tag
+  with a token that has contents write only, and GitHub refuses a ref at a commit whose `.github/workflows` tree
+  matches no branch tip unless the token has workflow scope. So re-run a failed `tag` job before any workflow change
+  lands on `main`. If one already has, a maintainer creates the tag by hand and pushes it over SSH. The tag's push runs
+  the release workflow, as a dispatch would only run a dry run.
+* The release workflow's `downstream` job failed: the release is published, so don't re-run the release run. Run
+  `generator.yml` in tibia-sh/tibiawiki-mcp by hand with the version.
+
+The App's private key is the tibia-sh organization secret `TIBIA_SH_APP_PRIVATE_KEY`. If it leaks, generate a new key
+in the App's settings, put it in the secret and delete the leaked key. Then look for tags, releases, branches
+and pull requests the App made in tibia-sh's repositories that no workflow run explains, and delete them.
 
 To check a download, run `sha256sum -c SHA256SUMS` and this for each file:
 
@@ -47,9 +79,11 @@ that `main` lacks, it opens an issue titled `Upstream has new commits` that list
 closes the issue. To merge them, add the remote once with
 `git remote add upstream https://github.com/Galarzaa90/tibiawiki-sql.git`. Then run `git fetch upstream`, merge
 `upstream/main` into a branch and open a pull request. This repository allows only merge commits, because a squash or a
-rebase rewrites upstream's commits, so they would still look new and the issue would never close. Keep the change
-notice in every file this copy changes. GitHub turns off a scheduled workflow after 60 days without activity in the
-repository. If that happens, you can turn it back on from the Actions tab.
+rebase rewrites upstream's commits, so they would still look new and the issue would never close. When the merge
+conflicts on `__version__`, take upstream's version. The next release then gets the next `+tibiash.N` of it. Add an
+entry for the merge under `## Unreleased` in `CHANGELOG.md`, so it is released. Keep the change notice in every file
+this copy changes. GitHub turns off a scheduled workflow after 60 days without activity in the repository. If that
+happens, you can turn it back on from the Actions tab.
 
 Every upstream file this copy changes carries this line at the top, in the file's comment syntax:
 
