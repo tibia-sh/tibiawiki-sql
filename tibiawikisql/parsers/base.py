@@ -1,3 +1,4 @@
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
 from collections.abc import Callable
 from typing import Any, ClassVar, Generic, TypeVar
 
@@ -100,10 +101,10 @@ class AttributeParser(Generic[T]):
         """Create a parser for the commonly found "implemented" parameter.
 
         Returns:
-            An attribute parser for the implemented parameter.
+            An attribute parser for the implemented parameter, lowercased, falling back to None if not found.
 
         """
-        return cls(lambda x: x.get("implemented").lower())
+        return cls.optional("implemented", str.lower)
 
 
 class ParserMeta(type):
