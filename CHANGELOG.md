@@ -12,6 +12,8 @@
 - Store `npc.city` as `NULL` when an NPC's article has no `city` field, instead of dropping the NPC. Such an NPC's
   travel legs start where a `From [[Place]]` note or a shuttle names, and otherwise have a `NULL` origin. A Blue Stone
   is now kept.
+- Store `achievement.name` and `achievement.description` as `NULL` when an achievement's article has no such field,
+  instead of dropping the achievement. `achievement.description` is now nullable. Achievement 563 is now kept.
 
 ## 9.0.0+tibiash.4
 

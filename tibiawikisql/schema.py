@@ -16,7 +16,7 @@ class AchievementTable(Table):
     name: ClassVar = Column(Text, no_case=True, index=True)
     grade: ClassVar = Column(Integer)
     points: ClassVar = Column(Integer)
-    description: ClassVar = Column(Text, nullable=False)
+    description: ClassVar = Column(Text)
     spoiler: ClassVar = Column(Text)
     is_secret: ClassVar = Column(Boolean)
     is_premium: ClassVar = Column(Boolean)

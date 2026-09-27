@@ -1,0 +1,16 @@
+{{Infobox Achievement|List={{{1|}}}|GetValue={{{GetValue|}}}
+| grade         = 
+| name          = 
+| actualname    = 
+| description   = 
+| spoiler       = 
+| premium       = ?
+| points        = ?
+| secret        = yes
+| implemented   = 15.10.46b862
+| achievementid = 563?
+| relatedpages  =
+| history       = 
+| status        = 
+| unknown       = yes
+}}
