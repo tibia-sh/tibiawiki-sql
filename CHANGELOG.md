@@ -1,6 +1,21 @@
 <!-- Changed by tibia.sh in 2026. See "About this copy" in README.md. -->
 # Changelog
 
+## Unreleased
+
+- Read loot ranges with commas as thousands separators, like `1,000-2,000`, as 1000 to 2000 instead of 0 to 2. This
+  covers creature loot and the Loot Statistics pages. A Loot Statistics entry like
+  `Gold Coin, times:1,234, amount:1,000-2,000` keeps `1,234` and `1,000-2,000` whole, and an entry whose `times` has no
+  number is skipped instead of stopping the task. Neither side of a range has a sign, as before, and `1,0002-3` still
+  reads as 2 to 3. No current value changes.
+- Read a currency linked with a leading colon, like `[[:Gold Token]]`, as `Gold Token` instead of `:Gold Token`, in
+  `item.value_buy_currency` and `mount.price_currency`. Colon links to files, images and categories are still skipped.
+  No current value changes.
+- Keep the Loot Statistics task running past a bad page. An entry without `times` is skipped, and a page whose `kills`
+  is 0, missing or not a number gets no drop rows, since no chance can be computed. Before, each of these stopped the
+  task for every later page. A page with negative `kills` also gets no drop rows, and an entry with negative `times`
+  is skipped, instead of replacing a drop with a negative chance. No current value changes.
+
 ## 9.0.0+tibiash.6
 
 - Read numbers with commas as thousands separators, like `50,000`, as the whole number instead of the digits before

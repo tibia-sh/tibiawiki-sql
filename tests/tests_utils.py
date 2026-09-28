@@ -116,6 +116,20 @@ class TestUtils(unittest.TestCase):
         self.assertEqual("Theons", parse_currency("[[theons]]"))
         self.assertEqual("Silver Token", parse_currency("[[Silver_Token|tokens]]"))
 
+    def test_parse_currency_colon_link(self):
+        for value, expected in (
+            ("[[:Gold Token]]", "Gold Token"),
+            ("[[:theons]]", "Theons"),
+            ("[[ : Gold Token ]]s", "Gold Token"),
+            ("[[:]]", None),
+        ):
+            with self.subTest(value=value):
+                self.assertEqual(expected, parse_currency(value))
+
+    def test_parse_currency_skips_colon_file_and_category_links(self):
+        self.assertIsNone(parse_currency("[[:Category:Foo]]"))
+        self.assertEqual("Theons", parse_currency("[[:File:X.gif]] [[Theons]]"))
+
     def test_parse_currency_section_link_display_text(self):
         self.assertEqual("Hunting Task Points", parse_currency("[[Task Board#Hunting Task Points|Hunting Task Points]]"))
         self.assertEqual("Hunting Task Points", parse_currency("[[Task Board#Hunting Task Points]]"))
@@ -182,6 +196,21 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(parse_min_max("5-20"), (5, 20))
         self.assertEqual(parse_min_max("50"), (0, 50))
         self.assertEqual((0, 1000), parse_min_max("1,000"))
+        self.assertEqual((0, 40), parse_min_max("0-40"))
+
+    def test_parse_min_max_thousands_separator(self):
+        for value, expected in (("1,000-2,000", (1000, 2000)), ("0-1,500", (0, 1500))):
+            with self.subTest(value=value):
+                self.assertEqual(expected, parse_min_max(value))
+
+    def test_parse_min_max_not_thousands_separator(self):
+        # No valid thousands number sits next to the hyphen.
+        self.assertEqual((2, 3), parse_min_max("1,0002-3"))
+        self.assertEqual((1, 2), parse_min_max("1-2,0003"))
+
+    def test_parse_min_max_unsigned(self):
+        self.assertEqual((5, 20), parse_min_max("-5-20"))
+        self.assertEqual((0, 5), parse_min_max("5--20"))
 
     def test_parse_sounds(self):
         sound_string = "{{Sound List|Sound 1|Sound 2|Sound 3}}"
@@ -198,6 +227,10 @@ class TestUtils(unittest.TestCase):
 
         kills, _ = parse_loot_statistics(content.replace("|kills=36488", "|kills=1,234"))
         self.assertEqual(1234, kills)
+
+        kills, loot_statistics = parse_loot_statistics(content.replace("|kills=36488", ""))
+        self.assertEqual(0, kills)
+        self.assertEqual(34, len(loot_statistics))
 
         kills, loot_statistics = parse_loot_statistics("Something else")
         self.assertEqual(kills, 0)

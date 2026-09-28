@@ -1,3 +1,4 @@
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
 import datetime
 import sqlite3
 import unittest
@@ -10,7 +11,7 @@ from tibiawikisql import __main__ as cli_module
 from tibiawikisql import generation as generation_module
 from tibiawikisql.api import Article, WikiEntry
 from tibiawikisql.generation import WEAPON_PROFICIENCY_NAME_ARTICLE, WEAPON_PROFICIENCY_TABLES_ARTICLE
-from tibiawikisql.schema import ItemProficiencyPerkTable, ItemTable
+from tibiawikisql.schema import CreatureDropTable, CreatureTable, ItemProficiencyPerkTable, ItemTable
 from tibiawikisql.tasks import images as image_tasks
 from tibiawikisql.tasks.item_proficiency_perks import generate_item_proficiency_perks
 from tibiawikisql.tasks.loot_statistics import generate_loot_statistics
@@ -339,6 +340,121 @@ class TestGenerationOrchestration(unittest.TestCase):
             echo=Mock(),
         )
         wiki_client.get_articles.assert_not_called()
+
+
+class TestGenerateLootStatistics(unittest.TestCase):
+    DRAGON_PAGE = "{{Loot2\n|kills=200\n|Gold Coin, times:100, amount:1-50\n}}"
+    DRAGON_ROW = (11, 20, 50.0, 1, 50)
+    SEEDED_DEMON_ROW = (10, 20, 12.5, 1, 3)
+
+    def setUp(self):
+        self.conn = sqlite3.connect(":memory:")
+        self.conn.executescript(CreatureTable.get_create_table_statement())
+        self.conn.executescript(CreatureDropTable.get_create_table_statement())
+        timestamp = datetime.datetime.fromisoformat("2024-01-01T00:00:00+00:00")
+        CreatureTable.insert(self.conn, article_id=10, title="Demon", timestamp=timestamp)
+        CreatureTable.insert(self.conn, article_id=11, title="Dragon", timestamp=timestamp)
+        self.data_store = {
+            "creatures_map": {"demon": 10, "dragon": 11},
+            "items_map": {"gold coin": 20, "platinum coin": 21},
+        }
+
+    def tearDown(self):
+        self.conn.close()
+
+    def generate(self, *pages: tuple[str, str]) -> list[tuple]:
+        """Run the task over Loot Statistics pages, given in order as (creature, content) pairs."""
+        wiki_client = Mock()
+        wiki_client.get_articles.return_value = [
+            Article(
+                article_id=9999,
+                title=f"Loot Statistics:{creature}",
+                timestamp=datetime.datetime.fromisoformat("2024-01-01T00:00:00+00:00"),
+                content=content,
+            )
+            for creature, content in pages
+        ]
+        generate_loot_statistics(
+            self.conn,
+            self.data_store,
+            wiki_client=wiki_client,
+            progress_bar=generation_module.progress_bar,
+            article_label=generation_module.article_label,
+            timed=generation_module.timed,
+            echo=Mock(),
+        )
+        return self.conn.execute(
+            "SELECT creature_id, item_id, chance, min, max FROM creature_drop ORDER BY creature_id, item_id",
+        ).fetchall()
+
+    def test_thousands_separators(self):
+        rows = self.generate(("Demon", "{{Loot2\n|kills=2,000\n|Gold Coin, times:1,234, amount:1,000-2,000\n}}"))
+        self.assertEqual([(10, 20, 61.7, 1000, 2000)], rows)
+
+    def test_plain_numbers(self):
+        rows = self.generate(("Demon", "{{Loot2\n|kills=4000\n|Gold Coin, times:3016, amount:1-120\n}}"))
+        self.assertEqual([(10, 20, 75.4, 1, 120)], rows)
+
+    def test_skips_times_without_number(self):
+        rows = self.generate(
+            ("Demon", ("{{Loot2\n|kills=1000\n|Gold Coin, times:abc, amount:1-120\n"
+                       "|Platinum Coin, times:500, amount:1-8\n}}")),
+            ("Dragon", self.DRAGON_PAGE),
+        )
+        self.assertEqual([(10, 21, 50.0, 1, 8), self.DRAGON_ROW], rows)
+
+    def test_skips_entry_without_times(self):
+        rows = self.generate(
+            ("Demon", ("{{Loot2\n|kills=1000\n|Gold Coin, amount:1-120\n"
+                       "|Platinum Coin, times:500, amount:1-8\n}}")),
+            ("Dragon", self.DRAGON_PAGE),
+        )
+        self.assertEqual([(10, 21, 50.0, 1, 8), self.DRAGON_ROW], rows)
+
+    def seed_demon_row(self):
+        """Store a drop the Demon's article gave, which a skipped page must leave in place."""
+        self.conn.execute(
+            "INSERT INTO creature_drop(creature_id, item_id, chance, min, max) VALUES(?,?,?,?,?)",
+            self.SEEDED_DEMON_ROW,
+        )
+
+    def test_skips_page_with_zero_kills(self):
+        self.seed_demon_row()
+        rows = self.generate(
+            ("Demon", "{{Loot2\n|kills=0\n|Gold Coin, times:5, amount:1-120\n}}"),
+            ("Dragon", self.DRAGON_PAGE),
+        )
+        self.assertEqual([self.SEEDED_DEMON_ROW, self.DRAGON_ROW], rows)
+
+    def test_skips_page_with_negative_kills(self):
+        self.seed_demon_row()
+        rows = self.generate(
+            ("Demon", "{{Loot2\n|kills=-100\n|Gold Coin, times:5, amount:1-120\n}}"),
+            ("Dragon", self.DRAGON_PAGE),
+        )
+        self.assertEqual([self.SEEDED_DEMON_ROW, self.DRAGON_ROW], rows)
+
+    def test_keeps_zero_times(self):
+        rows = self.generate(
+            ("Demon", "{{Loot2\n|kills=1000\n|Gold Coin, times:0, amount:1-120\n}}"),
+            ("Dragon", self.DRAGON_PAGE),
+        )
+        self.assertEqual([(10, 20, 0.0, 1, 120), self.DRAGON_ROW], rows)
+
+    def test_skips_negative_times(self):
+        rows = self.generate(
+            ("Demon", ("{{Loot2\n|kills=1000\n|Gold Coin, times:-5, amount:1-120\n"
+                       "|Platinum Coin, times:500, amount:1-8\n}}")),
+            ("Dragon", self.DRAGON_PAGE),
+        )
+        self.assertEqual([(10, 21, 50.0, 1, 8), self.DRAGON_ROW], rows)
+
+    def test_skips_page_without_kills(self):
+        rows = self.generate(
+            ("Demon", "{{Loot2\n|Gold Coin, times:5, amount:1-120\n}}"),
+            ("Dragon", self.DRAGON_PAGE),
+        )
+        self.assertEqual([self.DRAGON_ROW], rows)
 
 
 class TestGenerateCommand(unittest.TestCase):
