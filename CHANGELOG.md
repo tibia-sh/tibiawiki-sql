@@ -8,6 +8,9 @@
   `Gold Coin, times:1,234, amount:1,000-2,000` keeps `1,234` and `1,000-2,000` whole, and an entry whose `times` has no
   number is skipped instead of stopping the task. Neither side of a range has a sign, as before, and `1,0002-3` still
   reads as 2 to 3. No current value changes.
+- Read a currency linked with a leading colon, like `[[:Gold Token]]`, as `Gold Token` instead of `:Gold Token`, in
+  `item.value_buy_currency` and `mount.price_currency`. Colon links to files, images and categories are still skipped.
+  No current value changes.
 
 ## 9.0.0+tibiash.6
 

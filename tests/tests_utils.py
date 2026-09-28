@@ -116,6 +116,20 @@ class TestUtils(unittest.TestCase):
         self.assertEqual("Theons", parse_currency("[[theons]]"))
         self.assertEqual("Silver Token", parse_currency("[[Silver_Token|tokens]]"))
 
+    def test_parse_currency_colon_link(self):
+        for value, expected in (
+            ("[[:Gold Token]]", "Gold Token"),
+            ("[[:theons]]", "Theons"),
+            ("[[ : Gold Token ]]s", "Gold Token"),
+            ("[[:]]", None),
+        ):
+            with self.subTest(value=value):
+                self.assertEqual(expected, parse_currency(value))
+
+    def test_parse_currency_skips_colon_file_and_category_links(self):
+        self.assertIsNone(parse_currency("[[:Category:Foo]]"))
+        self.assertEqual("Theons", parse_currency("[[:File:X.gif]] [[Theons]]"))
+
     def test_parse_currency_section_link_display_text(self):
         self.assertEqual("Hunting Task Points", parse_currency("[[Task Board#Hunting Task Points|Hunting Task Points]]"))
         self.assertEqual("Hunting Task Points", parse_currency("[[Task Board#Hunting Task Points]]"))

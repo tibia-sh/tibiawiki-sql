@@ -381,8 +381,9 @@ def parse_currency(value: str) -> str | None:
     2. Links to files, images and categories are removed.
     3. A value with a remaining link gives the first link's target, the currency's page, so ``[[Silver Token]]s``
        gives ``Silver Token``. When the target is a section of a page, the link's text is used instead, so
-       ``[[Task Board#Hunting Task Points]]`` gives ``Hunting Task Points``. A link that names nothing, like ``[[]]``,
-       gives ``None``.
+       ``[[Task Board#Hunting Task Points]]`` gives ``Hunting Task Points``. A leading colon, which links a page
+       without categorising or embedding it, is removed with the whitespace around it, so ``[[:Gold Token]]`` gives
+       ``Gold Token``. A link that names nothing, like ``[[]]`` or ``[[:]]``, gives ``None``.
     4. Otherwise the text is read without HTML tags and comments. ``gp`` gives :data:`GOLD_COIN`, and ``?`` or no text
        gives ``None``. Any other text is the currency. The contents of ``<nowiki>`` are text, so
        ``<nowiki>{{Foo}}</nowiki>`` gives ``{{Foo}}``.
@@ -406,7 +407,7 @@ def parse_currency(value: str) -> str | None:
         if section:
             text = strip_code(link.text) if link.text is not None else ""
             return text or section.strip() or None
-        name = page.replace("_", " ").strip()
+        name = page.replace("_", " ").strip().removeprefix(":").strip()
         return name[:1].upper() + name[1:] or None
     text = code.strip_code().strip()
     if text == "gp":
