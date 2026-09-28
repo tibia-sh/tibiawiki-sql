@@ -1,3 +1,4 @@
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
 import datetime
 import sqlite3
 import unittest
@@ -10,7 +11,7 @@ from tibiawikisql import __main__ as cli_module
 from tibiawikisql import generation as generation_module
 from tibiawikisql.api import Article, WikiEntry
 from tibiawikisql.generation import WEAPON_PROFICIENCY_NAME_ARTICLE, WEAPON_PROFICIENCY_TABLES_ARTICLE
-from tibiawikisql.schema import ItemProficiencyPerkTable, ItemTable
+from tibiawikisql.schema import CreatureDropTable, CreatureTable, ItemProficiencyPerkTable, ItemTable
 from tibiawikisql.tasks import images as image_tasks
 from tibiawikisql.tasks.item_proficiency_perks import generate_item_proficiency_perks
 from tibiawikisql.tasks.loot_statistics import generate_loot_statistics
@@ -339,6 +340,59 @@ class TestGenerationOrchestration(unittest.TestCase):
             echo=Mock(),
         )
         wiki_client.get_articles.assert_not_called()
+
+
+class TestGenerateLootStatistics(unittest.TestCase):
+    def setUp(self):
+        self.conn = sqlite3.connect(":memory:")
+        self.conn.executescript(CreatureTable.get_create_table_statement())
+        self.conn.executescript(CreatureDropTable.get_create_table_statement())
+        timestamp = datetime.datetime.fromisoformat("2024-01-01T00:00:00+00:00")
+        CreatureTable.insert(self.conn, article_id=10, title="Demon", timestamp=timestamp)
+        self.data_store = {
+            "creatures_map": {"demon": 10},
+            "items_map": {"gold coin": 20, "platinum coin": 21},
+        }
+
+    def tearDown(self):
+        self.conn.close()
+
+    def generate(self, content: str) -> list[tuple]:
+        wiki_client = Mock()
+        wiki_client.get_articles.return_value = [
+            Article(
+                article_id=9999,
+                title="Loot Statistics:Demon",
+                timestamp=datetime.datetime.fromisoformat("2024-01-01T00:00:00+00:00"),
+                content=content,
+            ),
+        ]
+        generate_loot_statistics(
+            self.conn,
+            self.data_store,
+            wiki_client=wiki_client,
+            progress_bar=generation_module.progress_bar,
+            article_label=generation_module.article_label,
+            timed=generation_module.timed,
+            echo=Mock(),
+        )
+        return self.conn.execute(
+            "SELECT creature_id, item_id, chance, min, max FROM creature_drop ORDER BY item_id",
+        ).fetchall()
+
+    def test_thousands_separators(self):
+        rows = self.generate("{{Loot2\n|kills=2,000\n|Gold Coin, times:1,234, amount:1,000-2,000\n}}")
+        self.assertEqual([(10, 20, 61.7, 1000, 2000)], rows)
+
+    def test_plain_numbers(self):
+        rows = self.generate("{{Loot2\n|kills=4000\n|Gold Coin, times:3016, amount:1-120\n}}")
+        self.assertEqual([(10, 20, 75.4, 1, 120)], rows)
+
+    def test_skips_times_without_number(self):
+        rows = self.generate(
+            "{{Loot2\n|kills=1000\n|Gold Coin, times:abc, amount:1-120\n|Platinum Coin, times:500, amount:1-8\n}}",
+        )
+        self.assertEqual([(10, 21, 50.0, 1, 8)], rows)
 
 
 class TestGenerateCommand(unittest.TestCase):

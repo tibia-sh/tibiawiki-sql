@@ -1,3 +1,4 @@
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
 """Task for parsing creature loot statistics pages."""
 from __future__ import annotations
 
@@ -5,7 +6,7 @@ from typing import Any, TYPE_CHECKING
 
 from colorama import Fore, Style
 
-from tibiawikisql.utils import parse_loot_statistics, parse_min_max
+from tibiawikisql.utils import parse_integer, parse_loot_statistics, parse_min_max
 
 if TYPE_CHECKING:
     import sqlite3
@@ -52,8 +53,11 @@ def generate_loot_statistics(
                     if item_id is None:
                         unknown_items.add(item_name)
                         continue
+                    times = parse_integer(entry["times"], None)
+                    if times is None:
+                        continue
                     amount = entry.get("amount", 1)
-                    percentage = min(int(entry["times"]) / kills * 100, 100)
+                    percentage = min(times / kills * 100, 100)
                     minimum, maximum = parse_min_max(amount)
                     rows.append((creature_id, item_id, percentage, minimum, maximum))
                     cursor.execute(

@@ -1,6 +1,14 @@
 <!-- Changed by tibia.sh in 2026. See "About this copy" in README.md. -->
 # Changelog
 
+## Unreleased
+
+- Read loot ranges with commas as thousands separators, like `1,000-2,000`, as 1000 to 2000 instead of 0 to 2. This
+  covers creature loot and the Loot Statistics pages. A Loot Statistics entry like
+  `Gold Coin, times:1,234, amount:1,000-2,000` keeps `1,234` and `1,000-2,000` whole, and an entry whose `times` has no
+  number is skipped instead of stopping the task. Neither side of a range has a sign, as before, and `1,0002-3` still
+  reads as 2 to 3. No current value changes.
+
 ## 9.0.0+tibiash.6
 
 - Read numbers with commas as thousands separators, like `50,000`, as the whole number instead of the digits before

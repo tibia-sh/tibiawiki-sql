@@ -18,10 +18,16 @@ if TYPE_CHECKING:
     from collections.abc import Generator
     from mwparserfromhell.nodes import Template
 
-min_max_pattern = re.compile(r"(\d+)-(\d+)")
+unsigned_number_rule = r"\d{1,3}(?:,\d{3})+(?!\d)|\d+"
+"""The rule for a number without a sign, whose thousands may be grouped with commas, like ``50,000``. Other commas end
+the number."""
+min_max_pattern = re.compile(rf"({unsigned_number_rule})-({unsigned_number_rule})")
+"""A range of two numbers without a sign, separated by a hyphen, like ``0-40`` or ``1,000-2,000``."""
 int_pattern = re.compile(r"[+-]?\d+")
-number_pattern = re.compile(r"[+-]?\d{1,3}(?:,\d{3})+(?!\d)|[+-]?\d+")
+number_pattern = re.compile(rf"[+-]?(?:{unsigned_number_rule})")
 """A number whose thousands may be grouped with commas, like ``50,000``. Other commas end the number."""
+loot_field_separator_pattern = re.compile(r",(?!\d{3}(?!\d))")
+"""A comma between the fields of a loot statistics entry. A comma followed by exactly three digits groups thousands."""
 float_pattern = re.compile(r"[+-]?(\d*[.])?\d+")
 escaping_tags = frozenset(("nowiki", "pre"))
 inert_comment_start = "<!\u200b--"
@@ -525,6 +531,9 @@ def _get_template_param(template: Template, param_name: str) -> str | None:
 def _parse_loot_entry(entry: str) -> dict[str, str]:
     """Parse a single parameter of the loot statistics template.
 
+    Fields are separated by commas. A comma followed by exactly three digits groups thousands, so in
+    ``Gold Coin, times:1,234, amount:1,000-2,000`` the times are ``1,234`` and the amount is ``1,000-2,000``.
+
     Args:
         entry: A single item entry.
 
@@ -532,7 +541,7 @@ def _parse_loot_entry(entry: str) -> dict[str, str]:
         A dictionary containing the drop data: item name, times dropped, amount dropped, etcetera.
 
     """
-    arguments = entry.split(",")
+    arguments = loot_field_separator_pattern.split(entry)
     entry = {"amount": "1"}
     for arg in arguments:
         subarg = arg.split(":")
@@ -551,18 +560,20 @@ def _parse_loot_entry(entry: str) -> dict[str, str]:
 def parse_min_max(value: str) -> tuple[int, int]:
     """Parse the minimum and maximum amounts of a loot drop.
 
-    They consist of two numbers separated by a hyphen, e.g. ``0-40``
+    They consist of two numbers separated by a hyphen, e.g. ``0-40``. Thousands may be grouped with commas, so
+    ``1,000-2,000`` gives 1000 and 2000. Neither number has a sign, so ``-5-20`` gives 5 and 20.
 
     Args:
         value: A string containing minimum and maximum values.
 
     Returns:
-        The minimum and maximum amounts.
+        The minimum and maximum amounts. Without a range, the minimum is 0 and the maximum is the first number, or 1 if
+        there is none.
 
     """
     match = min_max_pattern.search(value)
     if match:
-        return int(match.group(1)), int(match.group(2))
+        return int(match.group(1).replace(",", "")), int(match.group(2).replace(",", ""))
     return 0, parse_integer(value, 1)
 
 
