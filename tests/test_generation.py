@@ -345,6 +345,7 @@ class TestGenerationOrchestration(unittest.TestCase):
 class TestGenerateLootStatistics(unittest.TestCase):
     DRAGON_PAGE = "{{Loot2\n|kills=200\n|Gold Coin, times:100, amount:1-50\n}}"
     DRAGON_ROW = (11, 20, 50.0, 1, 50)
+    SEEDED_DEMON_ROW = (10, 20, 12.5, 1, 3)
 
     def setUp(self):
         self.conn = sqlite3.connect(":memory:")
@@ -410,12 +411,36 @@ class TestGenerateLootStatistics(unittest.TestCase):
         )
         self.assertEqual([(10, 21, 50.0, 1, 8), self.DRAGON_ROW], rows)
 
+    def seed_demon_row(self):
+        """Store a drop the Demon's article gave, which a skipped page must leave in place."""
+        self.conn.execute(
+            "INSERT INTO creature_drop(creature_id, item_id, chance, min, max) VALUES(?,?,?,?,?)",
+            self.SEEDED_DEMON_ROW,
+        )
+
     def test_skips_page_with_zero_kills(self):
+        self.seed_demon_row()
         rows = self.generate(
             ("Demon", "{{Loot2\n|kills=0\n|Gold Coin, times:5, amount:1-120\n}}"),
             ("Dragon", self.DRAGON_PAGE),
         )
-        self.assertEqual([self.DRAGON_ROW], rows)
+        self.assertEqual([self.SEEDED_DEMON_ROW, self.DRAGON_ROW], rows)
+
+    def test_skips_page_with_negative_kills(self):
+        self.seed_demon_row()
+        rows = self.generate(
+            ("Demon", "{{Loot2\n|kills=-100\n|Gold Coin, times:5, amount:1-120\n}}"),
+            ("Dragon", self.DRAGON_PAGE),
+        )
+        self.assertEqual([self.SEEDED_DEMON_ROW, self.DRAGON_ROW], rows)
+
+    def test_skips_negative_times(self):
+        rows = self.generate(
+            ("Demon", ("{{Loot2\n|kills=1000\n|Gold Coin, times:-5, amount:1-120\n"
+                       "|Platinum Coin, times:500, amount:1-8\n}}")),
+            ("Dragon", self.DRAGON_PAGE),
+        )
+        self.assertEqual([(10, 21, 50.0, 1, 8), self.DRAGON_ROW], rows)
 
     def test_skips_page_without_kills(self):
         rows = self.generate(

@@ -44,8 +44,8 @@ def generate_loot_statistics(
                 if creature_id is None:
                     continue
                 kills, loot_stats = parse_loot_statistics(article.content)
-                if not kills:
-                    # Without kills no chance can be computed.
+                if kills <= 0:
+                    # Without a positive number of kills no chance can be computed.
                     continue
                 rows = []
                 for entry in loot_stats:
@@ -57,7 +57,7 @@ def generate_loot_statistics(
                         unknown_items.add(item_name)
                         continue
                     times = parse_integer(entry.get("times", ""), None)
-                    if times is None:
+                    if times is None or times < 0:
                         continue
                     amount = entry.get("amount", 1)
                     percentage = min(times / kills * 100, 100)

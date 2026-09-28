@@ -13,7 +13,8 @@
   No current value changes.
 - Keep the Loot Statistics task running past a bad page. An entry without `times` is skipped, and a page whose `kills`
   is 0, missing or not a number gets no drop rows, since no chance can be computed. Before, each of these stopped the
-  task for every later page. No current value changes.
+  task for every later page. A page with negative `kills` also gets no drop rows, and an entry with negative `times`
+  is skipped, instead of replacing a drop with a negative chance. No current value changes.
 
 ## 9.0.0+tibiash.6
 
