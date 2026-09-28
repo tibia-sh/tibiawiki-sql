@@ -11,6 +11,9 @@
 - Read a currency linked with a leading colon, like `[[:Gold Token]]`, as `Gold Token` instead of `:Gold Token`, in
   `item.value_buy_currency` and `mount.price_currency`. Colon links to files, images and categories are still skipped.
   No current value changes.
+- Keep the Loot Statistics task running past a bad page. An entry without `times` is skipped, and a page whose `kills`
+  is 0, missing or not a number gets no drop rows, since no chance can be computed. Before, each of these stopped the
+  task for every later page. No current value changes.
 
 ## 9.0.0+tibiash.6
 

@@ -438,13 +438,13 @@ def parse_loot_statistics(value: str) -> tuple[int, list[Any]]:
         value: A string containing a creature's loot statistics.
 
     Returns:
-        A tuple containing the total kills and a list of entries.
+        A tuple containing the total kills and a list of entries. The kills are 0 when missing or not a number.
 
     """
     template = find_template(value, "Loot2", partial=True)
     if not template:
         return 0, []
-    kills = parse_integer(strip_code(template.get("kills", 0)))
+    kills = parse_integer(strip_code(template.get("kills", "")))
     entries = [_parse_loot_entry(param.value.strip_code()) for param in template.params if not param.showkey]
     return kills, entries
 

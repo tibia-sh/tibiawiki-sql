@@ -343,29 +343,35 @@ class TestGenerationOrchestration(unittest.TestCase):
 
 
 class TestGenerateLootStatistics(unittest.TestCase):
+    DRAGON_PAGE = "{{Loot2\n|kills=200\n|Gold Coin, times:100, amount:1-50\n}}"
+    DRAGON_ROW = (11, 20, 50.0, 1, 50)
+
     def setUp(self):
         self.conn = sqlite3.connect(":memory:")
         self.conn.executescript(CreatureTable.get_create_table_statement())
         self.conn.executescript(CreatureDropTable.get_create_table_statement())
         timestamp = datetime.datetime.fromisoformat("2024-01-01T00:00:00+00:00")
         CreatureTable.insert(self.conn, article_id=10, title="Demon", timestamp=timestamp)
+        CreatureTable.insert(self.conn, article_id=11, title="Dragon", timestamp=timestamp)
         self.data_store = {
-            "creatures_map": {"demon": 10},
+            "creatures_map": {"demon": 10, "dragon": 11},
             "items_map": {"gold coin": 20, "platinum coin": 21},
         }
 
     def tearDown(self):
         self.conn.close()
 
-    def generate(self, content: str) -> list[tuple]:
+    def generate(self, *pages: tuple[str, str]) -> list[tuple]:
+        """Run the task over Loot Statistics pages, given in order as (creature, content) pairs."""
         wiki_client = Mock()
         wiki_client.get_articles.return_value = [
             Article(
                 article_id=9999,
-                title="Loot Statistics:Demon",
+                title=f"Loot Statistics:{creature}",
                 timestamp=datetime.datetime.fromisoformat("2024-01-01T00:00:00+00:00"),
                 content=content,
-            ),
+            )
+            for creature, content in pages
         ]
         generate_loot_statistics(
             self.conn,
@@ -377,22 +383,46 @@ class TestGenerateLootStatistics(unittest.TestCase):
             echo=Mock(),
         )
         return self.conn.execute(
-            "SELECT creature_id, item_id, chance, min, max FROM creature_drop ORDER BY item_id",
+            "SELECT creature_id, item_id, chance, min, max FROM creature_drop ORDER BY creature_id, item_id",
         ).fetchall()
 
     def test_thousands_separators(self):
-        rows = self.generate("{{Loot2\n|kills=2,000\n|Gold Coin, times:1,234, amount:1,000-2,000\n}}")
+        rows = self.generate(("Demon", "{{Loot2\n|kills=2,000\n|Gold Coin, times:1,234, amount:1,000-2,000\n}}"))
         self.assertEqual([(10, 20, 61.7, 1000, 2000)], rows)
 
     def test_plain_numbers(self):
-        rows = self.generate("{{Loot2\n|kills=4000\n|Gold Coin, times:3016, amount:1-120\n}}")
+        rows = self.generate(("Demon", "{{Loot2\n|kills=4000\n|Gold Coin, times:3016, amount:1-120\n}}"))
         self.assertEqual([(10, 20, 75.4, 1, 120)], rows)
 
     def test_skips_times_without_number(self):
         rows = self.generate(
-            "{{Loot2\n|kills=1000\n|Gold Coin, times:abc, amount:1-120\n|Platinum Coin, times:500, amount:1-8\n}}",
+            ("Demon", ("{{Loot2\n|kills=1000\n|Gold Coin, times:abc, amount:1-120\n"
+                       "|Platinum Coin, times:500, amount:1-8\n}}")),
+            ("Dragon", self.DRAGON_PAGE),
         )
-        self.assertEqual([(10, 21, 50.0, 1, 8)], rows)
+        self.assertEqual([(10, 21, 50.0, 1, 8), self.DRAGON_ROW], rows)
+
+    def test_skips_entry_without_times(self):
+        rows = self.generate(
+            ("Demon", ("{{Loot2\n|kills=1000\n|Gold Coin, amount:1-120\n"
+                       "|Platinum Coin, times:500, amount:1-8\n}}")),
+            ("Dragon", self.DRAGON_PAGE),
+        )
+        self.assertEqual([(10, 21, 50.0, 1, 8), self.DRAGON_ROW], rows)
+
+    def test_skips_page_with_zero_kills(self):
+        rows = self.generate(
+            ("Demon", "{{Loot2\n|kills=0\n|Gold Coin, times:5, amount:1-120\n}}"),
+            ("Dragon", self.DRAGON_PAGE),
+        )
+        self.assertEqual([self.DRAGON_ROW], rows)
+
+    def test_skips_page_without_kills(self):
+        rows = self.generate(
+            ("Demon", "{{Loot2\n|Gold Coin, times:5, amount:1-120\n}}"),
+            ("Dragon", self.DRAGON_PAGE),
+        )
+        self.assertEqual([self.DRAGON_ROW], rows)
 
 
 class TestGenerateCommand(unittest.TestCase):

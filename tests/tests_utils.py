@@ -228,6 +228,10 @@ class TestUtils(unittest.TestCase):
         kills, _ = parse_loot_statistics(content.replace("|kills=36488", "|kills=1,234"))
         self.assertEqual(1234, kills)
 
+        kills, loot_statistics = parse_loot_statistics(content.replace("|kills=36488", ""))
+        self.assertEqual(0, kills)
+        self.assertEqual(34, len(loot_statistics))
+
         kills, loot_statistics = parse_loot_statistics("Something else")
         self.assertEqual(kills, 0)
         self.assertFalse(loot_statistics)
