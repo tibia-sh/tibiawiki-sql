@@ -434,6 +434,13 @@ class TestGenerateLootStatistics(unittest.TestCase):
         )
         self.assertEqual([self.SEEDED_DEMON_ROW, self.DRAGON_ROW], rows)
 
+    def test_keeps_zero_times(self):
+        rows = self.generate(
+            ("Demon", "{{Loot2\n|kills=1000\n|Gold Coin, times:0, amount:1-120\n}}"),
+            ("Dragon", self.DRAGON_PAGE),
+        )
+        self.assertEqual([(10, 20, 0.0, 1, 120), self.DRAGON_ROW], rows)
+
     def test_skips_negative_times(self):
         rows = self.generate(
             ("Demon", ("{{Loot2\n|kills=1000\n|Gold Coin, times:-5, amount:1-120\n"
