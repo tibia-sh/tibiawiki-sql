@@ -1,7 +1,7 @@
 <!-- Changed by tibia.sh in 2026. See "About this copy" in README.md. -->
 # Changelog
 
-## Unreleased
+## 9.0.0+tibiash.9
 
 - Send the `tibiawikisql/<version> (+https://github.com/tibia-sh/tibiawiki-sql)` User-Agent with every TibiaWiki API
   request. Before, requests carried the `requests` library's default, `python-requests/<version>`.
