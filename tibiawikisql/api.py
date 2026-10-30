@@ -109,8 +109,8 @@ class WikiClient:
     def _get_json(self, params: dict) -> dict:
         """Request the API and parse its response.
 
-        A request that gets no response, a 429 or 5xx status, or a 200 status with a body that is not JSON is retried
-        after each of the `RETRY_DELAYS`.
+        A request that gets no response, a response cut short mid-body, a 429 or 5xx status, or a 200 status with a
+        body that is not JSON is retried after each of the `RETRY_DELAYS`.
 
         Args:
             params: The query parameters of the request.
@@ -128,7 +128,7 @@ class WikiClient:
             cause = None
             try:
                 response = self.session.get(self.ENDPOINT, params=params, timeout=REQUEST_TIMEOUT)
-            except (requests.ConnectionError, requests.Timeout) as exc:
+            except (requests.ConnectionError, requests.Timeout, requests.exceptions.ChunkedEncodingError) as exc:
                 cause = exc
                 status = text = None
                 problem = f"no response ({exc.__class__.__name__}: {exc})"

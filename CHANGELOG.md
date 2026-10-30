@@ -3,10 +3,11 @@
 
 ## Unreleased
 
-- Retry a TibiaWiki API request that gets no response within 60 seconds, a 429 or 5xx status, or a body that is not
-  JSON, up to 5 attempts, waiting 5, 15, 30 and 60 seconds between them. Any other status, an API error or a fifth
-  failure stops the run with a `WikiApiError` that names the status and the request. Before, articles and category
-  members had no timeout and stopped at the first bad response, and image info retried a failed request forever.
+- Retry a TibiaWiki API request that gets no response within 60 seconds, a response cut short mid-body, a 429 or 5xx
+  status, or a body that is not JSON, up to 5 attempts, waiting 5, 15, 30 and 60 seconds between them. Any other
+  status, an API error or a fifth failure stops the run with a `WikiApiError` that names the status and the request.
+  Before, articles and category members had no timeout and stopped at the first bad response, and image info retried
+  a failed request forever.
 
 ## 9.0.0+tibiash.7
 

@@ -137,6 +137,32 @@ class TestWikiApi(unittest.TestCase):
         self.assert_requests(2)
         self.assertEqual(self.sleep.call_args_list, [call(5)])
 
+    def test_body_cut_short_is_retried(self):
+        self.respond(
+            requests.exceptions.ChunkedEncodingError("connection broken mid-body"),
+            response(200, load_resource("response_revisions.json")),
+        )
+
+        article = self.wiki_client.get_article("Golden Armor")
+
+        self.assertEqual(article.title, "Golden Armor")
+        self.assert_requests(2)
+        self.assertEqual(self.sleep.call_args_list, [call(5)])
+
+    def test_bodies_cut_short_raise_after_five_attempts(self):
+        self.respond(*[requests.exceptions.ChunkedEncodingError("connection broken mid-body")] * 5)
+
+        with self.assertRaises(WikiApiError) as context:
+            self.wiki_client.get_article("Golden Armor")
+
+        error = context.exception
+        self.assertIsNone(error.status)
+        self.assertIsNone(error.body)
+        self.assertIsInstance(error.__cause__, requests.exceptions.ChunkedEncodingError)
+        self.assertIn("Golden Armor", str(error))
+        self.assert_requests(5)
+        self.assertEqual(self.sleep.call_args_list, [call(5), call(15), call(30), call(60)])
+
     def test_body_that_is_never_json_raises_after_five_attempts(self):
         body = "<html>" + "x" * 300
         self.respond(*[response(200, body)] * 5)
