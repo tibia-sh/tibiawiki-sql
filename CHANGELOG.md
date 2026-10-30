@@ -1,6 +1,11 @@
 <!-- Changed by tibia.sh in 2026. See "About this copy" in README.md. -->
 # Changelog
 
+## Unreleased
+
+- Send the `tibiawikisql/<version> (+https://github.com/tibia-sh/tibiawiki-sql)` User-Agent with every TibiaWiki API
+  request. Before, requests carried the `requests` library's default, `python-requests/<version>`.
+
 ## 9.0.0+tibiash.8
 
 - Retry a TibiaWiki API request that gets no response within 60 seconds, a response cut short mid-body, a 429 or 5xx

@@ -93,7 +93,7 @@ class WikiClient:
     ENDPOINT: ClassVar[str] = f"{BASE_URL}/api.php"
 
     headers: ClassVar[dict[str, str]]= {
-        "User-Agent": f'tibiawikisql/{__version__}',  # noqa: Q000
+        "User-Agent": f"tibiawikisql/{__version__} (+https://github.com/tibia-sh/tibiawiki-sql)",
     }
 
     def __init__(self, sleep: Callable[[float], None] = time.sleep) -> None:
@@ -104,6 +104,7 @@ class WikiClient:
 
         """
         self.session = requests.Session()
+        self.session.headers.update(self.headers)
         self._sleep = sleep
 
     def _get_json(self, params: dict) -> dict:
