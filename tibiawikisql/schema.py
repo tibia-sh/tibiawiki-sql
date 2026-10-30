@@ -102,6 +102,8 @@ class CreatureAbilityTable(Table, table_name="creature_ability"):
     name = Column(Text, nullable=False)
     effect = Column(Text)
     element = Column(Text)
+    condition = Column(Text)
+    condition_value = Column(Integer)
 
 
 class CreatureMaxDamageTable(Table, table_name="creature_max_damage"):

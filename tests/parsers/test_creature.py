@@ -5,7 +5,13 @@ import unittest
 from tests import load_resource
 from tibiawikisql.api import Article
 from tibiawikisql.models import Creature, CreatureDrop
-from tibiawikisql.parsers.creature import CreatureParser, parse_abilities, parse_mana_cost, parse_maximum_damage
+from tibiawikisql.parsers.creature import (
+    CreatureParser,
+    format_debuff_effect,
+    parse_abilities,
+    parse_mana_cost,
+    parse_maximum_damage,
+)
 
 
 class TestCreatureParser(unittest.TestCase):
@@ -504,3 +510,237 @@ class TestCreatureParserLoot(unittest.TestCase):
             ],
             [(drop.item_title, drop.min, drop.max, drop.rarity) for drop in creature.loot],
         )
+
+
+class TestCreatureParserAbilities(unittest.TestCase):
+    def _abilities(self, resource: str) -> list[tuple]:
+        article = Article(
+            article_id=1,
+            title=resource,
+            timestamp=datetime.datetime.fromisoformat("2026-10-30T00:00:00+00:00"),
+            content=load_resource(resource),
+        )
+        creature = CreatureParser.from_article(article)
+        return [
+            (ability.name, ability.effect, ability.element, ability.condition, ability.condition_value)
+            for ability in creature.abilities
+        ]
+
+    def _rows(self, content: str) -> list[tuple]:
+        return [
+            (row["name"], row.get("effect"), row["element"], row.get("condition"), row.get("condition_value"))
+            for row in parse_abilities(content)
+        ]
+
+    def test_debuff_effect(self):
+        self.assertEqual("value=50%; duration=10; flags=distance,melee",
+                         format_debuff_effect("50%", "10", {"melee", "distance"}))
+
+    def test_debuff_effect_orders_every_flag(self):
+        self.assertEqual("flags=distance,melee,magic,shielding",
+                         format_debuff_effect("", "", ["shielding", "magic", "melee", "distance"]))
+
+    def test_debuff_effect_without_flags(self):
+        self.assertEqual("value=50%; duration=10", format_debuff_effect("50%", "10", ()))
+
+    def test_debuff_effect_without_value(self):
+        self.assertEqual("duration=10; flags=melee", format_debuff_effect("", "10", {"melee"}))
+
+    def test_debuff_effect_only_duration(self):
+        self.assertEqual("duration=10", format_debuff_effect("", "10", ()))
+
+    def test_debuff_effect_empty(self):
+        self.assertEqual("", format_debuff_effect("", "", ()))
+
+    def test_unchanged_without_new_kinds(self):
+        # Pinned to what the parser gave before conditions were read: the new columns are the only change.
+        self.assertEqual(
+            [
+                ("Melee", "0-500", "physical", None, None),
+                ("Great Fireball", "150-250", "fire", None, None),
+                ("Great Energy Beam", "300-480", "lifedrain", None, None),
+                ("Close-range Energy Strike", "210-300", "energy", None, None),
+                ("Mana Drain", "30-120", "manadrain", None, None),
+                ("Self-Healing", "80-250", "healing", None, None),
+                ("Shoots Fire Fields", "", "fire", None, None),
+                ("Distance Paralyze", "", "paralyze", None, None),
+                ("Fire Elemental", "1", "summon", None, None),
+            ],
+            self._abilities("content_creature.txt"),
+        )
+
+    def test_apocalypse(self):
+        self.assertEqual(
+            [
+                ("Melee", "0-3098", "physical", "poisoned", 25),
+                ("Armageddon", "450-4000?", "death", None, None),
+                ("Great fireball", "100-900", "fire", None, None),
+                ("Teleport Wave", "600-1100", "mana drain", None, None),
+                ("Explosion Wave", "300-900", "physical", None, None),
+                ("Explosion Exori", "100?-500?", "energy", None, None),
+                ("Yellow Energy Beam", "500-1500", "energy", None, None),
+                ("Death Beam", "300?-1000?", "death", None, None),
+                ("Poisoning Beam", "up to 100 hp/turn", "physical", "poisoned", None),
+                ("Paralyze", "210-220 points for 60 seconds", "physical", "slowed", None),
+                # The unnamed yes after the name is not a flag.
+                ("Debuff", "value=80-100%; duration=10", "debuff", None, None),
+                ("Strong Haste", "", "haste", None, None),
+                ("Weak Self-Healing", "2000-3000", "healing", None, None),
+                ("Strong Self-Healing", "6000-10000", "healing", None, None),
+            ],
+            self._abilities("content_creature_apocalypse.txt"),
+        )
+
+    def test_gnorre_chyllson_debuff_flags_in_fixed_order(self):
+        abilities = self._abilities("content_creature_gnorre_chyllson.txt")
+
+        self.assertIn(("Debuff", "value=34-54%; duration=4; flags=distance,melee,shielding", "debuff", None, None),
+                      abilities)
+        self.assertIn(("Strong Haste", "", "haste", None, None), abilities)
+        self.assertIn(("Paralyze", "?", "", "slowed", None), abilities)
+        self.assertEqual(11, len(abilities))
+
+    def test_abyssador_debuffs_differ_by_flags(self):
+        abilities = self._abilities("content_creature_abyssador.txt")
+
+        self.assertEqual(
+            [("Debuff", "flags=distance", "debuff", None, None), ("Debuff", "flags=melee", "debuff", None, None)],
+            [ability for ability in abilities if ability[2] == "debuff"],
+        )
+        self.assertIn(("Poisoning Bomb", "?", "physical", "poisoned", None), abilities)
+        self.assertIn(("Melee", "0-1400+", "physical", None, None), abilities)
+        self.assertEqual(13, len(abilities))
+
+    def test_dreadbeast_unknown_poison(self):
+        abilities = self._abilities("content_creature_dreadbeast.txt")
+
+        self.assertEqual(
+            [
+                ("Melee", "0-50", "physical", "poisoned", None),
+                ("Drown Hit", "70-90", "drowning", None, None),
+                ("Life Drain Berserk", "0-80", "life drain", None, None),
+                ("Poisoning Berserk", "up to 6?hp/turn", "earth", "poisoned", None),
+                ("Debuff", "value=20-30%; duration=20secs; flags=melee", "debuff", None, None),
+                ("Self-Healing", "35-65", "healing", None, None),
+            ],
+            abilities,
+        )
+
+    def test_son_of_verminor_outfits(self):
+        abilities = self._abilities("content_creature_son_of_verminor.txt")
+
+        self.assertEqual(
+            [
+                ("Rat", "no", "outfit", None, None),
+                ("Larva", "no", "outfit", None, None),
+                ("Scorpion", "no", "outfit", None, None),
+                ("Slime", "no", "outfit", None, None),
+            ],
+            [ability for ability in abilities if ability[2] == "outfit"],
+        )
+        # The template reads poison=, not poisoned=.
+        self.assertIn(("Melee", "0-460", "physical", None, None), abilities)
+        self.assertEqual(9, len(abilities))
+
+    def test_mimic_outfits(self):
+        self.assertEqual(
+            [
+                ("Teddy Bear", "no", "outfit", None, None),
+                ("Demon Shield", "no", "outfit", None, None),
+                ("Warlord Sword", "no", "outfit", None, None),
+                ("Piggy Bank", "no", "outfit", None, None),
+                ("Green Frog", "no", "outfit", None, None),
+                ("Treasure Chest", "no", "outfit", None, None),
+                ("Rat", "no", "outfit", None, None),
+                ("Slime", "no", "outfit", None, None),
+                ("Pumpkin", "no", "outfit", None, None),
+                ("Jewel Case", "no", "outfit", None, None),
+                ("Giant Mushroom", "no", "outfit", None, None),
+                ("Present Box", "no", "outfit", None, None),
+                ("The Orb of Nature", "no", "outfit", None, None),
+                ("Vashresamun", "no", "outfit", None, None),
+                ("Turns Invisible", "very rare 1s", "invisible", None, None),
+            ],
+            self._abilities("content_creature_mimic.txt"),
+        )
+
+    def test_green_djinn_outfit_scene_is_not_a_name(self):
+        abilities = self._abilities("content_creature_green_djinn.txt")
+
+        self.assertEqual([("rat", "yes", "outfit", None, None)],
+                         [ability for ability in abilities if ability[2] == "outfit"])
+        self.assertIn(("Drunkenness", "30 seconds", "drunk", None, None), abilities)
+
+    def test_outfit_named_parameters(self):
+        rows = self._rows("{{Ability List|{{Outfit|victim=Yes|thing=Massive Fire Elemental|scene=|thing2=Football"
+                          "|thing3=|thing4=Snowman}}}}")
+
+        self.assertEqual(
+            [
+                ("Massive Fire Elemental", "yes", "outfit", None, None),
+                ("Football", "yes", "outfit", None, None),
+                ("Snowman", "yes", "outfit", None, None),
+            ],
+            rows,
+        )
+
+    def test_outfit_positional_extra_wins_over_named(self):
+        rows = self._rows("{{Ability List|{{Outfit|no|Rat||Larva|thing2=Bug}}}}")
+
+        self.assertEqual([("Rat", "no", "outfit", None, None), ("Larva", "no", "outfit", None, None)], rows)
+
+    def test_haste_without_name(self):
+        self.assertEqual([("Haste", "", "haste", None, None)], self._rows("{{Ability List|{{Haste}}}}"))
+
+    def test_haste_named_name(self):
+        self.assertEqual([("Strong Haste", "", "haste", None, None)],
+                         self._rows("{{Ability List|{{Haste|name=[[Strong Haste]]}}}}"))
+
+    def test_template_name_matches_exactly(self):
+        self.assertEqual([], self._rows("{{Ability List|{{Haste\n  |scene=}}|{{haste}}}}"))
+
+    def test_debuff_named_name(self):
+        self.assertEqual([("Icicle", "value=50%; flags=melee,shielding", "debuff", None, None)],
+                         self._rows("{{Ability List|{{Debuff|Icicle|shielding=yes|melee=yes|value=50%}}}}"))
+
+    def test_debuff_without_parameters(self):
+        self.assertEqual([("Debuff", "", "debuff", None, None)], self._rows("{{Ability List|{{Debuff}}}}"))
+
+    def test_debuff_flag_not_yes(self):
+        self.assertEqual([("Debuff", "flags=magic", "debuff", None, None)],
+                         self._rows("{{Ability List|{{Debuff|melee=no|distance=|magic=Yes <!-- c -->}}}}"))
+
+    def test_condition_unknown(self):
+        self.assertEqual([("Bomb", "?", "physical", None, None)],
+                         self._rows("{{Ability List|{{Ability|Bomb|condition=?}}}}"))
+
+    def test_condition_ignores_comments_and_case(self):
+        self.assertEqual([("Bomb", "?", "physical", "burning", None)],
+                         self._rows("{{Ability List|{{Ability|Bomb|condition=Burning <!-- note -->}}}}"))
+
+    def test_melee_condition(self):
+        self.assertEqual([("Melee", "0-50", "physical", "bleeding", None)],
+                         self._rows("{{Ability List|{{Melee|0-50|condition=bleeding}}}}"))
+
+    def test_melee_empty_poison(self):
+        self.assertEqual([("Melee", "0-50", "physical", None, None)],
+                         self._rows("{{Ability List|{{Melee|0-50|poison= <!-- 5 -->}}}}"))
+
+    def test_healing_and_summon_have_no_condition(self):
+        self.assertEqual(
+            [("Self-Healing", "10-20", "healing", None, None), ("Rat", "2", "summon", None, None)],
+            self._rows("{{Ability List|{{Healing|range=10-20|condition=x}}|{{Summon|Rat|2|condition=x}}}}"),
+        )
+
+    def test_no_template_and_plain_text_have_no_condition(self):
+        self.assertEqual([("Bites", None, "no_template", None, None)], self._rows("Bites"))
+        self.assertEqual([("Melee", "0-5", "physical", None, None), ("Bites", None, "plain_text", None, None)],
+                         self._rows("{{Ability List|{{Melee|0-5}}|Bites}}"))
+
+    def test_debuff_effect_rejects_an_unknown_flag(self):
+        with self.assertRaises(ValueError):
+            format_debuff_effect("50%", "10", {"melee", "speed"})
+
+    def test_outfit_named_victim_and_thing_win_over_positional(self):
+        self.assertEqual([("Bug", "yes", "outfit", None, None)],
+                         self._rows("{{Ability List|{{Outfit|no|Rat|victim=yes|thing=Bug}}}}"))

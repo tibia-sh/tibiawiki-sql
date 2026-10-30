@@ -1,0 +1,71 @@
+{{Infobox Creature|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name           = Abyssador
+| actualname     = Abyssador
+| hp             = 340000
+| exp            = 400000
+| armor          = ?
+| summon         = --
+| convince       = --
+| illusionable   = no
+| creatureclass  = Elementals
+| primarytype    = Bio-Elementals
+| secondarytype  = Myriapods
+| spawntype      = Unique, Triggered, Unblockable
+| isboss         = yes
+| isarenaboss    = no
+| abilities      = {{Ability List
+ |{{Melee|0-1400+}}
+ |{{Ability|[[Invisible]]||invisible}}
+ |{{Ability|Poisoning Bomb|condition=poisoned}}
+ |{{Ability|Earth Wave|500-1100+|earth}}
+ |{{Ability|Earth Bomb around itself|300-700+|earth}}
+ |{{Ability|Distance Explosion Attack|300-600+|physical}}
+ |{{Ability|Stone Shower Beam|500-1200+}}
+ |{{Ability|Death Bomb|?|mana drain}}
+ |{{Healing|Ultimate [[Self-Healing]]|range=50000-300000, rare}}
+ |{{Healing|Medium [[Self-Healing]]|30000-40000, semi-rarely}}
+ |{{Healing|Light [[Self-Healing]]|3000-10000, often}}
+ |{{Debuff|distance=yes}}
+ |{{Debuff|melee=yes}}
+}}
+| maxdmg         = {{Max Damage|physical=2000+|earth=3000+|manadrain=?}}
+| pushable       = no
+| pushobjects    = yes
+| walksaround    = ?
+| walksthrough   = ?
+| paraimmune     = yes
+| senseinvis     = yes
+| physicalDmgMod = 100%<?
+| earthDmgMod    = 0%
+| fireDmgMod     = 85%
+| deathDmgMod    = 85%
+| energyDmgMod   = 85%
+| holyDmgMod     = 100%
+| iceDmgMod      = 85%
+| hpDrainDmgMod  = 100%
+| drownDmgMod    = 100%
+| healMod        = 100%?
+| sounds         = {{Sound List|*** STEALTH ***|*** TIME ***|*** IMPORTANT ***|*** BRAINS *** SMALL ***|*** DEATH ***|*** FIRE *** HOME *** VICTORY ***|*** EXISTENCE *** FUTILE ***}}
+| implemented    = 9.60
+| race_id	= 887
+| notes          = Abyssador is the hardest of the [[Warzone]] bosses.
+| behaviour      = Has a very erratic retargeting behavior. Goes invisible often.
+| speed          = 230
+| strategy       = Trap it in the western part of his dungeon.<br />'''[[Mage]]s''' should use [[Sudden Death Rune]]s and summon [[Fire Elemental]]s or [[Fire Devil]]s to deal more damage.<br />'''[[Paladin]]s''' should use [[Infernal Bolt]]s and [[Sharpshooter]] but have to be wary of the distance attacks.
+| location       = [[Warzone 3]].
+| loot           = {{Loot Table
+ |{{Loot Item|Abyssador's Lash|always}}
+ |{{Loot Item|Crystal Crossbow}}
+ |{{Loot Item|Crystalline Axe}}
+ |{{Loot Item|Crystalline Sword}}
+ |{{Loot Item|Decorative Ribbon}}
+ |{{Loot Item|Mycological Bow}}
+ |{{Loot Item|Mycological Mace}}
+ |{{Loot Item|Shiny Blade}}
+}}
+| bosstiaryclass = Archfoe
+| cooldown       = 20
+| history        = * As announced on {{OfficialNewsArchive|7858|April 23, 2024}}, the [[Updates/13.35.14931|patch]] increased its experience from 50,000 to 400,000 as part of the [[2024 Balancing Project]].
+* As announced on {{OfficialNewsArchive|7890|May 14, 2024}}, the [[Updates/13.36.d8d851|patch]] its loot is now cooperative as part of the [[2024 Balancing Project]]. 
+| bestiaryname    = abyssador
+}}

@@ -3,7 +3,7 @@ import sqlite3
 import unittest
 
 from tibiawikisql import schema
-from tibiawikisql.models import Creature, CreatureDrop, Item
+from tibiawikisql.models import Creature, CreatureAbility, CreatureDrop, Item
 from tibiawikisql.schema import ItemTable
 
 
@@ -139,4 +139,27 @@ class TestCreature(unittest.TestCase):
         self.assertEqual(
             [("Demon", 0, 100, "common")],
             [(drop.creature_title, drop.min, drop.max, drop.rarity) for drop in gold_coin.dropped_by],
+        )
+
+    def test_creature_ability_condition_round_trip(self):
+        creature = self._creature(35)
+        creature.abilities = [
+            CreatureAbility(
+                name="Melee", effect="0-3098", element="physical", condition="poisoned", condition_value=25,
+            ),
+            CreatureAbility(name="Debuff", effect="value=80-100%; duration=10", element="debuff"),
+        ]
+        creature.insert(self.conn)
+
+        loaded = Creature.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertEqual(
+            [
+                ("Melee", "0-3098", "physical", "poisoned", 25),
+                ("Debuff", "value=80-100%; duration=10", "debuff", None, None),
+            ],
+            [
+                (ability.name, ability.effect, ability.element, ability.condition, ability.condition_value)
+                for ability in loaded.abilities
+            ],
         )

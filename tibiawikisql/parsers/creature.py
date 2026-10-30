@@ -1,5 +1,6 @@
 # Changed by tibia.sh in 2026. See "About this copy" in README.md.
 import re
+from collections.abc import Collection
 from typing import Any, ClassVar, TYPE_CHECKING
 
 import mwparserfromhell
@@ -37,6 +38,9 @@ range_hyphen_pattern = re.compile(r"(?<=\d)-(?=\d)")
 
 LOOT_RARITIES = ("always", "common", "uncommon", "semi-rare", "rare", "very rare")
 """The rarity words of the Loot Item template."""
+
+DEBUFF_FLAGS = ("distance", "melee", "magic", "shielding")
+"""The skills a Debuff template can reduce, in the order its effect lists them."""
 
 
 def parse_maximum_damage(value: str) -> dict[str, int]:
@@ -192,8 +196,121 @@ def parse_loot(value: str) -> list[tuple[str, str, str | None]]:
     return loot
 
 
-def parse_abilities(value: str) -> list[dict[str, str]]:
+def template_value(template: "Template", *names: str) -> str:
+    """Get the plain text of the first given parameter of a template, as the template reads ``{{{a|{{{b|}}}}}}``.
+
+    Args:
+        template: The template to read.
+        *names: The names of the parameters, in order of precedence, like ``"1"`` or ``"name"``.
+
+    Returns:
+        The stripped plain text of the first given parameter, even if it is empty, or an empty string if none is given.
+
+    """
+    for name in names:
+        if template.has(name):
+            return strip_code(template.get(name))
+    return ""
+
+
+def format_debuff_effect(value: str, duration: str, flags: Collection[str]) -> str:
+    """Write the effect of a Debuff ability as ``value=<value>; duration=<duration>; flags=<flags>``.
+
+    An empty part is left out, with its separator, so a Debuff with only a duration is ``duration=10``.
+
+    Args:
+        value: How much the skills are reduced, as the wiki writes it, like ``50%``.
+        duration: How long the reduction lasts, as the wiki writes it, like ``10``.
+        flags: The skills reduced, from :data:`DEBUFF_FLAGS`, in any order. They are written in the order of
+            :data:`DEBUFF_FLAGS`, separated by commas.
+
+    Returns:
+        The effect, like ``value=50%; duration=10; flags=distance,melee``, or an empty string when every part is empty.
+
+    Raises:
+        ValueError: If a flag is not one of :data:`DEBUFF_FLAGS`.
+
+    """
+    unknown = set(flags).difference(DEBUFF_FLAGS)
+    if unknown:
+        msg = f"Unknown debuff flags: {sorted(unknown)}"
+        raise ValueError(msg)
+    parts = []
+    if value:
+        parts.append(f"value={value}")
+    if duration:
+        parts.append(f"duration={duration}")
+    ordered_flags = [flag for flag in DEBUFF_FLAGS if flag in flags]
+    if ordered_flags:
+        parts.append(f"flags={','.join(ordered_flags)}")
+    return "; ".join(parts)
+
+
+def parse_debuff_effect(template: "Template") -> str:
+    """Parse the effect of a Debuff template with :func:`format_debuff_effect`.
+
+    The value, duration and flags are read from the named parameters ``value``, ``duration``, ``distance``,
+    ``melee``, ``magic`` and ``shielding``. A flag is set when its value is ``yes``, in any case. Positional
+    parameters after the name are not read, so ``{{Debuff|Debuff|yes|value=80-100%}}`` has no flags.
+
+    Args:
+        template: The Debuff template.
+
+    Returns:
+        The effect of the Debuff.
+
+    """
+    flags = [flag for flag in DEBUFF_FLAGS if template_value(template, flag).lower() == "yes"]
+    return format_debuff_effect(template_value(template, "value"), template_value(template, "duration"), flags)
+
+
+def parse_outfit_names(template: "Template") -> list[str]:
+    """Parse the outfits an Outfit template changes into.
+
+    The first outfit is ``thing`` or parameter 2. Parameter 3 is never an outfit. Each extra outfit ``thingN``, from
+    ``thing2`` on, may also be given as parameter N + 2, which takes precedence.
+
+    Args:
+        template: The Outfit template.
+
+    Returns:
+        The names of the outfits, in order, without the empty ones.
+
+    """
+    last_extra = 1
+    for param in template.params:
+        name = str(param.name).strip()
+        if name.isdigit():
+            last_extra = max(last_extra, int(name) - 2)
+        elif name.startswith("thing") and name[len("thing"):].isdigit():
+            last_extra = max(last_extra, int(name[len("thing"):]))
+    names = [template_value(template, "thing", "2")]
+    names.extend(template_value(template, str(number + 2), f"thing{number}") for number in range(2, last_extra + 1))
+    return [name for name in names if name]
+
+
+def parse_condition(template: "Template") -> str | None:
+    """Parse the condition an ability causes from its ``condition`` parameter, with :func:`parse_known_text`.
+
+    Args:
+        template: The ability template.
+
+    Returns:
+        The condition in lower case, like ``poisoned``, or ``None`` if the parameter is absent, empty or unknown.
+
+    """
+    if not template.has("condition"):
+        return None
+    return parse_known_text(str(template.get("condition").value))
+
+
+def parse_abilities(value: str) -> list[dict[str, str | int | None]]:
     """Parse the abilities of a creature.
+
+    Besides the Melee, Summon, Healing and Ability templates, Haste, Debuff and Outfit templates give abilities with
+    the element ``haste``, ``debuff`` and ``outfit``. An Outfit template gives one ability per outfit. A Melee or
+    Ability ``condition`` is kept, and a Melee ``poison`` makes the condition ``poisoned``, with the damage as its
+    value. Template names must match exactly, so ``{{haste}}`` gives nothing.
 
     Args:
     value: A string containing the creature's abilities definition.
@@ -230,7 +347,13 @@ def parse_abilities(value: str) -> list[dict[str, str]]:
                 "name": ability_template.get("name", "Melee"),
                 "effect": ability_template.get(1, ability_template.get("damage", "?")),
                 "element": ability_template.get(2, ability_template.get("element", "physical")),
+                "condition": parse_condition(ability_template),
             }
+            if ability_template.has("poison"):
+                poison = visible_text(str(ability_template.get("poison").value))
+                if poison.strip():
+                    ability["condition"] = "poisoned"
+                    ability["condition_value"] = parse_known_integer(poison)
         if template_name == "Summon":
             ability = {
                 "name": ability_template.get(1, ability_template.get("creature", None)),
@@ -248,9 +371,27 @@ def parse_abilities(value: str) -> list[dict[str, str]]:
                 "name": ability_template.get(1, ability_template.get("name", None)),
                 "effect": ability_template.get(2, ability_template.get("damage", "?")),
                 "element": ability_template.get(3, ability_template.get("element", "physical")),
+                "condition": parse_condition(ability_template),
             }
             if ability["name"] is None:
                 ability["name"] = f'{ability["element"].title()} Damage'
+        if template_name == "Haste":
+            ability = {
+                "name": template_value(ability_template, "1", "name") or "Haste",
+                "effect": "",
+                "element": "haste",
+            }
+        if template_name == "Debuff":
+            ability = {
+                "name": template_value(ability_template, "1", "name") or "Debuff",
+                "effect": parse_debuff_effect(ability_template),
+                "element": "debuff",
+            }
+        if template_name == "Outfit":
+            victim = template_value(ability_template, "victim", "1").lower()
+            abilities.extend(
+                {"name": name, "effect": victim, "element": "outfit"} for name in parse_outfit_names(ability_template)
+            )
         if ability:
             abilities.append(strip_code(ability))
     return abilities

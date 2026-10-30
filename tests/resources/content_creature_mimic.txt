@@ -1,0 +1,48 @@
+{{Infobox Creature|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name           = Mimic
+| article        = a
+| actualname     = mimic
+| plural         = mimics
+| hp             = 1200
+| exp            = 0
+| armor          = ?
+| summon         = --
+| convince       = --
+| illusionable   = no
+| creatureclass  = Special
+| primarytype    = Shapeshifters
+| isboss         = no
+| abilities      = {{Ability List
+ |{{Outfit|no|Teddy Bear|thing2=Demon Shield|thing3=Warlord Sword|thing4=Piggy Bank}}
+ |{{Outfit|no|Green Frog|thing2=Treasure Chest|thing3=Rat|thing4=Slime}}
+ |{{Outfit|no|Pumpkin|thing2=Jewel Case|thing3=Giant Mushroom|thing4=Present Box}}
+ |{{Outfit|no|The Orb of Nature|thing2=Vashresamun}}
+ |{{Ability|Turns Invisible|very rare 1s|element=invisible}}
+}}
+| maxdmg         = 0
+| pushable       = ?
+| pushobjects    = ?
+| walksaround    = ?
+| walksthrough   = ?
+| paraimmune     = ?
+| senseinvis     = ?
+| physicalDmgMod = 0%
+| earthDmgMod    = 0%
+| fireDmgMod     = 0%
+| deathDmgMod    = 0%
+| energyDmgMod   = 0%
+| holyDmgMod     = 0%
+| iceDmgMod      = 0%
+| hpDrainDmgMod  = 0%
+| drownDmgMod    = 0%
+| healMod        = 100%?
+| sounds         = {{Sound List|}}
+| implemented    = 7.3
+| race_id	 = 92
+| notes          = They are shape shifters. Legends say they shapeshift into items that are of your inner-most desire. They were [[Summon Creature|summonable]] for a short period.
+| behaviour      = Keeps moving around shapeshifting.
+| speed          = ?
+| strategy       = They don't attack and you can't kill them either, so simply just watch them or ignore them.
+| location       = Third dream in the [[Dream Realm]]
+| loot           = {{Loot Table}}
+}}

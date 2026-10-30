@@ -51,12 +51,19 @@ class CreatureAbility(BaseModel):
     name: str
     """The name of the ability."""
     effect: str | None = None
-    """The effect of the ability, or the damage range."""
+    """The effect of the ability, or the damage range.
+    For a ``debuff``, the reduction as ``value=<value>; duration=<duration>; flags=<flags>``, without the empty parts.
+    For an ``outfit``, ``yes`` if it changes the victim's outfit and ``no`` if it changes the creature's own."""
     element: str
     """The element of damage type of the ability. This could also be a status condition instead.
+    Haste, debuff and outfit change abilities are ``haste``, ``debuff`` and ``outfit``.
     For abilities that are just plain text, ``plain_text`` is set.
     For abilities that are not using the abilities templates in TibiaWiki, they are saved as a single entry
     with element: ``no_template``."""
+    condition: str | None = None
+    """The condition the ability causes, in lower case, like ``poisoned`` or ``slowed``. ``None`` if unknown or none."""
+    condition_value: int | None = None
+    """The poison damage per turn a melee attack starts at, up to. ``None`` if unknown or not a poisoning melee."""
 
 
 class CreatureDrop(BaseModel):

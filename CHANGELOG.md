@@ -32,6 +32,18 @@
   listed both `common` and `very rare`, or when the article does not list the item. `loot_statistics_kills` holds the
   kills of the page the chances come from, and is `NULL` for a creature without a page or whose page has no positive
   number of kills. Loot `min` and `max`, and the number of drop rows, are unchanged.
+- Add `creature_ability.condition` and `creature_ability.condition_value`, and keep the `{{Haste}}`, `{{Debuff}}` and
+  `{{Outfit}}` abilities, which were dropped. `condition` is the `condition` of a `{{Melee}}` or `{{Ability}}` in lower
+  case, like `poisoned` or `slowed`, and `NULL` for `?`, an empty or absent value. A `{{Melee}}` with `poison=` is
+  `poisoned`, with the number in `condition_value`, which is `NULL` for `poison=?` and on every other row. Wiki
+  comments are ignored. A Haste row has the element `haste`, its spell as the name, like `Strong Haste`, or `Haste`,
+  and an empty effect. A Debuff row has the element `debuff`, its name or `Debuff`, and the effect
+  `value=<value>; duration=<duration>; flags=<flags>`, like `value=50%; duration=10; flags=distance,melee`: the values
+  are copied as written, the flags set to `yes` are listed in the order `distance`, `melee`, `magic`, `shielding`, and
+  an empty part is left out. Flags given without a name, as in `{{Debuff|Debuff|yes}}`, are not read. An Outfit gives
+  one row per outfit, from parameter 2 or `thing`, then parameters 4 and up or `thing2` and up, with the element
+  `outfit` and the effect `yes` when it changes the victim and `no` when it changes the creature. Template names must
+  match exactly, as before, and the existing rows keep their values.
 
 ## 9.0.0+tibiash.9
 

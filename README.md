@@ -30,6 +30,9 @@ The copy adds this data to the database:
 * The `item_client_id` table. It keeps every client ID of an item, in the order the wiki lists them, from position 0.
 * The `creature_drop.rarity` and `creature.loot_statistics_kills` columns. They hold the rarity a creature's article
   gives a drop, like `common`, and the kills on its Loot Statistics page that the drop chances come from.
+* The `creature_ability.condition` and `creature_ability.condition_value` columns, and the `haste`, `debuff` and
+  `outfit` abilities. The columns hold the condition an ability causes, like `poisoned`, and the poison damage a melee
+  attack starts at.
 
 The [database schema](docs/schema.md) describes each of them.
 

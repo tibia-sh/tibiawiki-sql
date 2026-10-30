@@ -1,0 +1,58 @@
+{{Infobox Creature|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name           = Son of Verminor
+| article        = a
+| actualname     = son of verminor
+| hp             = 8500
+| exp            = 5900
+| armor          = 48
+| mitigation     = 2.09
+| summon         = --
+| convince       = --
+| illusionable   = no
+| creatureclass  = Elementals
+| primarytype    = Blobs
+| secondarytype  = Shapeshifters
+| bestiaryclass  = Slime
+| bestiarylevel  = Hard
+| occurrence     = Common
+| isboss         = no
+| spawntype      = Regular
+| abilities      = {{Ability List
+ |{{Melee|0-460|poisoned=?}}
+ |{{Ability|Poison Hit|150-200|earth}}
+ |{{Ability|Poison Berserk|350-390|earth}}
+ |{{Ability|Curse Berserk|220-270|death}}
+ |{{Outfit|no|Rat||Larva|Scorpion|Slime}}
+ |{{Healing|range=250-350}}
+}}
+| maxdmg         = {{Max Damage|physical=460|earth=590|death=270}}
+| pushable       = no
+| pushobjects    = yes
+| walksaround    = Fire
+| walksthrough   = Energy, Poison
+| paraimmune     = yes
+| senseinvis     = yes
+| physicalDmgMod = 100%
+| earthDmgMod    = 0%
+| fireDmgMod     = 90%
+| deathDmgMod    = 100%
+| energyDmgMod   = 80%
+| holyDmgMod     = 100%
+| iceDmgMod      = 100%
+| hpDrainDmgMod  = 100%?
+| drownDmgMod    = 100%?
+| healMod        = 100%
+| bestiaryname   = sonofverminor
+| bestiarytext   = It is said that the dark lord of decay, Verminor, one of the Ruthless Seven, oozes the very essence of destruction. The power of that demon is so immense that some of his ooze gained a sort of sentience over the years. Instinctively devouring more and more of the demonic ooze, it grows in proportions and sentience unless a semi-intelligent creature is formed that is known as Son of Verminor.<br />The most powerful of them are recognised by their progenitor as his kin and serve as his minions. Usually not more than an almost mindless mass of decay and hunger, they can be used by their dark master almost like puppets to fulfil his unholy duties. It is assumed that they not only function as the long arm of their master, but also as his eyes, enabling him to sight what is happening in the vicinity of his 'son'. When encountered in the realm of man, Sons of Verminor are usually just a shambling ever-hungry mass that tries to consume everything that it can catch. Because of the mindless destruction they tend to cause, they are seldom summoned by the servants of the demons. The Sons of Verminor are usually used to make places as inhospitable as possible. Sometimes a greater number of them is summoned to make an area almost impassable for a while.
+| sounds         = {{Sound List|Blubb.}}
+| implemented    = 7.9
+| race_id	     = 265
+| behaviour      = 
+| runsat         = 0
+| speed          = 120
+| strategy       = Kill it fast using [[Ice Damage|ice]], [[Holy Damage|holy]], or [[Death Damage|death]] runes/spells and [[Exori Gran]].
+| location       = Deep in the [[Pits of Inferno]], in Verminor's throne room. Also in the [[Demon Forge]] (The Vats and The Hive).
+| loot           = {{Loot Table}}
+| usespells      = yes
+| attacktype     = Melee
+}}

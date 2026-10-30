@@ -1,0 +1,64 @@
+{{Infobox Creature|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name           = Dreadbeast
+| article        = a
+| actualname     = dreadbeast
+| plural         = dreadbeasts
+| hp             = 800
+| exp            = 250
+| armor          = ?
+| summon         = --
+| convince       = 800
+| illusionable   = no
+| creatureclass  = The Undead
+| primarytype    = Skeletons
+| secondarytype  = Ungulates
+| isboss         = no
+| abilities      = {{Ability List
+ |{{Melee|0-50|poison=?}}
+ |{{Ability|Drown Hit|70-90|element=drowning|scene={{Scene|spell=7sqmstrike|caster=Dreadbeast|look_direction=south|effect=Purple Electricity Effect|damage_effect=Ripple Effect|missile=Death Missile (Large)|missile_direction=south-east|missile_distance=7/7}}}}
+ |{{Ability|Life Drain Berserk|0-80|element=life drain
+  |scene={{Scene|spell=3x3spell|caster=Dreadbeast|look_direction=south|effect=Red Sparkles Effect|effect_on_caster=yes}}}}
+ |{{Ability|Poisoning Berserk|up to 6?hp/turn|element=earth|condition=poisoned|scene={{Scene|spell=3x3spell|caster=Dreadbeast|look_direction=south|effect=Poison Effect 3|effect_on_caster=yes}}}}
+ |{{Debuff|melee=yes|value=20-30%|duration=20secs
+  |scene={{Scene|spell=1sqmstrike|caster=Dreadbeast|look_direction=south|effect=Yellow Electricity Effect}}}}
+ |{{Healing|range=35-65
+  |scene={{Scene|spell=buffspell|caster=Dreadbeast|look_direction=south|effect=Poison Effect 2|effect_on_caster=yes}}}}
+}}
+| maxdmg         = 140
+| pushable       = ?
+| pushobjects    = ?
+| walksaround    = Fire, ?
+| walksthrough   = ?
+| paraimmune     = ?
+| senseinvis     = ?
+| physicalDmgMod = 70%
+| earthDmgMod    = 0%
+| fireDmgMod     = 45%
+| deathDmgMod    = 0%
+| energyDmgMod   = 85%
+| holyDmgMod     = 150%
+| iceDmgMod      = 60%
+| hpDrainDmgMod  = 0%
+| drownDmgMod    = 25%
+| healMod        = 100%?
+| sounds         = {{Sound List|}}
+| implemented    = 8.20
+| race_id	= 404
+| notes          = They are constantly summoned in [[Hellgorak|Hellgorak's]] Room.
+| behaviour      = Try to hit you with their [[Drown Damage|Drown Hits]].
+| speed          = 68
+| strategy       = Convince it and use it to kill the boss of the room at [[The Inquisition Quest]].
+| location       = [[The Inquisition Quest]], [[Hellgorak|Hellgorak's]] Room.
+| loot           = {{Loot Table
+ |{{Loot Item|0-88|Gold Coin}}
+ |{{Loot Item|Bone}}
+ |{{Loot Item|Plate Armor|semi-rare}}
+ |{{Loot Item|Skull (Item)|semi-rare}}
+ |{{Loot Item|Big Bone|rare}}
+ |{{Loot Item|Bone Club|rare}}
+ |{{Loot Item|Bone Shield|rare}}
+ |{{Loot Item|Green Mushroom|rare}}
+ |{{Loot Item|Hardened Bone|rare}}
+ |{{Loot Item|Health Potion|rare}}
+}}
+}}
