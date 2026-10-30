@@ -212,7 +212,7 @@ def find_templates(content: str, template_name: str, partial: bool = False, recu
             yield template
 
 
-def parse_boolean(value: str, default: bool = False, invert: bool = False) -> bool:
+def parse_boolean(value: str, default: bool | None = False, invert: bool = False) -> bool | None:
     """Parse a boolean value from a string.
 
     String must contain "yes" to be considered True.
@@ -271,7 +271,7 @@ def parse_date(value: str) -> datetime.date:
     raise ValueError(msg)
 
 
-def parse_float(value: str, default: float = 0.0) -> float:
+def parse_float(value: str, default: float | None = 0.0) -> float | None:
     """From a string, parses a floating value.
 
     Args:
@@ -343,20 +343,19 @@ def parse_whole_number(value: str) -> int | None:
     return None
 
 
-def parse_client_id(value: str) -> int | None:
-    """Parse a client ID, ignoring wiki comments.
+def visible_text(value: str) -> str:
+    """Remove the wiki comments from a value, leaving the text a reader of the page sees.
 
     Each comment is replaced by a space, so digits on either side of it stay apart. As in MediaWiki, an unclosed
     ``<!--`` hides the rest of the value, even inside a tag, template or link. Inside a ``<nowiki>`` or ``<pre>``,
-    however deeply nested, ``<!--`` is text: it hides nothing, and the digits of an escaped comment count. A value that
-    is only a comment, such as ``<!-- objectID: 51952-->`` or ``<!-- 51952``, counts as absent.
+    however deeply nested, ``<!--`` is text: it hides nothing, and the digits of an escaped comment count.
 
     Args:
-        value: The raw value of a client ID field.
+        value: The raw value of a template field.
 
     Returns:
-        The first integer in the value after comments are removed, or ``None`` if there is none. In a list of IDs like
-        ``421,437,438,747``, that is the first ID.
+        The value without its comments. Markup that is not a comment is kept, and an escaped ``<!--`` gets a
+        zero-width space after its ``!``.
 
     """
     code = mwparserfromhell.parse(value)
@@ -367,7 +366,23 @@ def parse_client_id(value: str) -> int | None:
     for tag in code.filter_tags(matches=lambda tag: str(tag.tag).strip().lower() in escaping_tags):
         if code.contains(tag):
             code.replace(tag, str(tag).replace("<!--", inert_comment_start))
-    return parse_first_integer(str(code).partition("<!--")[0], None)
+    return str(code).partition("<!--")[0]
+
+
+def parse_client_id(value: str) -> int | None:
+    """Parse a client ID, ignoring wiki comments as :func:`visible_text` does.
+
+    A value that is only a comment, such as ``<!-- objectID: 51952-->`` or ``<!-- 51952``, counts as absent.
+
+    Args:
+        value: The raw value of a client ID field.
+
+    Returns:
+        The first integer in the value after comments are removed, or ``None`` if there is none. In a list of IDs like
+        ``421,437,438,747``, that is the first ID.
+
+    """
+    return parse_first_integer(visible_text(value), None)
 
 
 def parse_currency(value: str) -> str | None:

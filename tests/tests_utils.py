@@ -8,7 +8,7 @@ from tests import load_resource
 from tibiawikisql.utils import (clean_links, client_color_to_rgb, parse_boolean, parse_client_id, parse_currency,
                                 parse_first_integer, parse_float, parse_integer,
                                 parse_date, parse_loot_statistics, parse_min_max, parse_sounds,
-                                parse_weapon_proficiency_name, parse_weapon_proficiency_tables)
+                                parse_weapon_proficiency_name, parse_weapon_proficiency_tables, visible_text)
 
 
 class TestUtils(unittest.TestCase):
@@ -77,6 +77,12 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(-5, parse_first_integer("-5 and 7"))
         self.assertEqual(0, parse_first_integer("--"))
         self.assertIsNone(parse_first_integer("--", None))
+
+    def test_visible_text(self):
+        self.assertEqual("35  7", visible_text("35<!-- note --> 7"))
+        self.assertEqual("\n \n", visible_text("\n<!--objectID: 51192-->\n"))
+        self.assertEqual("35 ", visible_text("35 <!-- 7"))
+        self.assertEqual("--", visible_text("--"))
 
     def test_parse_client_id(self):
         self.assertEqual(35, parse_client_id("35"))

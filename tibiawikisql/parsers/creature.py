@@ -25,6 +25,7 @@ from tibiawikisql.utils import (
     parse_min_max,
     parse_sounds,
     strip_code,
+    visible_text,
 )
 
 if TYPE_CHECKING:
@@ -77,6 +78,78 @@ def parse_maximum_integer(value: str) -> int | None:
     """
     matches = number_pattern.findall(range_hyphen_pattern.sub(" ", value))
     return max((parse_integer(match) for match in matches), default=None)
+
+
+def parse_known_integer(value: str) -> int | None:
+    """Parse a creature number, such as its hitpoints, from the visible text of its value.
+
+    Args:
+        value: The raw value of the field.
+
+    Returns:
+        The first number outside wiki comments, including 0, or ``None`` if there is none, as for ``?``, ``--`` or a
+        colour word.
+
+    """
+    return parse_integer(visible_text(value), None)
+
+
+def parse_known_float(value: str) -> float | None:
+    """Parse a creature decimal number, such as its mitigation, from the visible text of its value.
+
+    Args:
+        value: The raw value of the field.
+
+    Returns:
+        The first number outside wiki comments, including 0, or ``None`` if there is none.
+
+    """
+    return parse_float(visible_text(value), None)
+
+
+def parse_mana_cost(value: str) -> int | None:
+    """Parse the mana needed to summon or convince a creature.
+
+    The template renders ``--`` as "cannot", so ``--`` and ``no`` are a cost of 0.
+
+    Args:
+        value: The raw value of the ``summon`` or ``convince`` field.
+
+    Returns:
+        The first number outside wiki comments, 0 for ``--`` or ``no``, or ``None`` for anything else, such as ``?``
+        or ``yes``.
+
+    """
+    text = visible_text(value)
+    if text.strip().lower() in {"--", "no"}:
+        return 0
+    return parse_integer(text, None)
+
+
+def parse_known_boolean(value: str) -> bool | None:
+    """Parse a creature flag, such as whether it is pushable.
+
+    Args:
+        value: The raw value of the field.
+
+    Returns:
+        ``True`` for ``yes``, ``False`` for ``no``, or ``None`` for anything else, such as ``?`` or ``no?``.
+
+    """
+    return parse_boolean(value, None)
+
+
+def parse_paralysable(value: str) -> bool | None:
+    """Parse whether a creature can be paralysed from its ``paraimmune`` field, which says whether it is immune.
+
+    Args:
+        value: The raw value of the ``paraimmune`` field.
+
+    Returns:
+        ``False`` for ``yes``, ``True`` for ``no``, or ``None`` for anything else, such as ``?``.
+
+    """
+    return parse_boolean(value, None, invert=True)
 
 
 def parse_loot(value: str) -> list[tuple[str, str]]:
@@ -220,32 +293,32 @@ class CreatureParser(BaseParser):
         "bestiary_level": AttributeParser.optional("bestiarylevel"),
         "bestiary_occurrence": AttributeParser.optional("occurrence"),
         "bosstiary_class": AttributeParser.optional("bosstiaryclass"),
-        "hitpoints": AttributeParser.optional("hp", parse_integer),
-        "experience": AttributeParser.optional("exp", parse_integer),
-        "armor": AttributeParser.optional("armor", parse_integer),
-        "mitigation": AttributeParser.optional("mitigation", parse_float),
-        "speed": AttributeParser.optional("speed", parse_integer),
-        "runs_at": AttributeParser.optional("runsat", parse_integer),
-        "summon_cost": AttributeParser.optional("summon", parse_integer),
-        "convince_cost": AttributeParser.optional("convince", parse_integer),
-        "illusionable": AttributeParser.optional("illusionable", parse_boolean),
-        "pushable": AttributeParser.optional("pushable", parse_boolean),
-        "push_objects": AttributeParser.optional("pushobjects", parse_boolean),
-        "sees_invisible": AttributeParser.optional("senseinvis", parse_boolean),
-        "paralysable": AttributeParser.optional("paraimmune", parse_boolean),
+        "hitpoints": AttributeParser.optional("hp", parse_known_integer),
+        "experience": AttributeParser.optional("exp", parse_known_integer),
+        "armor": AttributeParser.optional("armor", parse_known_integer),
+        "mitigation": AttributeParser.optional("mitigation", parse_known_float),
+        "speed": AttributeParser.optional("speed", parse_known_integer),
+        "runs_at": AttributeParser.optional("runsat", parse_known_integer),
+        "summon_cost": AttributeParser.optional("summon", parse_mana_cost),
+        "convince_cost": AttributeParser.optional("convince", parse_mana_cost),
+        "illusionable": AttributeParser.optional("illusionable", parse_known_boolean),
+        "pushable": AttributeParser.optional("pushable", parse_known_boolean),
+        "push_objects": AttributeParser.optional("pushobjects", parse_known_boolean),
+        "sees_invisible": AttributeParser.optional("senseinvis", parse_known_boolean),
+        "paralysable": AttributeParser.optional("paraimmune", parse_paralysable),
         "spawn_type": AttributeParser.optional("spawntype"),
         "is_boss": AttributeParser.optional("isboss", parse_boolean, False),
         "cooldown": AttributeParser.optional("cooldown", parse_float),
-        "modifier_physical": AttributeParser.optional("physicalDmgMod", parse_integer),
-        "modifier_earth": AttributeParser.optional("earthDmgMod", parse_integer),
-        "modifier_fire": AttributeParser.optional("fireDmgMod", parse_integer),
-        "modifier_energy": AttributeParser.optional("energyDmgMod", parse_integer),
-        "modifier_ice": AttributeParser.optional("iceDmgMod", parse_integer),
-        "modifier_death": AttributeParser.optional("deathDmgMod", parse_integer),
-        "modifier_holy": AttributeParser.optional("holyDmgMod", parse_integer),
-        "modifier_drown": AttributeParser.optional("drownDmgMod", parse_integer),
-        "modifier_lifedrain": AttributeParser.optional("hpDrainDmgMod", parse_integer),
-        "modifier_healing": AttributeParser.optional("healMod", parse_integer),
+        "modifier_physical": AttributeParser.optional("physicalDmgMod", parse_known_integer),
+        "modifier_earth": AttributeParser.optional("earthDmgMod", parse_known_integer),
+        "modifier_fire": AttributeParser.optional("fireDmgMod", parse_known_integer),
+        "modifier_energy": AttributeParser.optional("energyDmgMod", parse_known_integer),
+        "modifier_ice": AttributeParser.optional("iceDmgMod", parse_known_integer),
+        "modifier_death": AttributeParser.optional("deathDmgMod", parse_known_integer),
+        "modifier_holy": AttributeParser.optional("holyDmgMod", parse_known_integer),
+        "modifier_drown": AttributeParser.optional("drownDmgMod", parse_known_integer),
+        "modifier_lifedrain": AttributeParser.optional("hpDrainDmgMod", parse_known_integer),
+        "modifier_healing": AttributeParser.optional("healMod", parse_known_integer),
         "walks_through": AttributeParser.optional("walksthrough", parse_monster_walks),
         "walks_around": AttributeParser.optional("walksaround", parse_monster_walks),
         "location": AttributeParser.optional("location", clean_links),
