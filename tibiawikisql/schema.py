@@ -163,6 +163,13 @@ class ItemSoundTable(Table, table_name="item_sound"):
     content = Column(Text, nullable=False)
 
 
+class ItemClientIdTable(Table, table_name="item_client_id"):
+    """Contains every client ID of an item, in the order the wiki lists them."""
+    item_id = Column(ForeignKey(Integer, table="item", column="article_id"), index=True)
+    client_id = Column(Integer, nullable=False)
+    position = Column(Integer, nullable=False)
+
+
 class ItemStoreOfferTable(Table, table_name="item_store_offer"):
     """Contains the Tibia store offers for an item."""
     item_id = Column(ForeignKey(Integer, table="item", column="article_id"), index=True)

@@ -24,6 +24,8 @@ the number."""
 min_max_pattern = re.compile(rf"({unsigned_number_rule})-({unsigned_number_rule})")
 """A range of two numbers without a sign, separated by a hyphen, like ``0-40`` or ``1,000-2,000``."""
 int_pattern = re.compile(r"[+-]?\d+")
+whole_number_pattern = re.compile(r"\d+")
+"""A whole number: a run of digits, without a sign or separators."""
 number_pattern = re.compile(rf"[+-]?(?:{unsigned_number_rule})")
 """A number whose thousands may be grouped with commas, like ``50,000``. Other commas end the number."""
 loot_field_separator_pattern = re.compile(r",(?!\d{3}(?!\d))")
@@ -383,6 +385,20 @@ def parse_client_id(value: str) -> int | None:
 
     """
     return parse_first_integer(visible_text(value), None)
+
+
+def parse_client_ids(value: str) -> list[int]:
+    """Parse every client ID in a list of IDs, ignoring wiki comments as :func:`visible_text` does.
+
+    Args:
+        value: The raw value of a client ID field, like ``629,630,631``.
+
+    Returns:
+        Every whole number in the value after comments are removed, in listed order. IDs may be separated by commas,
+        spaces or line breaks, and a sign is not read. The list is empty when there is no whole number, as for ``?``.
+
+    """
+    return [int(number) for number in whole_number_pattern.findall(visible_text(value))]
 
 
 def parse_known_boolean(value: str) -> bool | None:

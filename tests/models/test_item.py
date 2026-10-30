@@ -119,3 +119,39 @@ class TestItem(unittest.TestCase):
 
         self.assertIsNone(loaded.slot)
         self.assertIsNone(loaded.is_usable)
+
+    def test_item_client_ids_round_trip(self):
+        article = Article(
+            article_id=1,
+            title="Shallow Water",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource("content_item_shallow_water.txt"),
+        )
+        ItemParser.from_article(article).insert(self.conn)
+
+        loaded = Item.get_one_by_field(self.conn, "article_id", 1)
+        rows = self.conn.execute(
+            "SELECT item_id, client_id, position FROM item_client_id ORDER BY position",
+        ).fetchall()
+
+        self.assertEqual(629, loaded.client_id)
+        self.assertEqual([629, 630, 631, 632, 633, 634], loaded.client_ids)
+        self.assertEqual(
+            [(1, 629, 0), (1, 630, 1), (1, 631, 2), (1, 632, 3), (1, 633, 4), (1, 634, 5)],
+            [tuple(row) for row in rows],
+        )
+
+    def test_item_client_ids_round_trip_single(self):
+        article = Article(
+            article_id=1,
+            title="Amethyst Necklace",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource("content_item_amethyst_necklace.txt"),
+        )
+        ItemParser.from_article(article).insert(self.conn)
+
+        loaded = Item.get_one_by_field(self.conn, "article_id", 1)
+        rows = self.conn.execute("SELECT item_id, client_id, position FROM item_client_id").fetchall()
+
+        self.assertEqual([35609], loaded.client_ids)
+        self.assertEqual([(1, 35609, 0)], [tuple(row) for row in rows])

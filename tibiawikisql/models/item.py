@@ -15,6 +15,7 @@ from tibiawikisql.schema import (
     BookTable,
     CreatureDropTable,
     ItemAttributeTable,
+    ItemClientIdTable,
     ItemKeyTable,
     ItemProficiencyPerkTable,
     ItemSoundTable,
@@ -160,6 +161,8 @@ class Item(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=ItemTa
     """The radius of the light emitted by this item, if any."""
     client_id: int | None
     """The internal id of the item in the client."""
+    client_ids: list[int] = Field(default_factory=list)
+    """Every client id of the item, in the order the wiki lists them."""
     attributes: list[ItemAttribute] = Field(default_factory=list)
     """The item's attributes."""
     dropped_by: list[ItemDrop] = Field(default_factory=list)
@@ -292,6 +295,8 @@ class Item(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=ItemTa
             ItemAttributeTable.insert(conn, item_id=self.article_id, **attribute.model_dump())
         for sound in self.sounds:
             ItemSoundTable.insert(conn, item_id=self.article_id, content=sound)
+        for position, client_id in enumerate(self.client_ids):
+            ItemClientIdTable.insert(conn, item_id=self.article_id, client_id=client_id, position=position)
         for offer in self.store_offers:
             ItemStoreOfferTable.insert(conn, item_id=self.article_id, **offer.model_dump())
 
@@ -319,6 +324,9 @@ class Item(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=ItemTa
 
         sounds = ItemSoundTable.get_list_by_field(conn, "item_id", item.article_id)
         item.sounds = [r["content"] for r in sounds]
+
+        client_ids = ItemClientIdTable.get_list_by_field(conn, "item_id", item.article_id, sort_by="position")
+        item.client_ids = [r["client_id"] for r in client_ids]
 
         item.bought_by = [
             ItemOffer(

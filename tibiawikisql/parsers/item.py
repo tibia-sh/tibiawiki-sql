@@ -16,6 +16,7 @@ from tibiawikisql.utils import (
     find_templates,
     number_pattern,
     parse_boolean,
+    parse_client_ids,
     parse_currency,
     parse_float,
     parse_first_integer,
@@ -163,6 +164,7 @@ class ItemParser(BaseParser):
         cls.parse_resistances(row)
         cls.parse_restores(row)
         cls.parse_sounds(row)
+        cls.parse_client_ids(row)
         cls.parse_store_value(row)
         return row
 
@@ -312,6 +314,13 @@ class ItemParser(BaseParser):
         if "sounds" not in row["_raw_attributes"]:
             return
         row["sounds"] = parse_sounds(row["_raw_attributes"]["sounds"])
+
+    @classmethod
+    def parse_client_ids(cls, row: dict[str, Any]) -> None:
+        """Read every client ID in the item's ``itemid`` into ``client_ids``, in listed order."""
+        if "itemid" not in row["_raw_attributes"]:
+            return
+        row["client_ids"] = parse_client_ids(row["_raw_attributes"]["itemid"])
 
     @classmethod
     def parse_store_value(cls, row):

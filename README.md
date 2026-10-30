@@ -27,6 +27,7 @@ The copy adds this data to the database:
 * The `spell.spell_id` column. It holds the ID of a spell, `NULL` when the wiki has none or only a comment.
 * The `creature.attack_type` and `creature.uses_spells` columns. They hold how a creature attacks, in lower case, like
   `melee`, and whether it uses spells, `NULL` when the wiki does not say.
+* The `item_client_id` table. It keeps every client ID of an item, in the order the wiki lists them, from position 0.
 
 The [database schema](docs/schema.md) describes each of them.
 

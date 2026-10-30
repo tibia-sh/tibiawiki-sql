@@ -1,10 +1,18 @@
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
 import sqlite3
 import unittest
 
 from polyfactory.factories.pydantic_factory import ModelFactory
 
 from tibiawikisql.models import Book, Item
-from tibiawikisql.schema import BookTable, ItemAttributeTable, ItemSoundTable, ItemStoreOfferTable, ItemTable
+from tibiawikisql.schema import (
+    BookTable,
+    ItemAttributeTable,
+    ItemClientIdTable,
+    ItemSoundTable,
+    ItemStoreOfferTable,
+    ItemTable,
+)
 
 
 class BookFactory(ModelFactory[Book]):
@@ -31,6 +39,7 @@ class TestBook(unittest.TestCase):
         self.conn.executescript(ItemAttributeTable.get_create_table_statement())
         self.conn.executescript(ItemStoreOfferTable.get_create_table_statement())
         self.conn.executescript(ItemSoundTable.get_create_table_statement())
+        self.conn.executescript(ItemClientIdTable.get_create_table_statement())
         self.conn.executescript(BookTable.get_create_table_statement())
 
 

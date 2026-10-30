@@ -1,7 +1,8 @@
 import datetime
+import os
 import unittest
 
-from tests import load_resource
+from tests import RESOURCES_PATH, load_resource
 from tibiawikisql.api import Article
 from tibiawikisql.parsers import ItemParser
 
@@ -339,3 +340,70 @@ class TestItemParserSlotAndUsable(unittest.TestCase):
         item = self._edited("| usable        = no", "| usable        = yes <!-- x -->")
 
         self.assertIs(True, item.is_usable)
+
+
+class TestItemParserClientIds(unittest.TestCase):
+    def _parse_content(self, title: str, content: str):
+        article = Article(
+            article_id=1,
+            title=title,
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=content,
+        )
+
+        return ItemParser.from_article(article)
+
+    def _edited(self, old: str, new: str):
+        content = load_resource("content_item_amethyst_necklace.txt")
+        self.assertIn(old, content)
+        return self._parse_content("Amethyst Necklace", content.replace(old, new))
+
+    def test_shallow_water_keeps_every_id(self):
+        item = self._parse_content("Shallow Water", load_resource("content_item_shallow_water.txt"))
+
+        self.assertEqual([629, 630, 631, 632, 633, 634], item.client_ids)
+        self.assertEqual(item.client_id, item.client_ids[0])
+
+    def test_single_id(self):
+        item = self._parse_content("Amethyst Necklace", load_resource("content_item_amethyst_necklace.txt"))
+
+        self.assertEqual([35609], item.client_ids)
+        self.assertEqual(35609, item.client_id)
+
+    def test_ids_separated_by_comma_and_space(self):
+        item = self._parse_content("Football", load_resource("content_item_no_attrib.txt"))
+
+        self.assertEqual([2990, 9104], item.client_ids)
+
+    def test_absent(self):
+        item = self._edited("| itemid        = 35609\n", "")
+
+        self.assertEqual([], item.client_ids)
+
+    def test_unknown(self):
+        item = self._edited("| itemid        = 35609", "| itemid        = ?")
+
+        self.assertEqual([], item.client_ids)
+
+    def test_only_in_a_comment(self):
+        item = self._edited("| itemid        = 35609", "| itemid        = <!-- 35609 -->")
+
+        self.assertEqual([], item.client_ids)
+
+    def test_ignores_a_trailing_comment(self):
+        item = self._edited("| itemid        = 35609", "| itemid        = 35609 <!-- 35610 -->")
+
+        self.assertEqual([35609], item.client_ids)
+
+    def test_first_id_matches_client_id_in_every_item_fixture(self):
+        resources = sorted(
+            name for name in os.listdir(RESOURCES_PATH)
+            if name.startswith("content_item") and "{{Infobox Object" in load_resource(name)
+        )
+        self.assertGreaterEqual(len(resources), 19)
+        for resource in resources:
+            with self.subTest(resource=resource):
+                item = self._parse_content(resource, load_resource(resource))
+
+                self.assertTrue(item.client_ids)
+                self.assertEqual(item.client_id, item.client_ids[0])

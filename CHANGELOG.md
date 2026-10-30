@@ -19,6 +19,9 @@
   `yes`, `false` for `no` and `NULL` for anything else, such as `?`. `spell_id` is the first number in the value and
   `NULL` when there is none, as for `?`. Wiki comments are ignored in all of these fields, and an absent value is
   `NULL`.
+- Add the `item_client_id` table, with every client ID in an item's `itemid` in listed order, from position 0. Shallow
+  Water's `629,630,631,632,633,634` gives six rows. Wiki comments are ignored, and an `itemid` with no whole number,
+  like `?`, gives no rows. `item.client_id` is unchanged and still holds the first ID.
 
 ## 9.0.0+tibiash.9
 

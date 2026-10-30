@@ -5,7 +5,8 @@ import datetime
 
 import tibiawikisql
 from tests import load_resource
-from tibiawikisql.utils import (clean_links, client_color_to_rgb, parse_boolean, parse_client_id, parse_currency,
+from tibiawikisql.utils import (clean_links, client_color_to_rgb, parse_boolean, parse_client_id, parse_client_ids,
+                                parse_currency,
                                 parse_first_integer, parse_float, parse_integer,
                                 parse_date, parse_loot_statistics, parse_min_max, parse_sounds,
                                 parse_known_boolean, parse_known_text, parse_weapon_proficiency_name,
@@ -133,6 +134,19 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(35, parse_client_id('<pre title="<nowiki>x</nowiki>">35</pre>'))
         self.assertIsNone(parse_client_id("abc"))
         self.assertIsNone(parse_client_id(""))
+
+    def test_parse_client_ids(self):
+        self.assertEqual([629, 630, 631, 632, 633, 634], parse_client_ids("629,630,631,632,633,634"))
+        self.assertEqual([32759, 32760], parse_client_ids(" 32759, 32760"))
+        self.assertEqual([35], parse_client_ids("35"))
+        self.assertEqual([35, 36, 37], parse_client_ids("35<br>36<br />37"))
+        self.assertEqual([35, 36], parse_client_ids("35 36"))
+        self.assertEqual([35, 7], parse_client_ids("35<!-- note -->7"))
+        self.assertEqual([644, 645], parse_client_ids("<!-- 7 -->644, <!-- 8 -->645"))
+        self.assertEqual([35], parse_client_ids("35 <!-- 36"))
+        self.assertEqual([], parse_client_ids("<!-- objectID: 51952-->"))
+        self.assertEqual([], parse_client_ids("?"))
+        self.assertEqual([], parse_client_ids(""))
 
     def test_parse_date_ignores_comma_separated_time(self):
         self.assertEqual(datetime.date(2026, 1, 27), parse_date("January 27, 2026, 16:00"))

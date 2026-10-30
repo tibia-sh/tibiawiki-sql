@@ -27,6 +27,7 @@ The generated database has the following tables.
 | `imbuement_material`    | Contains the item materials for imbuements.                                         |
 | `item`                  | Contains information for all items.                                                 |
 | `item_attribute`        | Contains extra attributes and properties of items that only apply to certain types. |
+| `item_client_id`        | Contains every client ID of items, in the order the wiki lists them.                |
 | `item_key`              | Contains the different key variations.                                              |
 | `item_sound`            | Contains all the sounds made by items.                                              |
 | `item_proficiency_perk` | Contains weapon proficiency perks for items.                                        |
@@ -345,7 +346,7 @@ The generated database has the following tables.
 | light_color        | `INTEGER`             | The color of the light emitted by this item, if any.                                                                                                                                                                                                                            |
 | light_radius       | `INTEGER`             | The radius of the light emitted by this item, if any.                                                                                                                                                                                                                           |
 | version            | `TEXT`                | The client version this item was introduced to the game.                                                                                                                                                                                                                        |
-| client_id          | `INTEGER`             | The client id of the item.                                                                                                                                                                                                                                                      |
+| client_id          | `INTEGER`             | The client id of the item, the first integer in `itemid`. `item_client_id` has every client ID.                                                                                                                                                                                 |
 | image              | `BLOB`                | The item’s image bytes.                                                                                                                                                                                                                                                         |
 | status             | `TEXT`                | The status of the item in game.                                                                                                                                                                                                                                                 |
 | timestamp          | `TIMESTAMP`           | ISO 8601 timestamp of the article's last edit.                                                                                                                                                                                                                                  |
@@ -365,6 +366,16 @@ sentence in its notes, as the attributes `restores_hp_min`, `restores_hp_max`, `
 `restores_mana_max`, with thousands separators removed. An item gets none of them when that sentence is missing or
 ambiguous: the same unit twice, an amount over nine digits, a minimum greater than its maximum, or another `between`
 that doesn't form a range.
+
+
+
+### item_client_id
+
+|  Column   |   Type    |                                     Description                                      |
+| --------- | --------- | ------------------------------------------------------------------------------------ |
+| item_id   | `INTEGER` | The id of the item this client ID belongs to.                                        |
+| client_id | `INTEGER` | A client ID of the item, a whole number in `itemid` after wiki comments are removed. |
+| position  | `INTEGER` | The ID's place in the `itemid` list, from 0.                                         |
 
 
 
