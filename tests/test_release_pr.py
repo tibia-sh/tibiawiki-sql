@@ -2,7 +2,9 @@ import io
 import json
 import os
 import re
+import subprocess
 import tempfile
+import textwrap
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
@@ -73,6 +75,16 @@ def job(workflow: str, name: str) -> str:
     start = lines.index(f"  {name}:")
     end = next((i for i in range(start + 1, len(lines)) if re.match(r"  \S", lines[i])), len(lines))
     return "\n".join(lines[start:end]) + "\n"
+
+
+def step_script(workflow: str, name: str) -> str:
+    """The script of a job's one ``run: |`` step, dedented as the runner hands it to the shell."""
+    lines = job(workflow, name).splitlines()
+    start = next(i for i, line in enumerate(lines) if line.strip() == "run: |")
+    indent = len(lines[start]) - len(lines[start].lstrip())
+    end = next((i for i in range(start + 1, len(lines))
+                if lines[i].strip() and len(lines[i]) - len(lines[i].lstrip()) <= indent), len(lines))
+    return textwrap.dedent("\n".join(lines[start + 1:end])).strip("\n") + "\n"
 
 
 class TestNextVersion(unittest.TestCase):
@@ -897,6 +909,75 @@ class TestReleaseWorkflow(WorkflowTestCase):
 
 class TestAlertWorkflow(WorkflowTestCase):
     WORKFLOW = "alert.yml"
+    # What the step gets through env: the watched run's fields, the repository and github.token.
+    ENV: ClassVar[dict[str, str]] = {
+        "GH_TOKEN": "ghs_alert",
+        "GH_REPO": "tibia-sh/tibiawiki-sql",
+        "WORKFLOW": "Release",
+        "CONCLUSION": "failure",
+        "RUN_URL": "https://github.com/tibia-sh/tibiawiki-sql/actions/runs/99",
+    }
+    # The open issue the alert comments on, and two it passes over: a later one with its title, and another title.
+    ISSUES: ClassVar[list[dict]] = [
+        {"number": 31, "title": "Automation needs a look"},
+        {"number": 30, "title": "Automation needs a look"},
+        {"number": 12, "title": "Automation needs a look again"},
+    ]
+    OPEN = ("gh issue create --title Automation needs a look --assignee drptbl"
+            " --body Release failure: https://github.com/tibia-sh/tibiawiki-sql/actions/runs/99")
+    # A stand-in gh that logs each call to $FAKE/events. `issue list ... --jq FILTER` runs the real jq with FILTER over
+    # $FAKE/issues, as gh does over the fields it fetched. `issue comment N` and `issue create` print the URL gh prints,
+    # and create opens issue 40. Call N of a kind exits with line N of $FAKE/<kind>-exits, its last line once they run
+    # out, or 0 without the file. A failed call prints a GraphQL error. A failed list still prints what it found, so a
+    # step that went on would act on it. A create lands even when it fails, as one whose answer GitHub lost does, so
+    # every list after it finds issue 40.
+    FAKE_GH = r"""#!/usr/bin/env bash
+here="$FAKE"
+echo "gh $*" >> "$here/events"
+if [ -z "$GH_REPO" ] || [ -z "$GH_TOKEN" ]; then
+  echo "fake gh: no GH_REPO or GH_TOKEN" >&2
+  exit 2
+fi
+kind="$2"
+if [ "$#" -eq 10 ] && [ "$1 $2 $3 $4 $5" = "issue list --state open --limit" ] \
+  && [ "$6 $7 $8 $9" = "1000 --json number,title --jq" ]; then
+  :
+elif [ "$#" -eq 5 ] && [ "$1 $2" = "issue comment" ] && [ "$4" = --body ]; then
+  case "$3" in
+    '' | *[!0-9]*) echo "fake gh: unsupported issue $3" >&2; exit 2 ;;
+  esac
+elif [ "$#" -eq 8 ] && [ "$1 $2 $3" = "issue create --title" ] && [ "$5 $6 $7" = "--assignee drptbl --body" ]; then
+  jq -n --arg title "$4" '{number: 40, title: $title}' > "$here/opened"
+else
+  echo "fake gh: unsupported command: $*" >&2
+  exit 2
+fi
+count=$(grep -c "^gh issue $kind " "$here/events")
+code=0
+if [ -e "$here/$kind-exits" ]; then
+  code=$(sed -n "${count}p" "$here/$kind-exits")
+  [ -n "$code" ] || code=$(tail -n 1 "$here/$kind-exits")
+fi
+case "$kind" in
+  list)
+    if [ -e "$here/opened" ]; then
+      jq -c --slurpfile opened "$here/opened" '. + $opened' "$here/issues"
+    else
+      cat "$here/issues"
+    fi | jq -r "${10}"
+    ;;
+  comment) [ "$code" -ne 0 ] || echo "https://github.com/$GH_REPO/issues/$3#issuecomment-1" ;;
+  create) [ "$code" -ne 0 ] || echo "https://github.com/$GH_REPO/issues/40" ;;
+esac
+if [ "$code" -ne 0 ]; then
+  echo 'GraphQL: Something went wrong while executing your query' >&2
+fi
+exit "$code"
+"""
+    # A stand-in sleep that logs its seconds to $FAKE/sleeps and returns at once.
+    FAKE_SLEEP = """#!/usr/bin/env bash
+echo "$*" >> "$FAKE/sleeps"
+"""
 
     def test_watches_the_automation_workflows_by_their_exact_names(self):
         self.assertIn("""\
@@ -921,7 +1002,7 @@ permissions: {}
       github.event.workflow_run.conclusion != 'neutral' &&
       github.event.workflow_run.event != 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     permissions:
       issues: write
     concurrency:
@@ -933,13 +1014,21 @@ permissions: {}
         run: |
           title='Automation needs a look'
           body="$WORKFLOW $CONCLUSION: $RUN_URL"
-          number=$(TITLE=$title gh issue list --state open --limit 1000 --json number,title \\
-            --jq 'map(select(.title == env.TITLE) | .number) | min // empty')
-          if [[ -n $number ]]; then
-            gh issue comment "$number" --body "$body"
-          else
-            gh issue create --title "$title" --assignee drptbl --body "$body"
-          fi
+          write_alert() {
+            number=$(TITLE=$title gh issue list --state open --limit 1000 --json number,title \\
+              --jq 'map(select(.title == env.TITLE) | .number) | min // empty') || return 1
+            if [[ -n $number ]]; then
+              gh issue comment "$number" --body "$body" || return 1
+            else
+              gh issue create --title "$title" --assignee drptbl --body "$body" || return 1
+            fi
+          }
+          for delay in 30 60 120 240; do
+            write_alert && exit 0
+            echo "::warning::Writing the alert issue failed. Trying again in $delay seconds."
+            sleep "$delay"
+          done
+          write_alert
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -948,3 +1037,77 @@ permissions: {}
           RUN_URL: ${{ github.event.workflow_run.html_url }}
 """)
         self.assertNotIn("uses:", self.text())
+
+    def run_alert(self, issues: list[dict], **exits: list[int]) -> dict:
+        """Run the step's script as the job's bash does, with the stand-in gh and sleep first on PATH.
+
+        ``issues`` are the open issues a list finds, and ``exits`` how each call of a kind (list, comment or create)
+        exits in turn. jq and everything else is real.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            fake = Path(tmp)
+            for name, script in [("gh", self.FAKE_GH), ("sleep", self.FAKE_SLEEP)]:
+                (fake / name).write_text(script, encoding="utf-8")
+                (fake / name).chmod(0o755)
+            (fake / "issues").write_text(json.dumps(issues), encoding="utf-8")
+            for kind, codes in exits.items():
+                (fake / f"{kind}-exits").write_text("".join(f"{code}\n" for code in codes), encoding="utf-8")
+            env = {**self.ENV, "PATH": f"{fake}{os.pathsep}{os.environ['PATH']}", "FAKE": tmp}
+            script = step_script(self.WORKFLOW, "alert")
+            # bash from PATH runs the workflow's own script, as the runner does.
+            run = subprocess.run(["bash", "-e", "-c", script], env=env, cwd=tmp,  # noqa: S603, S607
+                                 capture_output=True, text=True, timeout=60, check=False)
+            events = (fake / "events").read_text(encoding="utf-8").splitlines()
+            sleeps = (fake / "sleeps").read_text(encoding="utf-8").splitlines() if (fake / "sleeps").exists() else []
+        return {
+            "status": run.returncode,
+            "output": run.stdout + run.stderr,
+            "warnings": [line for line in run.stdout.splitlines() if line.startswith("::warning::")],
+            "lists": [event for event in events if event.startswith("gh issue list ")],
+            "comments": [event for event in events if event.startswith("gh issue comment ")],
+            "opens": [event for event in events if event.startswith("gh issue create ")],
+            "sleeps": sleeps,
+        }
+
+    def comment(self, number: int) -> str:
+        return (f"gh issue comment {number}"
+                " --body Release failure: https://github.com/tibia-sh/tibiawiki-sql/actions/runs/99")
+
+    def test_lists_5_times_and_never_writes_when_it_cannot_list_the_open_issues(self):
+        # Writing after a failed list would act on a list it could not trust, and could open a second issue beside
+        # the first. The stand-in's failed list still prints the issue it found, so a step that went on would comment.
+        for issues in [[], self.ISSUES]:
+            with self.subTest(issues=issues):
+                run = self.run_alert(issues, list=[1])
+                self.assertEqual(1, run["status"], run["output"])
+                self.assertEqual(5, len(run["lists"]), run["output"])
+                self.assertEqual([], run["comments"])
+                self.assertEqual([], run["opens"])
+                self.assertEqual(["30", "60", "120", "240"], run["sleeps"])
+                self.assertEqual([f"::warning::Writing the alert issue failed. Trying again in {delay} seconds."
+                                  for delay in [30, 60, 120, 240]], run["warnings"])
+
+    def test_comments_once_a_failed_list_finds_the_issue_on_the_next_try(self):
+        run = self.run_alert(self.ISSUES, list=[1, 0])
+        self.assertEqual(0, run["status"], run["output"])
+        self.assertEqual(2, len(run["lists"]))
+        self.assertEqual([self.comment(30)], run["comments"])
+        self.assertEqual([], run["opens"])
+        self.assertEqual(["30"], run["sleeps"])
+
+    def test_lists_and_comments_again_after_a_comment_fails(self):
+        run = self.run_alert(self.ISSUES, comment=[1, 0])
+        self.assertEqual(0, run["status"], run["output"])
+        self.assertEqual(2, len(run["lists"]))
+        self.assertEqual([self.comment(30), self.comment(30)], run["comments"])
+        self.assertEqual([], run["opens"])
+        self.assertEqual(["30"], run["sleeps"])
+
+    def test_comments_on_the_issue_a_failed_open_opened_and_never_opens_a_second(self):
+        # GitHub can open the issue and still answer with an error. The next try lists again and finds it.
+        run = self.run_alert([{"number": 12, "title": "Automation needs a look again"}], create=[1])
+        self.assertEqual(0, run["status"], run["output"])
+        self.assertEqual(2, len(run["lists"]))
+        self.assertEqual([self.OPEN], run["opens"])
+        self.assertEqual([self.comment(40)], run["comments"])
+        self.assertEqual(["30"], run["sleeps"])
