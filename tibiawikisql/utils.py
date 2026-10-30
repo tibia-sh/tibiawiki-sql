@@ -270,8 +270,12 @@ def clean_text_safely(value: str) -> str:
         :func:`clean_links` of the value whenever it can clean it, so ``{{Hover|Negotiable|ask}}`` is ``Negotiable``.
         When it raises :class:`IndexError` or :class:`ValueError`, the two errors it is known to raise on wiki text,
         the stripped plain text mwparserfromhell's ``strip_code`` gives instead, where links become their text and
-        templates and comments are dropped, so ``1,000 {{GP}}`` is ``1,000`` and ``{{A|x|{{B|y}}}}`` is empty. So a
-        value :func:`clean_links` cannot clean still gives a text rather than an error.
+        templates and comments are dropped, so ``1,000 {{GP}}`` is ``1,000`` and ``{{A|x|{{B|y}}}}`` is empty.
+
+    Raises:
+        ValueError: The known limit: the value holds a zero-padded decimal HTML entity of more than 4,300 digits. Both
+            :func:`clean_links` and the fallback decode it with mwparserfromhell's ``HTMLEntity.normalize``, which
+            reads it with :class:`int` past Python's digit limit.
 
     """
     try:
@@ -330,9 +334,9 @@ def parse_location(value: str) -> tuple[str, list[tuple[int, int, int, str | Non
     tried, reads as :func:`clean_text_safely` reads it, coordinates included, and each label is its ``text`` parameter
     cleaned on its own.
 
-    Where :func:`clean_links` cannot clean the text or a label, :func:`clean_text_safely` gives its plain text instead,
-    so such a location gives a text and rows rather than an error. A label :func:`clean_links` drops from the text, as
-    in a ``{{Hover}}``'s later parameter, still gives its row a label the text does not show.
+    Where :func:`clean_links` cannot clean the text or a label, :func:`clean_text_safely` gives its plain text instead.
+    A label :func:`clean_links` drops from the text, as in a ``{{Hover}}``'s later parameter, still gives its row a
+    label the text does not show.
 
     Args:
         value: The raw location.
@@ -341,6 +345,10 @@ def parse_location(value: str) -> tuple[str, list[tuple[int, int, int, str | Non
         The clean location, and the ``x``, ``y``, ``z`` and label of each template whose position
         :func:`parse_mapper_coords` reads, in the order they are written. The label is the text the location shows in
         the template's place, or ``None`` when it shows none. A template whose position is malformed gives no row.
+
+    Raises:
+        ValueError: The known limit, from :func:`clean_text_safely`: the location holds a zero-padded decimal HTML
+            entity of more than 4,300 digits, written whole or split by a template whose removal joins it.
 
     """
     # A mark a text decodes to is found only after a whole attempt, so crafted text aiming entities at successive
