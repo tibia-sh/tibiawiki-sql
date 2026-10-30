@@ -243,3 +243,34 @@ class TestCreature(unittest.TestCase):
 
         self.assertEqual("An example can be found at spot.", loaded.location)
         self.assertEqual([], loaded.location_coordinates)
+
+    def _black_sheep_with_first_label(self, label: str) -> Creature:
+        content = load_resource("content_creature_black_sheep.txt")
+        coordinates = "{{Mapper Coords|127.88|124.58|4|4|text=here}}"
+        self.assertIn(coordinates, content)
+        article = Article(
+            article_id=1,
+            title="Black Sheep",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=content.replace(coordinates, "{{Mapper Coords|127.88|124.58|4|4|text=" + label + "}}"),
+        )
+        CreatureParser.from_article(article).insert(self.conn)
+        return Creature.get_one_by_field(self.conn, "article_id", 1)
+
+    def test_label_clean_links_cannot_read_keeps_the_article(self):
+        loaded = self._black_sheep_with_first_label("{{Hover|here|reached via {{Item|Rope}}}}")
+
+        self.assertEqual("Femor Hills, cultist cave in Liberty Bay (here), Drefia", loaded.location)
+        self.assertEqual(
+            [(32600, 31802, 4, None), (32448, 32767, 7, "here")],
+            [(c.x, c.y, c.z, c.label) for c in loaded.location_coordinates],
+        )
+
+    def test_label_cleaned_once_keeps_the_location(self):
+        loaded = self._black_sheep_with_first_label("<nowiki>{{GP}}</nowiki>")
+
+        self.assertEqual("Femor Hills ({{GP}}), cultist cave in Liberty Bay (here), Drefia", loaded.location)
+        self.assertEqual(
+            [(32600, 31802, 4, "{{GP}}"), (32448, 32767, 7, "here")],
+            [(c.x, c.y, c.z, c.label) for c in loaded.location_coordinates],
+        )

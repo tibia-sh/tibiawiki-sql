@@ -251,36 +251,88 @@ def parse_mapper_coords(template: Template) -> tuple[int, int, int] | None:
     return x, y, z
 
 
-def mapper_coords_label(template: Template) -> str | None:
-    """Get the label a Mapper Coords template shows: its ``text`` parameter, cleaned by :func:`clean_links`.
+def clean_text_safely(value: str) -> str:
+    """Clean wiki text as :func:`clean_links` does, falling back to plain text where :func:`clean_links` fails.
 
     Args:
-        template: The Mapper Coords template.
+        value: The wiki text.
 
     Returns:
-        The clean label, like ``here`` for ``text={{Hover|here|explanation}}``, or ``None`` when the template has no
-        ``text``, it is empty once cleaned, as for a comment, or :func:`clean_links` cannot clean it because it holds a
-        template without parameters, like ``{{GP}}``.
+        :func:`clean_links` of the value whenever it can clean it, so ``{{Hover|Negotiable|ask}}`` is ``Negotiable``.
+        When it raises :class:`IndexError` or :class:`ValueError`, the two errors it is known to raise on wiki text,
+        the stripped plain text mwparserfromhell's ``strip_code`` gives instead, where links become their text and
+        templates and comments are dropped, so ``1,000 {{GP}}`` is ``1,000`` and ``{{A|x|{{B|y}}}}`` is empty. So a
+        value :func:`clean_links` cannot clean still gives a text rather than an error.
 
     """
-    if not template.has("text"):
-        return None
     try:
-        label = clean_links(str(template.get("text").value))
-    except IndexError:
-        return None
-    return label or None
+        return clean_links(value)
+    # IndexError: a template without parameters has no first one. ValueError: a template inside another's later
+    # parameter is gone from the text once the outer one is replaced, so it cannot be replaced in turn.
+    except (IndexError, ValueError):
+        return mwparserfromhell.parse(value).strip_code().strip()
+
+
+def _unused_private_character(value: str) -> str:
+    """Get a character from Unicode's private use area that does not appear in a value.
+
+    Raises:
+        StopIteration: If the value holds every one of the area's 6,400 characters.
+
+    """
+    return next(chr(code) for code in range(0xE000, 0xF900) if chr(code) not in value)
+
+
+def parse_location(value: str) -> tuple[str, list[tuple[int, int, int, str | None]]]:
+    """Clean a location and read the positions of its ``{{Mapper Coords}}`` templates.
+
+    Each template's label is its ``text`` parameter, cleaned once, as the rest of the location is: removed templates
+    tidied as below, then :func:`clean_text_safely`. A template inside the label is cleaned the same way first, so in
+    ``text={{Mapper Coords|...|text=here}}`` the label is ``here``. A label that is empty once cleaned counts as none.
+
+    In the text, each template is replaced by its label, so ``Femor Hills ({{Mapper Coords|127.88|124.58|4|
+    text=here}})`` reads ``Femor Hills (here)``, and no coordinate is left in it. A template without a label is
+    removed. Where one is removed, the spaces before it go too when a space, punctuation or the end of the text follows,
+    so ``Mintwallin {{Mapper Coords|...}}.`` reads ``Mintwallin.``; at the start of a line or after an opening
+    parenthesis, the spaces after it go; and parentheses left with nothing in them are removed with the spaces before
+    them. Labels are put in after the rest of the text is cleaned, through a private-use character absent from the
+    value, so each is cleaned once. A location without the template reads as :func:`clean_text_safely` reads it.
+
+    Where :func:`clean_links` cannot clean the text or a label, :func:`clean_text_safely` gives its plain text instead,
+    so such a location gives a text and rows rather than an error.
+
+    Args:
+        value: The raw location.
+
+    Returns:
+        The clean location, and the ``x``, ``y``, ``z`` and label of each template whose position
+        :func:`parse_mapper_coords` reads, in the order they are written. The label is the text the location shows in
+        the template's place, or ``None`` when it shows none. A template whose position is malformed gives no row.
+
+    """
+    code = mwparserfromhell.parse(value)
+    templates = code.filter_templates(matches=is_mapper_coords)
+    positions = [parse_mapper_coords(template) for template in templates]
+    mark = _unused_private_character(value)
+    placeholder = re.compile(f"{mark}([0-9]+){mark}")
+    labels: list[str | None] = [None] * len(templates)
+
+    def clean(text: str) -> str:
+        for pattern, replacement in removed_mapper_coords_rules:
+            text = pattern.sub(replacement, text)
+        return placeholder.sub(lambda match: labels[int(match[1])], clean_text_safely(text))
+
+    # Innermost first, so a template inside another's label is replaced before that label is cleaned.
+    for index in reversed(range(len(templates))):
+        template = templates[index]
+        labels[index] = (clean(str(template.get("text").value)) if template.has("text") else "") or None
+        code.replace(template, Text(f"{mark}{index}{mark}" if labels[index] else REMOVED_MAPPER_COORDS))
+    rows = [(*position, labels[index]) for index, position in enumerate(positions) if position is not None]
+    return clean(str(code)), rows
 
 
 def clean_location(value: str) -> str:
-    """Clean a location as :func:`clean_links` does, putting each ``{{Mapper Coords}}`` template's label in its place.
-
-    A Mapper Coords template is replaced by its label, from :func:`mapper_coords_label`, so ``Femor Hills ({{Mapper
-    Coords|127.88|124.58|4|text=here}})`` reads ``Femor Hills (here)``, and no coordinate is left in the text. A
-    template without a label is removed. Where one is removed, the spaces before it go too when a space, punctuation or
-    the end of the text follows, so ``Mintwallin {{Mapper Coords|...}}.`` reads ``Mintwallin.``; at the start of a line
-    or after an opening parenthesis, the spaces after it go; and parentheses left with nothing in them are removed with
-    the spaces before them. The rest of the text is cleaned exactly as :func:`clean_links` cleans it.
+    """Clean a location, with each ``{{Mapper Coords}}`` template's label in its place, as :func:`parse_location` does.
 
     Args:
         value: The raw location.
@@ -289,35 +341,22 @@ def clean_location(value: str) -> str:
         The clean location.
 
     """
-    code = mwparserfromhell.parse(value)
-    # Innermost first, so a template inside another's label is replaced before the label takes the outer one's place.
-    for template in reversed(code.filter_templates(matches=is_mapper_coords)):
-        code.replace(template, Text(mapper_coords_label(template) or REMOVED_MAPPER_COORDS))
-    text = str(code)
-    for pattern, replacement in removed_mapper_coords_rules:
-        text = pattern.sub(replacement, text)
-    return clean_links(text)
+    return parse_location(value)[0]
 
 
 def parse_location_coordinates(value: str) -> list[tuple[int, int, int, str | None]]:
-    """Read the positions of the ``{{Mapper Coords}}`` templates in a location, in the order they are written.
+    """Read the positions of the ``{{Mapper Coords}}`` templates in a location, as :func:`parse_location` does.
 
     Args:
         value: The raw location.
 
     Returns:
-        The ``x``, ``y``, ``z`` and label of each template whose position :func:`parse_mapper_coords` reads. The label
-        is the one :func:`clean_location` shows in its place, from :func:`mapper_coords_label`. A template whose
-        position is malformed gives nothing.
+        The ``x``, ``y``, ``z`` and label of each template whose position :func:`parse_mapper_coords` reads, in the
+        order they are written. The label is the text :func:`clean_location` shows in the template's place, or ``None``
+        when it shows none.
 
     """
-    coordinates = []
-    for template in mwparserfromhell.parse(value).filter_templates(matches=is_mapper_coords):
-        position = parse_mapper_coords(template)
-        if position is None:
-            continue
-        coordinates.append((*position, mapper_coords_label(template)))
-    return coordinates
+    return parse_location(value)[1]
 
 
 def find_template(content: str, template_name: str, partial: bool = False, recursive: bool = False) -> Template | None:

@@ -518,6 +518,12 @@ class TestItemParserTradeValueNote(unittest.TestCase):
         self.assertEqual("1,000", parse_trade_value_note("1,000 {{GP}}"))
         self.assertEqual("1,000", self._edited("| value         = 1,000 {{GP}}\n").trade_value_note)
 
+    def test_nested_templates_do_not_raise(self):
+        self.assertIsNone(parse_trade_value_note("{{A|x|{{B|y}}}}"))
+        self.assertEqual("5,000", parse_trade_value_note("5,000 {{A|x|{{B|y}}}}"))
+        self.assertEqual("5,000", self._edited("| value         = 5,000 {{A|x|{{B|y}}}}\n").trade_value_note)
+        self.assertIsNone(self._edited("| value         = {{A|x|{{B|y}}}}\n").trade_value_note)
+
     def test_only_a_template(self):
         self.assertIsNone(parse_trade_value_note("{{GP}}"))
         self.assertIsNone(self._edited("| value         = {{GP}}\n").trade_value_note)

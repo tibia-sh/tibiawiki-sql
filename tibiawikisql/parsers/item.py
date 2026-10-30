@@ -14,6 +14,7 @@ from tibiawikisql.utils import (
     clean_links,
     clean_location,
     clean_question_mark,
+    clean_text_safely,
     client_color_to_rgb,
     find_templates,
     number_pattern,
@@ -74,17 +75,13 @@ def parse_trade_value_note(value: str) -> str | None:
         value: The raw value of the field.
 
     Returns:
-        The value as written, like ``Negotiable`` or ``55,000,000 - 70,000,000``, cleaned by :func:`clean_links`, so
-        ``{{Hover|Negotiable|ask}}`` is ``Negotiable``. When :func:`clean_links` cannot clean it, because it holds a
-        template without parameters, it is the plain text mwparserfromhell's ``strip_code`` gives, with templates
-        dropped, so ``1,000 {{GP}}`` is ``1,000``. Wiki comments are dropped either way. It never raises, and it is
-        never read as a number. ``None`` when nothing is left, or the value is ``?`` or ``--``.
+        The value as written, like ``Negotiable`` or ``55,000,000 - 70,000,000``, cleaned by :func:`clean_text_safely`:
+        as :func:`clean_links` cleans it, so ``{{Hover|Negotiable|ask}}`` is ``Negotiable``, or, where that fails, as
+        plain text with templates dropped, so ``1,000 {{GP}}`` is ``1,000``. Wiki comments are dropped either way. It
+        is never read as a number. ``None`` when nothing is left, or the value is ``?`` or ``--``.
 
     """
-    try:
-        note = clean_links(value)
-    except IndexError:  # clean_links reads params[0] of every template, which a template without parameters lacks.
-        note = mwparserfromhell.parse(value).strip_code().strip()
+    note = clean_text_safely(value)
     return None if note in UNKNOWN_TRADE_VALUES else note
 
 

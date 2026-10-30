@@ -8,8 +8,8 @@ from mwparserfromhell.nodes import Template
 
 import tibiawikisql
 from tests import load_resource
-from tibiawikisql.utils import (clean_links, clean_location, client_color_to_rgb, parse_boolean, parse_client_id,
-                                parse_client_ids, parse_currency, parse_int, parse_location_coordinate,
+from tibiawikisql.utils import (clean_links, clean_location, clean_text_safely, client_color_to_rgb, parse_boolean,
+                                parse_client_id, parse_client_ids, parse_currency, parse_int, parse_location_coordinate,
                                 parse_location_coordinates, parse_mapper_coords,
                                 parse_first_integer, parse_float, parse_integer,
                                 parse_date, parse_loot_statistics, parse_min_max, parse_sounds,
@@ -455,16 +455,41 @@ class TestUtils(unittest.TestCase):
         )
 
     def test_clean_location_replaces_a_template_inside_a_label(self):
-        self.assertEqual(
-            "Femor Hills (here)",
-            clean_location("[[Femor Hills]] ({{Mapper Coords|1.1|1.1|7|text={{Mapper Coords|1.2|1.2|7|text=here}}}})"),
+        value = "[[Femor Hills]] ({{Mapper Coords|1.1|1.1|7|text={{Mapper Coords|1.2|1.2|7|text=here}}}})"
+        self.assertEqual("Femor Hills (here)", clean_location(value))
+        self.assertEqual([(257, 257, 7, "here"), (258, 258, 7, "here")], parse_location_coordinates(value))
+        value = "the {{Mapper Coords|1.1|1.1|7|text=[[Fortress|{{Mapper Coords|1.2|1.2|7|text=Fortress}}]]}}"
+        self.assertEqual("the Fortress", clean_location(value))
+        self.assertEqual([(257, 257, 7, "Fortress"), (258, 258, 7, "Fortress")], parse_location_coordinates(value))
+        value = "at {{Mapper Coords|1.1|1.1|7|text=({{Mapper Coords|1.2|1.2|7}})}}."
+        self.assertEqual("at.", clean_location(value))
+        self.assertEqual([(257, 257, 7, None), (258, 258, 7, None)], parse_location_coordinates(value))
+
+    def test_clean_text_safely(self):
+        for value in ("[[Holy Damage]]", "{{Hover|Negotiable|ask}}", "Negotiable<br>(~5k)", "Hello <!-- world -->", ""):
+            with self.subTest(value=value):
+                self.assertEqual(clean_links(value), clean_text_safely(value))
+        self.assertEqual("1,000", clean_text_safely("1,000 {{GP}}"))
+        self.assertEqual("5,000", clean_text_safely("5,000 {{A|x|{{B|y}}}}"))
+        self.assertEqual("", clean_text_safely("{{Hover|here|reached via {{Item|Rope}}}}"))
+
+    def test_location_labels_are_cleaned_once(self):
+        for value, text, label in (
+            ("at {{Mapper Coords|127.88|124.58|4|text=<nowiki>{{GP}}</nowiki>}}.", "at {{GP}}.", "{{GP}}"),
+            ("at {{Mapper Coords|127.88|124.58|4|text=&amp;lt;b&amp;gt;}}.", "at &lt;b&gt;.", "&lt;b&gt;"),
+        ):
+            with self.subTest(value=value):
+                self.assertEqual(text, clean_location(value))
+                self.assertEqual([(32600, 31802, 4, label)], parse_location_coordinates(value))
+
+    def test_location_that_clean_links_cannot_read(self):
+        value = (
+            "[[Femor Hills]] ({{Mapper Coords|127.88|124.58|4|4|text={{Hover|here|reached via {{Item|Rope}}}}}}), "
+            "[[Thais]] {{Hover|north|x {{Item|Rope}}}}, {{Mapper Coords|126.192|127.255|7|2|text=here}}"
         )
-        self.assertEqual(
-            "the Fortress",
-            clean_location(
-                "the {{Mapper Coords|1.1|1.1|7|text=[[Fortress|{{Mapper Coords|1.2|1.2|7|text=Fortress}}]]}}",
-            ),
-        )
+
+        self.assertEqual("Femor Hills, Thais , here", clean_location(value))
+        self.assertEqual([(32600, 31802, 4, None), (32448, 32767, 7, "here")], parse_location_coordinates(value))
 
     def test_label_is_the_text_the_location_shows(self):
         for value, text, label in (
