@@ -1,0 +1,31 @@
+{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name          = Amazon Armor
+| article       = an
+| actualname    = amazon armor
+| plural        = amazon armors
+| itemid        = 3394
+| objectclass   = Body Equipment
+| primarytype   = Armors
+| slot          = Body
+| implemented   = 7.3
+| immobile      = no
+| walkable      = yes
+| pickupable    = yes
+| levelrequired = 60
+| vocrequired   = paladins
+| imbueslots    = 2
+| upgradeclass  = 4
+| attrib        = distance fighting +3
+| armor         = 13
+| weight        = 45.00
+| stackable     = no
+| marketable    = yes
+| droppedby     = {{Dropped By|Orc Warlord}}
+| value         = 55,000,000 - 70,000,000
+| npcvalue      = 0
+| npcprice      = 0
+| buyfrom       = --
+| sellto        = --
+| notes         = It is only dropped during orc raids on [[Carlin Raids#Orc Raid on Femor Hills|Femor Hills]]. It is less rare than the [[Amazon Shield]], but still would take you 5 years on average to loot one if you killed every orc raid occurring. It is therefore extremely valuable. It is part of the [[Amazon Set]].
+| history       = Although this item was implemented in [[Updates/7.3|Summer Update 2004]], it became obtainable only after [[Updates/7.4|Christmas Update 2004]] with the implementation of raids.
+}}

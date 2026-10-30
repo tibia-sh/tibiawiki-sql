@@ -166,6 +166,7 @@ class ItemTable(Table):
     version = Column(Text, index=True)
     client_id = Column(Integer)
     location = Column(Text)
+    trade_value_note = Column(Text)
     image = Column(Blob)
     status = Column(Text, default="active", nullable=False)
     timestamp = Column(Timestamp, nullable=False)

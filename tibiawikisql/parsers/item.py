@@ -63,6 +63,25 @@ MARKUP_PATTERN = re.compile(r"<!--.*?(?:-->|$)|</?[A-Za-z][^<>]*>", re.DOTALL)
 NOTE_PATTERN = re.compile(r"\([^()]*\)")
 """A note in parentheses, without parentheses inside."""
 
+UNKNOWN_TRADE_VALUES = frozenset(("", "?", "--"))
+"""The cleaned ``value`` texts that say nothing about an item's trade value."""
+
+
+def parse_trade_value_note(value: str) -> str | None:
+    """Parse what players trade an item for, from its ``value`` field.
+
+    Args:
+        value: The raw value of the field.
+
+    Returns:
+        The value as written, with links and templates cleaned by :func:`clean_links`, which also drops wiki comments,
+        like ``Negotiable`` or ``55,000,000 - 70,000,000``. It is never read as a number. ``None`` when the value is
+        empty, ``?`` or ``--``.
+
+    """
+    note = clean_links(value)
+    return None if note in UNKNOWN_TRADE_VALUES else note
+
 
 class ItemParser(BaseParser):
     """Parses items and objects."""
@@ -92,6 +111,7 @@ class ItemParser(BaseParser):
         "version": AttributeParser.optional("implemented"),
         "client_id": AttributeParser.optional("itemid", parse_first_integer),
         "location": AttributeParser.optional("location", clean_location),
+        "trade_value_note": AttributeParser.optional("value", parse_trade_value_note),
         "status": AttributeParser.status(),
     }
 

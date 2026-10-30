@@ -170,6 +170,8 @@ class Item(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=ItemTa
     """Where the item can be found. Each map position is replaced by its label, if it has one."""
     location_coordinates: list[LocationCoordinate] = Field(default_factory=list)
     """The map positions in the item's location, in the order the wiki lists them."""
+    trade_value_note: str | None = None
+    """What players trade the item for, as the wiki writes it, like `Negotiable`. `None` if unknown."""
     attributes: list[ItemAttribute] = Field(default_factory=list)
     """The item's attributes."""
     dropped_by: list[ItemDrop] = Field(default_factory=list)

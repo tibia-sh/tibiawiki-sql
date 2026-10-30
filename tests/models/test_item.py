@@ -212,6 +212,32 @@ class TestItem(unittest.TestCase):
         self.assertEqual([], loaded.location_coordinates)
         self.assertEqual([], self.conn.execute("SELECT * FROM item_location_coordinate").fetchall())
 
+    def test_item_trade_value_note_round_trip(self):
+        article = Article(
+            article_id=1,
+            title="Amazon Armor",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource("content_item_amazon_armor.txt"),
+        )
+        ItemParser.from_article(article).insert(self.conn)
+
+        loaded = Item.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertEqual("55,000,000 - 70,000,000", loaded.trade_value_note)
+
+    def test_item_trade_value_note_round_trip_none(self):
+        article = Article(
+            article_id=1,
+            title="Shallow Water",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource("content_item_shallow_water.txt"),
+        )
+        ItemParser.from_article(article).insert(self.conn)
+
+        loaded = Item.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertIsNone(loaded.trade_value_note)
+
     def _insert_amethyst_necklace_with_itemid(self, itemid: str) -> None:
         content = load_resource("content_item_amethyst_necklace.txt")
         self.assertIn("| itemid        = 35609", content)

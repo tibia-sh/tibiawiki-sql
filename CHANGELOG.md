@@ -55,6 +55,9 @@
   read from the wiki's `major.minor` form, so `127.88` is 32600, and a malformed set like Warlord Ruzad's
   `128.202,123.233,5-2` gives no row, while its label still replaces it in the text. `item.location` is the item's
   `location`, cleaned the same way.
+- Add `item.trade_value_note`, the item's `value` as the wiki writes it, with links and templates cleaned and wiki
+  comments dropped, like `Negotiable`, `Negotiable gp` or Amazon Armor's `55,000,000 - 70,000,000`. It is never read as
+  a number, so a range or `0` is kept as written, and it is `NULL` when the value is absent, empty, `?` or `--`.
 
 ## 9.0.0+tibiash.9
 

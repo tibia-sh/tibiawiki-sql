@@ -6,6 +6,7 @@ from tests import RESOURCES_PATH, load_resource
 from tibiawikisql.api import Article
 from tibiawikisql.models import Item
 from tibiawikisql.parsers import ItemParser
+from tibiawikisql.parsers.item import parse_trade_value_note
 
 
 class TestItemParserRestores(unittest.TestCase):
@@ -459,3 +460,61 @@ class TestItemParserLocation(unittest.TestCase):
 
         self.assertIsNone(item.location)
         self.assertEqual([], item.location_coordinates)
+
+
+class TestItemParserTradeValueNote(unittest.TestCase):
+    def _parse(self, title: str, content: str) -> Item:
+        article = Article(
+            article_id=1,
+            title=title,
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=content,
+        )
+        return ItemParser.from_article(article)
+
+    def _edited(self, value: str) -> Item:
+        content = load_resource("content_item_amethyst_necklace.txt")
+        old = "| value         = Negotiable\n"
+        self.assertIn(old, content)
+        return self._parse("Amethyst Necklace", content.replace(old, value))
+
+    def test_fixtures_keep_the_note_as_written(self):
+        expected = {
+            "content_item_amazon_armor.txt": "55,000,000 - 70,000,000",
+            "content_item_amethyst_necklace.txt": "Negotiable",
+            "content_item_damage_reflection.txt": "Negotiable gp",
+            "content_item.txt": "4,000 - 8,000",
+            "content_item_store.txt": "< 50",
+            "content_item_adventurers_stone.txt": "0",
+            "content_item_potion_superior_mana_potion.txt": None,
+            "content_item_shallow_water.txt": None,
+        }
+        for resource, note in expected.items():
+            with self.subTest(resource=resource):
+                self.assertEqual(note, self._parse(resource, load_resource(resource)).trade_value_note)
+
+    def test_unknown(self):
+        self.assertIsNone(self._edited("| value         = ?\n").trade_value_note)
+        self.assertIsNone(self._edited("| value         = --\n").trade_value_note)
+        self.assertIsNone(self._edited("| value         = ? <!-- unknown -->\n").trade_value_note)
+        self.assertIsNone(self._edited("| value         =  \n").trade_value_note)
+
+    def test_absent(self):
+        self.assertIsNone(self._edited("").trade_value_note)
+
+    def test_cleans_links_and_templates(self):
+        self.assertEqual(
+            "About 5,000 or Negotiable",
+            self._edited("| value         = About [[Gold Coin|5,000]] or {{Hover|Negotiable|ask}} <!-- x -->\n")
+            .trade_value_note,
+        )
+
+    def test_parse_trade_value_note(self):
+        self.assertEqual("Negotiable", parse_trade_value_note(" Negotiable "))
+        self.assertEqual("55,000,000 - 70,000,000", parse_trade_value_note("55,000,000 - 70,000,000"))
+        self.assertEqual("Negotiable?", parse_trade_value_note("Negotiable?"))
+        self.assertEqual("-", parse_trade_value_note("-"))
+        self.assertIsNone(parse_trade_value_note("?"))
+        self.assertIsNone(parse_trade_value_note("--"))
+        self.assertIsNone(parse_trade_value_note(""))
+        self.assertIsNone(parse_trade_value_note("<!-- 5,000 -->"))

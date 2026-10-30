@@ -36,6 +36,8 @@ The copy adds this data to the database:
 * The `item.location` column and the `creature_location_coordinate` and `item_location_coordinate` tables. The tables
   keep the map positions written with `{{Mapper Coords}}` in a creature's or item's location, with their labels, and
   the location text shows each label in place of its position.
+* The `item.trade_value_note` column. It holds what players trade an item for, as the wiki writes it, like `Negotiable`
+  or `55,000,000 - 70,000,000`.
 
 The [database schema](docs/schema.md) describes each of them.
 
