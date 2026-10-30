@@ -504,10 +504,17 @@ class TestItemParserTradeValueNote(unittest.TestCase):
 
     def test_cleans_links_and_templates(self):
         self.assertEqual(
-            "About 5,000 or Negotiable",
-            self._edited("| value         = About [[Gold Coin|5,000]] or {{Hover|Negotiable|ask}} <!-- x -->\n")
-            .trade_value_note,
+            "About 5,000",
+            self._edited("| value         = About [[Gold Coin|5,000]] {{GP}} <!-- x -->\n").trade_value_note,
         )
+
+    def test_keeps_the_note_past_a_template_without_parameters(self):
+        self.assertEqual("1,000", parse_trade_value_note("1,000 {{GP}}"))
+        self.assertEqual("1,000", self._edited("| value         = 1,000 {{GP}}\n").trade_value_note)
+
+    def test_only_a_template(self):
+        self.assertIsNone(parse_trade_value_note("{{GP}}"))
+        self.assertIsNone(self._edited("| value         = {{GP}}\n").trade_value_note)
 
     def test_parse_trade_value_note(self):
         self.assertEqual("Negotiable", parse_trade_value_note(" Negotiable "))

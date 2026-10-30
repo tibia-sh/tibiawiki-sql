@@ -74,12 +74,13 @@ def parse_trade_value_note(value: str) -> str | None:
         value: The raw value of the field.
 
     Returns:
-        The value as written, with links and templates cleaned by :func:`clean_links`, which also drops wiki comments,
-        like ``Negotiable`` or ``55,000,000 - 70,000,000``. It is never read as a number. ``None`` when the value is
-        empty, ``?`` or ``--``.
+        The value as written, like ``Negotiable`` or ``55,000,000 - 70,000,000``, in the plain text mwparserfromhell's
+        ``strip_code`` gives: links become their text, and templates and wiki comments are dropped, so ``1,000 {{GP}}``
+        is ``1,000``. It never raises, and it is never read as a number. ``None`` when nothing is left, or the value is
+        ``?`` or ``--``.
 
     """
-    note = clean_links(value)
+    note = mwparserfromhell.parse(value).strip_code().strip()
     return None if note in UNKNOWN_TRADE_VALUES else note
 
 
