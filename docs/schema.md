@@ -137,7 +137,7 @@ The generated database has the following tables.
 | hitpoints           | `INTEGER`             | The number of hitpoints the creature has. May be `NULL` if unknown.                                                                     |
 | experience          | `INTEGER`             | The number of experience the creature yields . May be `NULL` if unknown.                                                                |
 | armor               | `INTEGER`             | The armor value of the creature. May be `NULL` if unknown.                                                                              |
-| mitigation          | `REAL`                | The creature's mitigation value.                                                                                                        |
+| mitigation          | `REAL`                | The creature's mitigation value. May be `NULL` if unknown.                                                                              |
 | speed               | `INTEGER`             | The speed value of the creature. May be `NULL` if unknown.                                                                              |
 | creature_class      | `TEXT`                | The class this creature belongs to (e.g. `Demons`, `Humanoids`, `Mammals`).                                                             |
 | type_primary        | `TEXT`                | The type this creature belongs to (e.g. `Archdemons`, `Dwarves`, `Apes`).                                                               |
@@ -146,14 +146,14 @@ The generated database has the following tables.
 | bestiary_level      | `TEXT`                | The bestiary level of this creature. `NULL` for creatures not in the bestiary.                                                          |
 | bestiary_occurrence | `TEXT`                | The bestiary’s rarity value of this creature. `NULL` for creatures not in the bestiary.                                                 |
 | bosstiary_class     | `TEXT`                | The bosstiary category of this creature. `NULL` for creatures not in the bestiary.                                                      |
-| runs_at             | `INTEGER`             | The amount of hitpoints when the creature starts to run away. 0 means it won't run away.                                                |
-| summon_cost         | `INTEGER`             | The mana cost to summon this creature. `0` means it is not summonable.                                                                  |
-| convince_cost       | `INTEGER`             | The mana cost to convince this creature. `0` means it is not convincible.                                                               |
-| illusionable        | `BOOLEAN`             | Whether the player can turn into this creature with Creature Illusion.                                                                  |
-| pushable            | `BOOLEAN`             | Whether this creature can be pushed or not.                                                                                             |
-| push_objects        | `BOOLEAN`             | Whether this creature can push objects or not.                                                                                          |
-| paralysable         | `BOOLEAN`             | Whether this creature can be paralyzed or not.                                                                                          |
-| sees_invisible      | `INTEGER`             | Whether this creature can see invisible players or not.                                                                                 |
+| runs_at             | `INTEGER`             | The amount of hitpoints when the creature starts to run away. 0 means it won't run away. May be `NULL` if unknown.                      |
+| summon_cost         | `INTEGER`             | The mana cost to summon this creature. `0` means it cannot be summoned. May be `NULL` if unknown.                                       |
+| convince_cost       | `INTEGER`             | The mana cost to convince this creature. `0` means it cannot be convinced. May be `NULL` if unknown.                                    |
+| illusionable        | `BOOLEAN`             | Whether the player can turn into this creature with Creature Illusion. May be `NULL` if unknown.                                        |
+| pushable            | `BOOLEAN`             | Whether this creature can be pushed or not. May be `NULL` if unknown.                                                                   |
+| push_objects        | `BOOLEAN`             | Whether this creature can push objects or not. May be `NULL` if unknown.                                                                |
+| paralysable         | `BOOLEAN`             | Whether this creature can be paralyzed or not. May be `NULL` if unknown.                                                                |
+| sees_invisible      | `INTEGER`             | Whether this creature can see invisible players or not. May be `NULL` if unknown.                                                       |
 | spawn_type          | `TEXT`                | The way this creature spawns.                                                                                                           |
 | is_boss             | `INTEGER`             | Whether this creature is a boss or not.                                                                                                 |
 | cooldown            | `REAL`                | The cooldown in hours to fight the boss again.                                                                                          |
@@ -165,8 +165,8 @@ The generated database has the following tables.
 | modifier_death      | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown. |
 | modifier_holy       | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown. |
 | modifier_drown      | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown. |
-| modifier_lifedrain  | `INTEGER`             | The healing modifier. `NULL` if unknown.                                                                                                |
-| modifier_healing    | `INTEGER`             | The healing modifier. `NULL` if unknown.                                                                                                |
+| modifier_lifedrain  | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown. |
+| modifier_healing    | `INTEGER`             | Percentage of healing the creature receives. `0` being completely immune, `100` neutral. May be `NULL` if unknown.                      |
 | walks_through       | `TEXT`                | The type of fields the creature will walk through.                                                                                      |
 | walks_around        | `TEXT`                | The type of fields the creature will walk around to avoid when possible.                                                                |
 | location            | `TEXT`                | The locations where the creature can be found.                                                                                          |

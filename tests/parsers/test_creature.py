@@ -335,3 +335,38 @@ class TestCreatureParserKnownValues(unittest.TestCase):
         creature = self._edited("| fireDmgMod     = 0%\n", "")
 
         self.assertIsNone(creature.modifier_fire)
+
+    def test_flag_ignores_a_trailing_comment(self):
+        creature = self._edited("| pushable       = No", "| pushable       = yes <!-- x -->")
+
+        self.assertIs(True, creature.pushable)
+
+    def test_paralysable_ignores_a_trailing_comment(self):
+        creature = self._edited("| paraimmune     = yes", "| paraimmune     = yes <!-- x -->")
+
+        self.assertIs(False, creature.paralysable)
+
+    def test_flag_typo(self):
+        creature = self._edited("| pushable       = No", "| pushable       = yse")
+
+        self.assertIsNone(creature.pushable)
+
+    def test_mitigation_only_in_a_comment(self):
+        creature = self._edited("| mitigation     = 1.56", "| mitigation     = <!-- 1.56 -->")
+
+        self.assertIsNone(creature.mitigation)
+
+    def test_stat_absent(self):
+        creature = self._edited("| armor          = 25\n", "")
+
+        self.assertIsNone(creature.armor)
+
+    def test_summon_absent(self):
+        creature = self._edited("| summon         = --\n", "")
+
+        self.assertIsNone(creature.summon_cost)
+
+    def test_convince_no(self):
+        creature = self._edited("| convince       = --", "| convince       = no")
+
+        self.assertEqual(0, creature.convince_cost)

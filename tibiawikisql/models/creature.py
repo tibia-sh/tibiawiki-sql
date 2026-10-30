@@ -178,29 +178,29 @@ class Creature(WikiEntry, WithStatus, WithVersion, WithImage, RowModel, table=Cr
     hitpoints: int | None
     """The creature's hitpoints, may be `None` if unknown."""
     experience: int | None
-    """Experience points yielded by the creature. Might be `None` if unknown."""
+    """Experience points yielded by the creature. ``None`` if unknown."""
     armor: int | None
-    """The creature's armor value."""
+    """The creature's armor value. ``None`` if unknown."""
     mitigation: float | None
-    """The creature's mitigation value."""
+    """The creature's mitigation value. ``None`` if unknown."""
     speed: int | None
-    """The creature's speed value."""
+    """The creature's speed value. ``None`` if unknown."""
     runs_at: int | None
-    """The amount of hitpoints when the creature starts to run away. 0 means it won't run away."""
+    """The amount of hitpoints when the creature starts to run away. 0 means it won't run away. ``None`` if unknown."""
     summon_cost: int | None
-    """The mana needed to summon this creature. 0 if not summonable."""
+    """The mana needed to summon this creature. 0 if it cannot be summoned, ``None`` if unknown."""
     convince_cost: int | None
-    """The mana needed to convince this creature. 0 if not convincible."""
+    """The mana needed to convince this creature. 0 if it cannot be convinced, ``None`` if unknown."""
     illusionable: bool | None
-    """Whether the creature can be illusioned into using `Creature Illusion`."""
+    """Whether the creature can be illusioned into using `Creature Illusion`. ``None`` if unknown."""
     pushable: bool | None
-    """Whether the creature can be pushed or not."""
+    """Whether the creature can be pushed or not. ``None`` if unknown."""
     push_objects: bool | None
-    """Whether the creature can push objects or not."""
+    """Whether the creature can push objects or not. ``None`` if unknown."""
     sees_invisible: bool | None
-    """Whether the creature can see invisible players or not."""
+    """Whether the creature can see invisible players or not. ``None`` if unknown."""
     paralysable: bool | None
-    """Whether the creature can be paralyzed or not."""
+    """Whether the creature can be paralyzed or not. ``None`` if unknown."""
     spawn_type: str | None
     """The way this creature spawns."""
     is_boss: bool
@@ -208,25 +208,25 @@ class Creature(WikiEntry, WithStatus, WithVersion, WithImage, RowModel, table=Cr
     cooldown: float | None
     """The cooldown in hours to fight the boss again."""
     modifier_physical: int | None
-    """The percentage of damage received of physical damage. ``None`` if unknown."""
+    """The percentage of damage received of physical damage. 0 if immune, ``None`` if unknown."""
     modifier_earth: int | None
-    """The percentage of damage received of earth damage. ``None`` if unknown."""
+    """The percentage of damage received of earth damage. 0 if immune, ``None`` if unknown."""
     modifier_fire: int | None
-    """The percentage of damage received of fire damage. ``None`` if unknown."""
+    """The percentage of damage received of fire damage. 0 if immune, ``None`` if unknown."""
     modifier_energy: int | None
-    """The percentage of damage received of energy damage. ``None`` if unknown."""
+    """The percentage of damage received of energy damage. 0 if immune, ``None`` if unknown."""
     modifier_ice: int | None
-    """The percentage of damage received of ice damage. ``None`` if unknown."""
+    """The percentage of damage received of ice damage. 0 if immune, ``None`` if unknown."""
     modifier_death: int | None
-    """The percentage of damage received of death damage. ``None`` if unknown."""
+    """The percentage of damage received of death damage. 0 if immune, ``None`` if unknown."""
     modifier_holy: int | None
-    """The percentage of damage received of holy damage. ``None`` if unknown."""
+    """The percentage of damage received of holy damage. 0 if immune, ``None`` if unknown."""
     modifier_drown: int | None
-    """The percentage of damage received of drown damage. ``None`` if unknown."""
+    """The percentage of damage received of drown damage. 0 if immune, ``None`` if unknown."""
     modifier_lifedrain: int | None
-    """The percentage of damage received of life drain damage. ``None`` if unknown."""
+    """The percentage of damage received of life drain damage. 0 if immune, ``None`` if unknown."""
     modifier_healing: int | None
-    """The healing modifier. ``None`` if unknown."""
+    """The percentage of healing received. 0 if immune, ``None`` if unknown."""
     abilities: list[CreatureAbility] = Field([])
     """A list of the creature abilities."""
     max_damage: CreatureMaxDamage | None = None

@@ -10,8 +10,9 @@
   value, `--` or a colour word like `deep red` in `runsat`. `illusionable`, `pushable`, `push_objects`,
   `sees_invisible` and `paralysable` are `NULL` for anything but `yes` or `no`, such as `?` or `no?`. `summon_cost` and
   `convince_cost` keep 0 for `--` or `no`, which the wiki shows as "cannot", and are `NULL` for `?`, an empty value or
-  `yes`. Wiki comments are not read as values, so an `exp` found only inside a comment, as on Bonelord Totem, is `NULL`
-  instead of the comment's number. An absent value was already `NULL`, and `is_boss` is unchanged.
+  `yes`. Wiki comments are ignored in all of these fields, so `yes <!-- note -->` reads as `yes`, and an `exp` found
+  only inside a comment, as on Bonelord Totem, is `NULL` instead of the comment's number. An absent value was already
+  `NULL`, and `is_boss` is unchanged.
 
 ## 9.0.0+tibiash.9
 

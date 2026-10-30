@@ -127,16 +127,17 @@ def parse_mana_cost(value: str) -> int | None:
 
 
 def parse_known_boolean(value: str) -> bool | None:
-    """Parse a creature flag, such as whether it is pushable.
+    """Parse a creature flag, such as whether it is pushable, from the visible text of its value.
 
     Args:
         value: The raw value of the field.
 
     Returns:
-        ``True`` for ``yes``, ``False`` for ``no``, or ``None`` for anything else, such as ``?`` or ``no?``.
+        ``True`` for ``yes``, ``False`` for ``no``, or ``None`` for anything else, such as ``?`` or ``no?``. Wiki
+        comments are ignored, so ``yes <!-- note -->`` is ``True``.
 
     """
-    return parse_boolean(value, None)
+    return parse_boolean(visible_text(value), None)
 
 
 def parse_paralysable(value: str) -> bool | None:
@@ -146,10 +147,11 @@ def parse_paralysable(value: str) -> bool | None:
         value: The raw value of the ``paraimmune`` field.
 
     Returns:
-        ``False`` for ``yes``, ``True`` for ``no``, or ``None`` for anything else, such as ``?``.
+        ``False`` for ``yes``, ``True`` for ``no``, or ``None`` for anything else, such as ``?``. Wiki comments are
+        ignored, as for :func:`parse_known_boolean`.
 
     """
-    return parse_boolean(value, None, invert=True)
+    return parse_boolean(visible_text(value), None, invert=True)
 
 
 def parse_loot(value: str) -> list[tuple[str, str]]:
