@@ -224,11 +224,13 @@ The generated database has the following tables.
 | position    | `INTEGER` | The row's place in the order the location lists its map positions, from 0.                  |
 
 Each row is a `{{Mapper Coords}}` template in the creature's `location`, in the order they are written. `x` and `y` are
-read from the wiki's `major.minor` form, so `127.88` is 32600, and `label` is the plain text of the template's `text`.
-Named parameters do not count as positions, so `{{Mapper Coords|text=here|127.234|127.59|14}}` gives the same row as
-`{{Mapper Coords|127.234|127.59|14|text=here}}`. A template whose `x`, `y` or `z` is missing or malformed, like Warlord
-Ruzad's `{{Mapper Coords|128.202,123.233,5-2|text=here}}`, gives no row. In `creature.location`, each template is
-replaced by its label, or left out when it has none, so no coordinate is left in the text.
+read from the wiki's `major.minor` form, so `127.88` is 32600. `label` is the template's `text`, cleaned as the
+location is, so it is the text `creature.location` shows in the template's place: `text={{Hover|here|explanation}}`
+gives `here`. Named parameters do not count as positions, so `{{Mapper Coords|text=here|127.234|127.59|14}}` gives the
+same row as `{{Mapper Coords|127.234|127.59|14|text=here}}`. A template whose `x`, `y` or `z` is missing, malformed or
+off the game's map, `x` and `y` from 0 to 65535 and `z` from 0 to 15, gives no row, like Warlord Ruzad's
+`{{Mapper Coords|128.202,123.233,5-2|text=here}}`. In `creature.location`, each template is replaced by its label, or
+left out when it has none, so no coordinate is left in the text.
 
 
 

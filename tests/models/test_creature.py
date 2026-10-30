@@ -2,8 +2,11 @@ import datetime
 import sqlite3
 import unittest
 
+from tests import load_resource
 from tibiawikisql import schema
+from tibiawikisql.api import Article
 from tibiawikisql.models import Creature, CreatureAbility, CreatureDrop, Item, LocationCoordinate
+from tibiawikisql.parsers import CreatureParser, ItemParser
 from tibiawikisql.schema import ItemTable
 
 
@@ -195,3 +198,48 @@ class TestCreature(unittest.TestCase):
 
         self.assertEqual([], loaded.location_coordinates)
         self.assertEqual([], self.conn.execute("SELECT * FROM creature_location_coordinate").fetchall())
+
+    def test_out_of_range_coordinates_insert_no_row(self):
+        content = load_resource("content_creature_black_sheep.txt")
+        coordinates = "{{Mapper Coords|127.88|124.58|4|4|text=here}}"
+        self.assertIn(coordinates, content)
+        for bad in (
+            "{{Mapper Coords|" + "9" * 30 + ".88|124.58|4|text=here}}",
+            "{{Mapper Coords|127.88|124.58|" + "9" * 30 + "|text=here}}",
+            "{{Mapper Coords|-127.88|124.58|4|text=here}}",
+            "{{Mapper Coords|127.88|124.58|16|text=here}}",
+        ):
+            with self.subTest(bad=bad):
+                schema.create_tables(self.conn)
+                article = Article(
+                    article_id=1,
+                    title="Black Sheep",
+                    timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+                    content=content.replace(coordinates, bad),
+                )
+
+                CreatureParser.from_article(article).insert(self.conn)
+                loaded = Creature.get_one_by_field(self.conn, "article_id", 1)
+
+                self.assertEqual("Femor Hills (here), cultist cave in Liberty Bay (here), Drefia", loaded.location)
+                self.assertEqual(
+                    [(32448, 32767, 7, "here")],
+                    [(c.x, c.y, c.z, c.label) for c in loaded.location_coordinates],
+                )
+
+    def test_out_of_range_item_coordinates_insert_no_row(self):
+        content = load_resource("content_item_sneeze_blossom.txt")
+        coordinates = "{{Mapper Coords|127.197|124.98|7|3|text=spot}}"
+        self.assertIn(coordinates, content)
+        article = Article(
+            article_id=1,
+            title="Sneeze Blossom",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=content.replace(coordinates, "{{Mapper Coords|127.197|" + "9" * 30 + ".98|7|text=spot}}"),
+        )
+
+        ItemParser.from_article(article).insert(self.conn)
+        loaded = Item.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertEqual("An example can be found at spot.", loaded.location)
+        self.assertEqual([], loaded.location_coordinates)

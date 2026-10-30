@@ -381,6 +381,23 @@ class TestUtils(unittest.TestCase):
         self.assertIsNone(parse_mapper_coords(self._mapper_coords("{{Mapper Coords|127.88|abc|7}}")))
         self.assertIsNone(parse_mapper_coords(self._mapper_coords("{{Mapper Coords}}")))
 
+    def test_parse_mapper_coords_bounds(self):
+        # The game's map: x and y from 0 to 65535, floors from 0 to 15.
+        self.assertEqual((0, 65535, 0), parse_mapper_coords(self._mapper_coords("{{Mapper Coords|0.0|255.255|0}}")))
+        self.assertEqual((32000, 32000, 15), parse_mapper_coords(self._mapper_coords("{{Mapper Coords|125|125|15}}")))
+        for template in (
+            "{{Mapper Coords|" + "9" * 30 + ".1|124.58|7}}",
+            "{{Mapper Coords|127.88|" + "9" * 5000 + "|7}}",
+            "{{Mapper Coords|256.0|124.58|7}}",
+            "{{Mapper Coords|-1.0|124.58|7}}",
+            "{{Mapper Coords|127.88|-1.58|7}}",
+            "{{Mapper Coords|127.88|124.58|16}}",
+            "{{Mapper Coords|127.88|124.58|-1}}",
+            "{{Mapper Coords|127.88|124.58|99999999999999999999}}",
+        ):
+            with self.subTest(template=template):
+                self.assertIsNone(parse_mapper_coords(self._mapper_coords(template)))
+
     def test_parse_mapper_coords_ignores_comments(self):
         template = self._mapper_coords("{{Mapper Coords|127.88<!-- x -->|124.58|7 <!-- floor -->}}")
 
@@ -448,6 +465,18 @@ class TestUtils(unittest.TestCase):
                 "the {{Mapper Coords|1.1|1.1|7|text=[[Fortress|{{Mapper Coords|1.2|1.2|7|text=Fortress}}]]}}",
             ),
         )
+
+    def test_label_is_the_text_the_location_shows(self):
+        for value, text, label in (
+            ("at {{Mapper Coords|127.88|124.58|4|text={{Hover|here|explanation}}}}.", "at here.", "here"),
+            ("at {{Mapper Coords|127.88|124.58|4|text=[[Femor Hills|the hills]]}}.", "at the hills.", "the hills"),
+            ("at {{Mapper Coords|127.88|124.58|4|text=here <!-- note -->}}.", "at here.", "here"),
+            ("at {{Mapper Coords|127.88|124.58|4|text=<!-- here -->}}.", "at.", None),
+            ("at {{Mapper Coords|127.88|124.58|4|text={{GP}}}}.", "at.", None),
+        ):
+            with self.subTest(value=value):
+                self.assertEqual(text, clean_location(value))
+                self.assertEqual([(32600, 31802, 4, label)], parse_location_coordinates(value))
 
     def test_clean_location_without_mapper_coords_is_clean_links(self):
         for value in (

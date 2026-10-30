@@ -51,9 +51,15 @@ non_currency_link_pattern = re.compile(r"\s*:?\s*(?:File|Image|Category)\s*:", r
 MAPPER_COORDS = "mapper coords"
 """The name of the template that links a map position, in lower case with spaces."""
 
+MAX_MAP_COORDINATE = 65535
+"""The highest x or y coordinate of the game's map."""
+
+MAX_MAP_FLOOR = 15
+"""The highest floor of the game's map."""
+
 REMOVED_MAPPER_COORDS = "\x00"
-"""Marks where a Mapper Coords template without a label was removed. The parser ends a text at this character, so a
-parsed location never holds one of its own."""
+"""Marks where a Mapper Coords template without a label was removed. MediaWiki page text never holds this control
+character, and the C tokenizer also ends a text at it."""
 
 removed_mapper_coords_rules = (
     (re.compile(r"[ \t]*\([ \t]*\x00+[ \t]*\)"), ""),
@@ -230,7 +236,8 @@ def parse_mapper_coords(template: Template) -> tuple[int, int, int] | None:
 
     Returns:
         The ``x``, ``y`` and ``z`` of the position, or ``None`` when any of them is missing or malformed, as in
-        Warlord Ruzad's ``{{Mapper Coords|128.202,123.233,5-2|text=here}}``.
+        Warlord Ruzad's ``{{Mapper Coords|128.202,123.233,5-2|text=here}}``. A position off the game's map, with ``x``
+        or ``y`` outside 0 to :data:`MAX_MAP_COORDINATE` or ``z`` outside 0 to :data:`MAX_MAP_FLOOR`, is malformed.
 
     """
     values = [visible_text(str(template.get(name).value)) if template.has(name) else "" for name in ("1", "2", "3")]
@@ -239,23 +246,41 @@ def parse_mapper_coords(template: Template) -> tuple[int, int, int] | None:
     z = parse_int(values[2])
     if x is None or y is None or z is None:
         return None
+    if not (0 <= x <= MAX_MAP_COORDINATE and 0 <= y <= MAX_MAP_COORDINATE and 0 <= z <= MAX_MAP_FLOOR):
+        return None
     return x, y, z
 
 
-def _mapper_coords_label(template: Template) -> str:
-    """Get the raw ``text`` parameter of a Mapper Coords template, stripped, or an empty string without one."""
-    return str(template.get("text").value).strip() if template.has("text") else ""
+def mapper_coords_label(template: Template) -> str | None:
+    """Get the label a Mapper Coords template shows: its ``text`` parameter, cleaned by :func:`clean_links`.
+
+    Args:
+        template: The Mapper Coords template.
+
+    Returns:
+        The clean label, like ``here`` for ``text={{Hover|here|explanation}}``, or ``None`` when the template has no
+        ``text``, it is empty once cleaned, as for a comment, or :func:`clean_links` cannot clean it because it holds a
+        template without parameters, like ``{{GP}}``.
+
+    """
+    if not template.has("text"):
+        return None
+    try:
+        label = clean_links(str(template.get("text").value))
+    except IndexError:
+        return None
+    return label or None
 
 
 def clean_location(value: str) -> str:
     """Clean a location as :func:`clean_links` does, putting each ``{{Mapper Coords}}`` template's label in its place.
 
-    A Mapper Coords template is replaced by its ``text`` parameter, so ``Femor Hills ({{Mapper Coords|127.88|124.58|4|
-    text=here}})`` reads ``Femor Hills (here)``, and no coordinate is left in the text. A template without a label is
-    removed. Where one is removed, the spaces before it go too when a space, punctuation or the end of the text
-    follows, so ``Mintwallin {{Mapper Coords|...}}.`` reads ``Mintwallin.``; at the start of a line or after an opening
-    parenthesis, the spaces after it go; and parentheses left with nothing in them are removed with the spaces before
-    them. The rest of the text is cleaned exactly as :func:`clean_links` cleans it.
+    A Mapper Coords template is replaced by its label, from :func:`mapper_coords_label`, so ``Femor Hills ({{Mapper
+    Coords|127.88|124.58|4|text=here}})`` reads ``Femor Hills (here)``, and no coordinate is left in the text. A
+    template without a label is removed. Where one is removed, the spaces before it go too when a space, punctuation or
+    the end of the text follows, so ``Mintwallin {{Mapper Coords|...}}.`` reads ``Mintwallin.``; at the start of a line
+    or after an opening parenthesis, the spaces after it go; and parentheses left with nothing in them are removed with
+    the spaces before them. The rest of the text is cleaned exactly as :func:`clean_links` cleans it.
 
     Args:
         value: The raw location.
@@ -267,7 +292,7 @@ def clean_location(value: str) -> str:
     code = mwparserfromhell.parse(value)
     # Innermost first, so a template inside another's label is replaced before the label takes the outer one's place.
     for template in reversed(code.filter_templates(matches=is_mapper_coords)):
-        code.replace(template, _mapper_coords_label(template) or Text(REMOVED_MAPPER_COORDS))
+        code.replace(template, Text(mapper_coords_label(template) or REMOVED_MAPPER_COORDS))
     text = str(code)
     for pattern, replacement in removed_mapper_coords_rules:
         text = pattern.sub(replacement, text)
@@ -282,8 +307,8 @@ def parse_location_coordinates(value: str) -> list[tuple[int, int, int, str | No
 
     Returns:
         The ``x``, ``y``, ``z`` and label of each template whose position :func:`parse_mapper_coords` reads. The label
-        is the plain text of the ``text`` parameter, or ``None`` when it is absent or empty. A template whose position
-        is malformed gives nothing.
+        is the one :func:`clean_location` shows in its place, from :func:`mapper_coords_label`. A template whose
+        position is malformed gives nothing.
 
     """
     coordinates = []
@@ -291,8 +316,7 @@ def parse_location_coordinates(value: str) -> list[tuple[int, int, int, str | No
         position = parse_mapper_coords(template)
         if position is None:
             continue
-        label = strip_code(mwparserfromhell.parse(_mapper_coords_label(template))) or None
-        coordinates.append((*position, label))
+        coordinates.append((*position, mapper_coords_label(template)))
     return coordinates
 
 
