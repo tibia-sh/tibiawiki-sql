@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import html
 import re
 import time
 from collections import defaultdict
@@ -273,14 +274,19 @@ def clean_text_safely(value: str) -> str:
         return mwparserfromhell.parse(value).strip_code().strip()
 
 
-def _unused_private_character(value: str) -> str:
-    """Get a character from Unicode's private use area that does not appear in a value.
+class _MarkCollisionError(Exception):
+    """A text about to be cleaned decodes to the placeholder mark, so the mark cannot tell its placeholders apart."""
 
-    Raises:
-        StopIteration: If the value holds every one of the area's 6,400 characters.
 
+def _unused_private_characters(value: str) -> Generator[str, None, None]:
+    """Get the characters of Unicode's private use area that appear neither in a value nor in its HTML-decoded form.
+
+    Cleaning decodes the HTML entities in wiki text, so ``&#xE000;`` reads as the area's first character. Wherever
+    mwparserfromhell decodes an entity to a private-use character, :func:`html.unescape` decodes it to the same one, and
+    it also decodes entities without the final semicolon.
     """
-    return next(chr(code) for code in range(0xE000, 0xF900) if chr(code) not in value)
+    taken = set(value) | set(html.unescape(value))
+    return (chr(code) for code in range(0xE000, 0xF900) if chr(code) not in taken)
 
 
 def parse_location(value: str) -> tuple[str, list[tuple[int, int, int, str | None]]]:
@@ -295,11 +301,19 @@ def parse_location(value: str) -> tuple[str, list[tuple[int, int, int, str | Non
     removed. Where one is removed, the spaces before it go too when a space, punctuation or the end of the text follows,
     so ``Mintwallin {{Mapper Coords|...}}.`` reads ``Mintwallin.``; at the start of a line or after an opening
     parenthesis, the spaces after it go; and parentheses left with nothing in them are removed with the spaces before
-    them. Labels are put in after the rest of the text is cleaned, through a private-use character absent from the
-    value, so each is cleaned once. A location without the template reads as :func:`clean_text_safely` reads it.
+    them. Labels are put in after the rest of the text is cleaned, so each is cleaned once. A location without the
+    template reads as :func:`clean_text_safely` reads it.
+
+    To put a label in, the template is first replaced by its index between two marks. The mark is a private-use
+    character that neither the value nor its HTML-decoded form holds, so not the one ``&#xE000;`` decodes to, and that
+    no text about to be cleaned decodes to either, as when removing a template joins ``&#xE0`` and ``00;``. Only the
+    marked indices written into a text are put back in it; any other marked text stays as it is. A value that leaves no
+    such character, such as one holding all 6,400 of them, reads as :func:`clean_text_safely` reads it, coordinates
+    included, and each label is its ``text`` parameter cleaned on its own.
 
     Where :func:`clean_links` cannot clean the text or a label, :func:`clean_text_safely` gives its plain text instead,
-    so such a location gives a text and rows rather than an error.
+    so such a location gives a text and rows rather than an error. A label :func:`clean_links` drops from the text, as
+    in a ``{{Hover}}``'s later parameter, still gives its row a label the text does not show.
 
     Args:
         value: The raw location.
@@ -310,23 +324,53 @@ def parse_location(value: str) -> tuple[str, list[tuple[int, int, int, str | Non
         the template's place, or ``None`` when it shows none. A template whose position is malformed gives no row.
 
     """
+    for mark in _unused_private_characters(value):
+        try:
+            return _parse_location_with_mark(value, mark)
+        except _MarkCollisionError:
+            continue
+    templates = mwparserfromhell.parse(value).filter_templates(matches=is_mapper_coords)
+    rows = []
+    for template in templates:
+        position = parse_mapper_coords(template)
+        if position is not None:
+            label = clean_text_safely(str(template.get("text").value)) if template.has("text") else ""
+            rows.append((*position, label or None))
+    return clean_text_safely(value), rows
+
+
+def _parse_location_with_mark(value: str, mark: str) -> tuple[str, list[tuple[int, int, int, str | None]]]:
+    """Do :func:`parse_location`'s work with a placeholder mark absent from the value.
+
+    Raises:
+        _MarkCollisionError: If a text about to be cleaned decodes to the mark.
+
+    """
     code = mwparserfromhell.parse(value)
     templates = code.filter_templates(matches=is_mapper_coords)
     positions = [parse_mapper_coords(template) for template in templates]
-    mark = _unused_private_character(value)
-    placeholder = re.compile(f"{mark}([0-9]+){mark}")
+    placeholder = re.compile(f"{mark}[0-9]+{mark}")
     labels: list[str | None] = [None] * len(templates)
+    expansions: dict[str, str] = {}
 
     def clean(text: str) -> str:
         for pattern, replacement in removed_mapper_coords_rules:
             text = pattern.sub(replacement, text)
-        return placeholder.sub(lambda match: labels[int(match[1])], clean_text_safely(text))
+        if html.unescape(text).count(mark) != text.count(mark):
+            raise _MarkCollisionError
+        written = {match[0] for match in placeholder.finditer(text)}
+        return placeholder.sub(
+            lambda match: expansions[match[0]] if match[0] in written else match[0], clean_text_safely(text),
+        )
 
     # Innermost first, so a template inside another's label is replaced before that label is cleaned.
     for index in reversed(range(len(templates))):
         template = templates[index]
-        labels[index] = (clean(str(template.get("text").value)) if template.has("text") else "") or None
-        code.replace(template, Text(f"{mark}{index}{mark}" if labels[index] else REMOVED_MAPPER_COORDS))
+        label = (clean(str(template.get("text").value)) if template.has("text") else "") or None
+        labels[index] = label
+        if label:
+            expansions[f"{mark}{index}{mark}"] = label
+        code.replace(template, Text(f"{mark}{index}{mark}" if label else REMOVED_MAPPER_COORDS))
     rows = [(*position, labels[index]) for index, position in enumerate(positions) if position is not None]
     return clean(str(code)), rows
 

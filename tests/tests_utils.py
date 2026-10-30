@@ -2,15 +2,17 @@
 import unittest
 
 import datetime
+from unittest import mock
 
 import mwparserfromhell
 from mwparserfromhell.nodes import Template
 
 import tibiawikisql
 from tests import load_resource
+from tibiawikisql import utils
 from tibiawikisql.utils import (clean_links, clean_location, clean_text_safely, client_color_to_rgb, parse_boolean,
-                                parse_client_id, parse_client_ids, parse_currency, parse_int, parse_location_coordinate,
-                                parse_location_coordinates, parse_mapper_coords,
+                                parse_client_id, parse_client_ids, parse_currency, parse_int, parse_location,
+                                parse_location_coordinate, parse_location_coordinates, parse_mapper_coords,
                                 parse_first_integer, parse_float, parse_integer,
                                 parse_date, parse_loot_statistics, parse_min_max, parse_sounds,
                                 parse_known_boolean, parse_known_text, parse_weapon_proficiency_name,
@@ -490,6 +492,65 @@ class TestUtils(unittest.TestCase):
 
         self.assertEqual("Femor Hills, Thais , here", clean_location(value))
         self.assertEqual([(32600, 31802, 4, None), (32448, 32767, 7, "here")], parse_location_coordinates(value))
+
+    def test_location_keeps_decoded_private_use_text(self):
+        mark = "\ue000"
+        removed = "&#xE0({{Mapper Coords|1.1|1.1|7}})00;"
+        for value, rows in (
+            ("a &#xE000;3&#xE000; b", []),
+            ("a &#57344;3&#57344; b", []),
+            ("a &#xe000;3&#xe000; b", []),
+            (f"a {removed}3{removed} b", [(257, 257, 7, None), (257, 257, 7, None)]),
+        ):
+            with self.subTest(value=value):
+                self.assertEqual((f"a {mark}3{mark} b", rows), parse_location(value))
+
+    def test_location_label_goes_only_where_its_template_was(self):
+        mark = "\ue000"
+        here = "{{Mapper Coords|1.2|1.2|7|text=here}}"
+        removed = "&#xE0({{Mapper Coords|1.1|1.1|7}})00;"
+        for value, text, rows in (
+            (f"a &#xE000;0&#xE000; {here}", f"a {mark}0{mark} here", [(258, 258, 7, "here")]),
+            (f"a &#57344;0&#57344; {here}", f"a {mark}0{mark} here", [(258, 258, 7, "here")]),
+            (
+                f"a {removed}2{removed} {here}",
+                f"a {mark}2{mark} here",
+                [(257, 257, 7, None), (257, 257, 7, None), (258, 258, 7, "here")],
+            ),
+            (
+                f"{{{{Mapper Coords|1.3|1.3|7|text=a {removed}3{removed}}}}} {here}",
+                f"a {mark}3{mark} here",
+                [(259, 259, 7, f"a {mark}3{mark}"), (257, 257, 7, None), (257, 257, 7, None), (258, 258, 7, "here")],
+            ),
+        ):
+            with self.subTest(value=value):
+                self.assertEqual((text, rows), parse_location(value))
+                self.assertEqual(1, parse_location(value)[0].count("here"))
+
+    def test_location_puts_labels_back_only_where_written(self):
+        # With the decoding check blinded, a decoded mark reaches the expansion, which must leave it as written.
+        mark = "\ue000"
+        here = "{{Mapper Coords|1.2|1.2|7|text=here}}"
+        with mock.patch.object(utils.html, "unescape", lambda text: text):
+            self.assertEqual((f"a {mark}3{mark} b", []), parse_location("a &#xE000;3&#xE000; b"))
+            self.assertEqual(
+                (f"a {mark}1{mark} here", [(259, 259, 7, f"a {mark}1{mark}"), (258, 258, 7, "here")]),
+                parse_location(f"{{{{Mapper Coords|1.3|1.3|7|text=a &#xE000;1&#xE000;}}}} {here}"),
+            )
+
+    def test_location_holding_every_private_use_character(self):
+        characters = "".join(chr(code) for code in range(0xE000, 0xF900))
+        here = " {{Mapper Coords|1.2|1.2|7|text=[[Fortress|here]]}}"
+        for value in (
+            characters + here,
+            characters[:-1] + "&#xF8FF;" + here,
+            characters[:-1] + "&#xF8({{Mapper Coords|1.1|1.1|7}})FF;" + here,
+        ):
+            with self.subTest(value=value[-60:]):
+                rows = [(258, 258, 7, "here")]
+                if "&#xF8(" in value:
+                    rows.insert(0, (257, 257, 7, None))
+                self.assertEqual((clean_text_safely(value), rows), parse_location(value))
 
     def test_label_is_the_text_the_location_shows(self):
         for value, text, label in (
