@@ -155,6 +155,8 @@ The generated database has the following tables.
 | paralysable         | `BOOLEAN`             | Whether this creature can be paralyzed or not. May be `NULL` if unknown.                                                                |
 | sees_invisible      | `INTEGER`             | Whether this creature can see invisible players or not. May be `NULL` if unknown.                                                       |
 | spawn_type          | `TEXT`                | The way this creature spawns.                                                                                                           |
+| attack_type         | `TEXT`                | How the creature attacks, in lower case (e.g. `melee`). May be `NULL` if unknown.                                                       |
+| uses_spells         | `BOOLEAN`             | Whether this creature uses spells or not. May be `NULL` if unknown.                                                                     |
 | is_boss             | `INTEGER`             | Whether this creature is a boss or not.                                                                                                 |
 | cooldown            | `REAL`                | The cooldown in hours to fight the boss again.                                                                                          |
 | modifier_physical   | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown. |
@@ -330,6 +332,7 @@ The generated database has the following tables.
 | is_stackable       | `BOOLEAN`             | Whether this item is stackable or not.                                                                                                                                                                                                                                          |
 | is_pickupable      | `BOOLEAN`             | Whether this item can be picked up or not.                                                                                                                                                                                                                                      |
 | is_immobile        | `BOOLEAN`             | Whether the item can be moved around the map or not.                                                                                                                                                                                                                            |
+| is_usable          | `BOOLEAN`             | Whether the item can be used or not. `NULL` if unknown.                                                                                                                                                                                                                         |
 | value_sell         | `INTEGER`             | The maximum value of this item when sold to NPCs                                                                                                                                                                                                                                |
 | value_buy          | `INTEGER`             | The maximum price of this item when bought from NPCs, in `value_buy_currency`.                                                                                                                                                                                                  |
 | value_buy_currency | `TEXT`                | The currency of `value_buy`: the article's `pricecurrency`, otherwise a currency written after the price in `npcprice`, otherwise Gold Coin. A linked currency gives the page it links to, like `Silver Token` for `[[Silver Token]]s`. `NULL` when `value_buy` is `NULL` or 0. |
@@ -337,6 +340,7 @@ The generated database has the following tables.
 | item_class         | `TEXT`                | The class this item belongs to (e.g. `Body Equipment` , `Weapons`).                                                                                                                                                                                                             |
 | item_type          | `TEXT`                | The category this item belongs to (e.g. `Helmets`, `Club Weapons`).                                                                                                                                                                                                             |
 | type_secondary     | `TEXT`                | A secondary type this item belongs to, if any.                                                                                                                                                                                                                                  |
+| slot               | `TEXT`                | The slot this item goes in, in lower case (e.g. `neck`, `weapon hand`). `NULL` if unknown.                                                                                                                                                                                      |
 | flavor_text        | `TEXT`                | The extra text that is displayed when some items are looked at.                                                                                                                                                                                                                 |
 | light_color        | `INTEGER`             | The color of the light emitted by this item, if any.                                                                                                                                                                                                                            |
 | light_radius       | `INTEGER`             | The radius of the light emitted by this item, if any.                                                                                                                                                                                                                           |
@@ -634,40 +638,41 @@ that doesn't form a range.
 
 ### spell
 
-|          Column          |         Type          |                                  Description                                  |
-| ------------------------ | --------------------- | ----------------------------------------------------------------------------- |
-| article_id               | `INTEGER` / `PRIMARY` | The id of the article containing this spell.                                  |
-| title                    | `TEXT`                | The title of the article containing the spell.                                |
-| name                     | `TEXT`                | The name of the spell.                                                        |
-| words                    | `TEXT`                | The words used to cast the spell.                                             |
-| effect                   | `TEXT`                | The effect of this spell.                                                     |
-| spell_type               | `TEXT`                | Whether the spell is `Instant` or a `Rune` spell.                             |
-| group_spell              | `TEXT`                | The cooldown group of this spell.                                             |
-| group_secondary          | `TEXT`                | The secondary cooldown group of this spell.                                   |
-| group_rune               | `TEXT`                | The cooldown group of the rune created by this spell.                         |
-| element                  | `TEXT`                | The type of damage this spell deals, if applicable.                           |
-| base_power               | `INTEGER`             | The spell's base power, if applicable.                                        |
-| level                    | `INTEGER`             | Level required to cast this spell                                             |
-| mana                     | `INTEGER`             | Mana required to cast this spell. `0` means special conditions apply.         |
-| soul                     | `INTEGER`             | Soul points required to cast this spell.                                      |
-| is_premium               | `BOOLEAN`             | Whether this spell requires premium account or not. `0` or `1`.               |
-| is_promotion             | `BOOLEAN`             | Whether this spell requires a promotion or not. `0` or `1`.                   |
-| is_wheel_spell           | `BOOLEAN`             | Whether this spell is acquired through the Wheel of Destiny.                  |
-| is_passive               | `BOOLEAN`             | Whether this spell is triggered automatically without casting.                |
-| cooldown                 | `INTEGER`             | The individual cooldown in seconds of this spell                              |
-| cooldown2                | `INTEGER`             | The spell's individual cooldown for the level 2 perk of the Wheel of Destiny. |
-| cooldown3                | `INTEGER`             | The spell's individual cooldown for the level 3 perk of the Wheel of Destiny. |
-| cooldown_group           | `INTEGER`             | The group cooldown of this spell.                                             |
-| cooldown_group_secondary | `INTEGER`             | The secondary group cooldown of this spell.                                   |
-| knight                   | `BOOLEAN`             | Whether this spell can be used by knights or not.                             |
-| sorcerer                 | `BOOLEAN`             | Whether this spell can be used by sorcerers or not.                           |
-| druid                    | `BOOLEAN`             | Whether this spell can be used by druids or not.                              |
-| paladin                  | `BOOLEAN`             | Whether this spell can be used by paladins or not.                            |
-| monk                     | `BOOLEAN`             | Whether the spell can be used by monks or not.                                |
-| image                    | `BLOB`                | The spell’s image bytes.                                                      |
-| version                  | `TEXT`                | Client version where this spell was implemented.                              |
-| status                   | `TEXT`                | The status of the spell in game.                                              |
-| timestamp                | `TIMESTAMP`           | ISO 8601 timestamp of the article's last edit.                                |
+|          Column          |         Type          |                                                   Description                                                   |
+| ------------------------ | --------------------- | --------------------------------------------------------------------------------------------------------------- |
+| article_id               | `INTEGER` / `PRIMARY` | The id of the article containing this spell.                                                                    |
+| title                    | `TEXT`                | The title of the article containing the spell.                                                                  |
+| name                     | `TEXT`                | The name of the spell.                                                                                          |
+| spell_id                 | `INTEGER`             | The ID of the spell, the first integer in the value after wiki comments are removed, `NULL` when there is none. |
+| words                    | `TEXT`                | The words used to cast the spell.                                                                               |
+| effect                   | `TEXT`                | The effect of this spell.                                                                                       |
+| spell_type               | `TEXT`                | Whether the spell is `Instant` or a `Rune` spell.                                                               |
+| group_spell              | `TEXT`                | The cooldown group of this spell.                                                                               |
+| group_secondary          | `TEXT`                | The secondary cooldown group of this spell.                                                                     |
+| group_rune               | `TEXT`                | The cooldown group of the rune created by this spell.                                                           |
+| element                  | `TEXT`                | The type of damage this spell deals, if applicable.                                                             |
+| base_power               | `INTEGER`             | The spell's base power, if applicable.                                                                          |
+| level                    | `INTEGER`             | Level required to cast this spell                                                                               |
+| mana                     | `INTEGER`             | Mana required to cast this spell. `0` means special conditions apply.                                           |
+| soul                     | `INTEGER`             | Soul points required to cast this spell.                                                                        |
+| is_premium               | `BOOLEAN`             | Whether this spell requires premium account or not. `0` or `1`.                                                 |
+| is_promotion             | `BOOLEAN`             | Whether this spell requires a promotion or not. `0` or `1`.                                                     |
+| is_wheel_spell           | `BOOLEAN`             | Whether this spell is acquired through the Wheel of Destiny.                                                    |
+| is_passive               | `BOOLEAN`             | Whether this spell is triggered automatically without casting.                                                  |
+| cooldown                 | `INTEGER`             | The individual cooldown in seconds of this spell                                                                |
+| cooldown2                | `INTEGER`             | The spell's individual cooldown for the level 2 perk of the Wheel of Destiny.                                   |
+| cooldown3                | `INTEGER`             | The spell's individual cooldown for the level 3 perk of the Wheel of Destiny.                                   |
+| cooldown_group           | `INTEGER`             | The group cooldown of this spell.                                                                               |
+| cooldown_group_secondary | `INTEGER`             | The secondary group cooldown of this spell.                                                                     |
+| knight                   | `BOOLEAN`             | Whether this spell can be used by knights or not.                                                               |
+| sorcerer                 | `BOOLEAN`             | Whether this spell can be used by sorcerers or not.                                                             |
+| druid                    | `BOOLEAN`             | Whether this spell can be used by druids or not.                                                                |
+| paladin                  | `BOOLEAN`             | Whether this spell can be used by paladins or not.                                                              |
+| monk                     | `BOOLEAN`             | Whether the spell can be used by monks or not.                                                                  |
+| image                    | `BLOB`                | The spell’s image bytes.                                                                                        |
+| version                  | `TEXT`                | Client version where this spell was implemented.                                                                |
+| status                   | `TEXT`                | The status of the spell in game.                                                                                |
+| timestamp                | `TIMESTAMP`           | ISO 8601 timestamp of the article's last edit.                                                                  |
 
 
 

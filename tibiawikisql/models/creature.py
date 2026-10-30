@@ -203,6 +203,10 @@ class Creature(WikiEntry, WithStatus, WithVersion, WithImage, RowModel, table=Cr
     """Whether the creature can be paralyzed or not. ``None`` if unknown."""
     spawn_type: str | None
     """The way this creature spawns."""
+    attack_type: str | None = None
+    """How the creature attacks, in lower case, like ``melee`` or ``distance``. ``None`` if unknown."""
+    uses_spells: bool | None = None
+    """Whether the creature uses spells or not. ``None`` if unknown."""
     is_boss: bool
     """Whether the creature is a boss or not."""
     cooldown: float | None

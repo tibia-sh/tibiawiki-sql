@@ -385,6 +385,35 @@ def parse_client_id(value: str) -> int | None:
     return parse_first_integer(visible_text(value), None)
 
 
+def parse_known_boolean(value: str) -> bool | None:
+    """Parse a yes or no field, such as whether a creature is pushable, from the visible text of its value.
+
+    Args:
+        value: The raw value of the field.
+
+    Returns:
+        ``True`` for ``yes``, ``False`` for ``no``, or ``None`` for anything else, such as ``?`` or ``no?``. Wiki
+        comments are ignored, so ``yes <!-- note -->`` is ``True``.
+
+    """
+    return parse_boolean(visible_text(value), None)
+
+
+def parse_known_text(value: str) -> str | None:
+    """Parse a text field, such as an item's slot, from the visible text of its value, in lower case.
+
+    Args:
+        value: The raw value of the field.
+
+    Returns:
+        The text outside wiki comments, stripped and lower-cased, or ``None`` if it is empty or holds a ``?``, as for
+        ``?`` or ``Melee?``.
+
+    """
+    text = clean_question_mark(visible_text(value).strip())
+    return text.lower() if text else None
+
+
 def parse_currency(value: str) -> str | None:
     """Parse the currency of a price, like the ``pricecurrency`` of an item or a mount.
 

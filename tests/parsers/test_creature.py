@@ -315,6 +315,8 @@ class TestCreatureParserKnownValues(unittest.TestCase):
         self.assertIsNone(creature.hitpoints)
         self.assertEqual(0, creature.runs_at)
         self.assertEqual(0, creature.modifier_fire)
+        self.assertIsNone(creature.attack_type)
+        self.assertIsNone(creature.uses_spells)
 
     def test_stat_ignores_a_trailing_comment(self):
         creature = self._edited("| hp             = 1000", "| hp             = 1000 <!-- 2000 -->")
@@ -370,3 +372,39 @@ class TestCreatureParserKnownValues(unittest.TestCase):
         creature = self._edited("| convince       = --", "| convince       = no")
 
         self.assertEqual(0, creature.convince_cost)
+
+    def test_attack_type_and_uses_spells(self):
+        creature = self._parse(load_resource("content_creature_dragon.txt"))
+
+        self.assertEqual("melee", creature.attack_type)
+        self.assertIs(True, creature.uses_spells)
+
+    def test_attack_type_unknown(self):
+        creature = self._edited("| attacktype   = Melee", "| attacktype   = ?")
+
+        self.assertIsNone(creature.attack_type)
+
+    def test_attack_type_absent(self):
+        creature = self._edited("| attacktype   = Melee\n", "")
+
+        self.assertIsNone(creature.attack_type)
+
+    def test_attack_type_ignores_a_trailing_comment(self):
+        creature = self._edited("| attacktype   = Melee", "| attacktype   = Distance <!-- Melee? -->")
+
+        self.assertEqual("distance", creature.attack_type)
+
+    def test_uses_spells_no(self):
+        creature = self._edited("| usespells    = yes", "| usespells    = no")
+
+        self.assertIs(False, creature.uses_spells)
+
+    def test_uses_spells_unknown(self):
+        creature = self._edited("| usespells    = yes", "| usespells    = ?")
+
+        self.assertIsNone(creature.uses_spells)
+
+    def test_uses_spells_absent(self):
+        creature = self._edited("| usespells    = yes\n", "")
+
+        self.assertIsNone(creature.uses_spells)

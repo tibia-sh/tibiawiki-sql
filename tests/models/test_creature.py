@@ -12,7 +12,12 @@ class TestCreature(unittest.TestCase):
         self.conn.row_factory = sqlite3.Row
         schema.create_tables(self.conn)
 
-    def _creature(self, race_id: int | None) -> Creature:
+    def _creature(
+        self,
+        race_id: int | None,
+        attack_type: str | None = None,
+        uses_spells: bool | None = None,
+    ) -> Creature:
         return Creature(
             article_id=1,
             title="Demon",
@@ -41,6 +46,8 @@ class TestCreature(unittest.TestCase):
             sees_invisible=True,
             paralysable=False,
             spawn_type=None,
+            attack_type=attack_type,
+            uses_spells=uses_spells,
             is_boss=False,
             cooldown=None,
             modifier_physical=75,
@@ -75,3 +82,19 @@ class TestCreature(unittest.TestCase):
         loaded = Creature.get_one_by_field(self.conn, "article_id", 1)
 
         self.assertIsNone(loaded.race_id)
+
+    def test_creature_attack_type_and_uses_spells_round_trip(self):
+        self._creature(35, attack_type="melee", uses_spells=False).insert(self.conn)
+
+        loaded = Creature.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertEqual("melee", loaded.attack_type)
+        self.assertIs(False, loaded.uses_spells)
+
+    def test_creature_attack_type_and_uses_spells_round_trip_none(self):
+        self._creature(35).insert(self.conn)
+
+        loaded = Creature.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertIsNone(loaded.attack_type)
+        self.assertIsNone(loaded.uses_spells)

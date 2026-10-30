@@ -13,6 +13,12 @@
   `yes`. Wiki comments are ignored in all of these fields, so `yes <!-- note -->` reads as `yes`, and an `exp` found
   only inside a comment, as on Bonelord Totem, is `NULL` instead of the comment's number. An absent value was already
   `NULL`, and `is_boss` is unchanged.
+- Add `item.slot`, `item.is_usable`, `spell.spell_id`, `creature.attack_type` and `creature.uses_spells`, read from
+  the `slot`, `usable`, `spellid`, `attacktype` and `usespells` fields. `slot` and `attack_type` are lower-cased, like
+  `neck` or `melee`, and `NULL` for an empty value or one with a `?`. `is_usable` and `uses_spells` are `true` for
+  `yes`, `false` for `no` and `NULL` for anything else, such as `?`. `spell_id` is the first number in the value and
+  `NULL` when there is none, as for `?`. Wiki comments are ignored in all of these fields, and an absent value is
+  `NULL`.
 
 ## 9.0.0+tibiash.9
 

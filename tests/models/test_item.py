@@ -91,3 +91,31 @@ class TestItem(unittest.TestCase):
 
         self.assertEqual(7197, loaded.value_buy)
         self.assertEqual("Theons", loaded.value_buy_currency)
+
+    def test_item_slot_and_usable_round_trip(self):
+        article = Article(
+            article_id=1,
+            title="Amethyst Necklace",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource("content_item_amethyst_necklace.txt"),
+        )
+        ItemParser.from_article(article).insert(self.conn)
+
+        loaded = Item.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertEqual("neck", loaded.slot)
+        self.assertIs(False, loaded.is_usable)
+
+    def test_item_slot_and_usable_round_trip_none(self):
+        article = Article(
+            article_id=1,
+            title="Shallow Water",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource("content_item_shallow_water.txt"),
+        )
+        ItemParser.from_article(article).insert(self.conn)
+
+        loaded = Item.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertIsNone(loaded.slot)
+        self.assertIsNone(loaded.is_usable)

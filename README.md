@@ -22,6 +22,11 @@ The copy adds this data to the database:
   `NULL` when the mount has no price.
 * The `item.value_buy_currency` column. It holds the currency of an item's NPC price, like `Gold Coin` or `Theons`,
   `NULL` when NPCs do not sell the item.
+* The `item.slot` and `item.is_usable` columns. They hold the slot an item goes in, in lower case, like `neck`, and
+  whether it can be used, `NULL` when the wiki does not say.
+* The `spell.spell_id` column. It holds the ID of a spell, `NULL` when the wiki has none or only a comment.
+* The `creature.attack_type` and `creature.uses_spells` columns. They hold how a creature attacks, in lower case, like
+  `melee`, and whether it uses spells, `NULL` when the wiki does not say.
 
 The [database schema](docs/schema.md) describes each of them.
 

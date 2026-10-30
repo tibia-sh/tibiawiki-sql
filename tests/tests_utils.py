@@ -8,7 +8,8 @@ from tests import load_resource
 from tibiawikisql.utils import (clean_links, client_color_to_rgb, parse_boolean, parse_client_id, parse_currency,
                                 parse_first_integer, parse_float, parse_integer,
                                 parse_date, parse_loot_statistics, parse_min_max, parse_sounds,
-                                parse_weapon_proficiency_name, parse_weapon_proficiency_tables, visible_text)
+                                parse_known_boolean, parse_known_text, parse_weapon_proficiency_name,
+                                parse_weapon_proficiency_tables, visible_text)
 
 
 class TestUtils(unittest.TestCase):
@@ -83,6 +84,26 @@ class TestUtils(unittest.TestCase):
         self.assertEqual("\n \n", visible_text("\n<!--objectID: 51192-->\n"))
         self.assertEqual("35 ", visible_text("35 <!-- 7"))
         self.assertEqual("--", visible_text("--"))
+
+    def test_parse_known_boolean(self):
+        self.assertIs(True, parse_known_boolean("yes"))
+        self.assertIs(True, parse_known_boolean(" Yes "))
+        self.assertIs(False, parse_known_boolean("no"))
+        self.assertIs(True, parse_known_boolean("yes <!-- note -->"))
+        self.assertIsNone(parse_known_boolean("?"))
+        self.assertIsNone(parse_known_boolean("no?"))
+        self.assertIsNone(parse_known_boolean(""))
+        self.assertIsNone(parse_known_boolean("<!-- yes -->"))
+
+    def test_parse_known_text(self):
+        self.assertEqual("weapon hand", parse_known_text("Weapon Hand"))
+        self.assertEqual("melee", parse_known_text(" Melee <!-- note -->"))
+        self.assertIsNone(parse_known_text("?"))
+        self.assertIsNone(parse_known_text("Melee?"))
+        self.assertIsNone(parse_known_text(""))
+        self.assertIsNone(parse_known_text(" "))
+        self.assertIsNone(parse_known_text("<!-- Melee -->"))
+        self.assertIsNone(parse_known_text("<!-- Melee"))
 
     def test_parse_client_id(self):
         self.assertEqual(35, parse_client_id("35"))

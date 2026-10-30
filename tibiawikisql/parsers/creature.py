@@ -22,6 +22,8 @@ from tibiawikisql.utils import (
     parse_client_id,
     parse_float,
     parse_integer,
+    parse_known_boolean,
+    parse_known_text,
     parse_min_max,
     parse_sounds,
     strip_code,
@@ -124,20 +126,6 @@ def parse_mana_cost(value: str) -> int | None:
     if text.strip().lower() in {"--", "no"}:
         return 0
     return parse_integer(text, None)
-
-
-def parse_known_boolean(value: str) -> bool | None:
-    """Parse a creature flag, such as whether it is pushable, from the visible text of its value.
-
-    Args:
-        value: The raw value of the field.
-
-    Returns:
-        ``True`` for ``yes``, ``False`` for ``no``, or ``None`` for anything else, such as ``?`` or ``no?``. Wiki
-        comments are ignored, so ``yes <!-- note -->`` is ``True``.
-
-    """
-    return parse_boolean(visible_text(value), None)
 
 
 def parse_paralysable(value: str) -> bool | None:
@@ -309,6 +297,8 @@ class CreatureParser(BaseParser):
         "sees_invisible": AttributeParser.optional("senseinvis", parse_known_boolean),
         "paralysable": AttributeParser.optional("paraimmune", parse_paralysable),
         "spawn_type": AttributeParser.optional("spawntype"),
+        "attack_type": AttributeParser.optional("attacktype", parse_known_text),
+        "uses_spells": AttributeParser.optional("usespells", parse_known_boolean),
         "is_boss": AttributeParser.optional("isboss", parse_boolean, False),
         "cooldown": AttributeParser.optional("cooldown", parse_float),
         "modifier_physical": AttributeParser.optional("physicalDmgMod", parse_known_integer),

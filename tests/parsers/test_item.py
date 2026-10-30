@@ -260,3 +260,82 @@ class TestItemParserBuyCurrency(unittest.TestCase):
 
         self.assertIsNone(item.value_buy)
         self.assertIsNone(item.value_buy_currency)
+
+
+class TestItemParserSlotAndUsable(unittest.TestCase):
+    def _parse_content(self, title: str, content: str):
+        article = Article(
+            article_id=1,
+            title=title,
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=content,
+        )
+
+        return ItemParser.from_article(article)
+
+    def _edited(self, old: str, new: str):
+        content = load_resource("content_item_amethyst_necklace.txt")
+        self.assertIn(old, content)
+        return self._parse_content("Amethyst Necklace", content.replace(old, new))
+
+    def test_amethyst_necklace(self):
+        item = self._parse_content("Amethyst Necklace", load_resource("content_item_amethyst_necklace.txt"))
+
+        self.assertEqual("neck", item.slot)
+        self.assertIs(False, item.is_usable)
+
+    def test_blade_of_mayhem(self):
+        item = self._parse_content("Blade of Mayhem", load_resource("content_item_blade_of_mayhem.txt"))
+
+        self.assertEqual("weapon hand", item.slot)
+        self.assertIs(True, item.is_usable)
+
+    def test_slot_unknown(self):
+        item = self._edited("| slot          = Neck", "| slot          = ?")
+
+        self.assertIsNone(item.slot)
+
+    def test_slot_uncertain(self):
+        item = self._edited("| slot          = Neck", "| slot          = Neck?")
+
+        self.assertIsNone(item.slot)
+
+    def test_slot_empty(self):
+        item = self._edited("| slot          = Neck", "| slot          =")
+
+        self.assertIsNone(item.slot)
+
+    def test_slot_absent(self):
+        item = self._edited("| slot          = Neck\n", "")
+
+        self.assertIsNone(item.slot)
+
+    def test_slot_ignores_a_trailing_comment(self):
+        item = self._edited("| slot          = Neck", "| slot          = Neck <!-- Ring? -->")
+
+        self.assertEqual("neck", item.slot)
+
+    def test_slot_only_in_a_comment(self):
+        item = self._edited("| slot          = Neck", "| slot          = <!-- Neck -->")
+
+        self.assertIsNone(item.slot)
+
+    def test_usable_unknown(self):
+        item = self._edited("| usable        = no", "| usable        = ?")
+
+        self.assertIsNone(item.is_usable)
+
+    def test_usable_absent(self):
+        item = self._edited("| usable        = no\n", "")
+
+        self.assertIsNone(item.is_usable)
+
+    def test_usable_typo(self):
+        item = self._edited("| usable        = no", "| usable        = noo")
+
+        self.assertIsNone(item.is_usable)
+
+    def test_usable_ignores_a_trailing_comment(self):
+        item = self._edited("| usable        = no", "| usable        = yes <!-- x -->")
+
+        self.assertIs(True, item.is_usable)

@@ -134,6 +134,8 @@ class Item(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=ItemTa
     """Whether the item can be picked up or not."""
     is_immobile: bool
     """Whether the item can be moved around the map or not."""
+    is_usable: bool | None = None
+    """Whether the item can be used or not. `None` if unknown."""
     value_sell: int | None
     """The highest price an NPC will buy this item for."""
     value_buy: int | None
@@ -148,6 +150,8 @@ class Item(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=ItemTa
     """The item's type."""
     type_secondary: str | None
     """The item's secondary type, if any."""
+    slot: str | None = None
+    """The slot the item goes in, in lower case, like `neck` or `weapon hand`. `None` if unknown."""
     flavor_text: str | None
     """The extra text that is displayed when some items are looked at."""
     light_color: int | None = None
