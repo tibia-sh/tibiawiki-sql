@@ -74,13 +74,17 @@ def parse_trade_value_note(value: str) -> str | None:
         value: The raw value of the field.
 
     Returns:
-        The value as written, like ``Negotiable`` or ``55,000,000 - 70,000,000``, in the plain text mwparserfromhell's
-        ``strip_code`` gives: links become their text, and templates and wiki comments are dropped, so ``1,000 {{GP}}``
-        is ``1,000``. It never raises, and it is never read as a number. ``None`` when nothing is left, or the value is
-        ``?`` or ``--``.
+        The value as written, like ``Negotiable`` or ``55,000,000 - 70,000,000``, cleaned by :func:`clean_links`, so
+        ``{{Hover|Negotiable|ask}}`` is ``Negotiable``. When :func:`clean_links` cannot clean it, because it holds a
+        template without parameters, it is the plain text mwparserfromhell's ``strip_code`` gives, with templates
+        dropped, so ``1,000 {{GP}}`` is ``1,000``. Wiki comments are dropped either way. It never raises, and it is
+        never read as a number. ``None`` when nothing is left, or the value is ``?`` or ``--``.
 
     """
-    note = mwparserfromhell.parse(value).strip_code().strip()
+    try:
+        note = clean_links(value)
+    except IndexError:  # clean_links reads params[0] of every template, which a template without parameters lacks.
+        note = mwparserfromhell.parse(value).strip_code().strip()
     return None if note in UNKNOWN_TRADE_VALUES else note
 
 

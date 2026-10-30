@@ -56,10 +56,12 @@
   and its place in the list from 0. `x` and `y` are read from the wiki's `major.minor` form, so `127.88` is 32600, and
   a malformed set like Warlord Ruzad's `128.202,123.233,5-2`, or one off the map, gives no row, while its label still
   replaces it in the text. `item.location` is the item's `location`, cleaned the same way.
-- Add `item.trade_value_note`, the item's `value` as the wiki writes it, in plain text: links become their text, and
-  templates and wiki comments are dropped, so `1,000 {{GP}}` is `1,000`. `Negotiable`, `Negotiable gp` and Amazon
-  Armor's `55,000,000 - 70,000,000` are kept. It is never read as a number, so a range or `0` is kept as written, and
-  it is `NULL` when the value is absent, `?`, `--` or empty once cleaned.
+- Add `item.trade_value_note`, the item's `value` as the wiki writes it, with links and templates cleaned and wiki
+  comments dropped, like `Negotiable`, `Negotiable gp` or Amazon Armor's `55,000,000 - 70,000,000`. A template gives
+  its first parameter, so `{{Hover|Negotiable|ask}}` is `Negotiable`, and a value holding a template without
+  parameters, which that cleaning cannot read, is read as plain text with its templates dropped, so `1,000 {{GP}}` is
+  `1,000`. It is never read as a number, so a range or `0` is kept as written, and it is `NULL` when the value is
+  absent, `?`, `--` or empty once cleaned.
 
 ## 9.0.0+tibiash.9
 

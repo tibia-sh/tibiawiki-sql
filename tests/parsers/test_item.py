@@ -508,6 +508,12 @@ class TestItemParserTradeValueNote(unittest.TestCase):
             self._edited("| value         = About [[Gold Coin|5,000]] {{GP}} <!-- x -->\n").trade_value_note,
         )
 
+    def test_keeps_the_clean_links_reading(self):
+        # The reading of 39c17a7: a template with parameters gives its first one, and <br> a line break.
+        self.assertEqual("Negotiable", parse_trade_value_note("{{Hover|Negotiable|ask}}"))
+        self.assertEqual("Negotiable", self._edited("| value         = {{Hover|Negotiable|ask}}\n").trade_value_note)
+        self.assertEqual("Negotiable\n(~5k)", parse_trade_value_note("Negotiable<br>(~5k)"))
+
     def test_keeps_the_note_past_a_template_without_parameters(self):
         self.assertEqual("1,000", parse_trade_value_note("1,000 {{GP}}"))
         self.assertEqual("1,000", self._edited("| value         = 1,000 {{GP}}\n").trade_value_note)
