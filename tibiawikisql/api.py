@@ -1,18 +1,25 @@
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
 """API to fetch information from [TibiaWiki](https://tibia.fandom.com) through MediaWiki's API."""
 
 import datetime
 import json
+import time
 import urllib.parse
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from typing import ClassVar
 
 from pydantic import BaseModel, computed_field
 import requests
 
 from tibiawikisql import __version__
+from tibiawikisql.errors import WikiApiError
 from tibiawikisql.utils import parse_templatates_data
 
 BASE_URL = "https://tibia.fandom.com"
+REQUEST_TIMEOUT = 60
+"""Seconds to wait for each response of the API."""
+RETRY_DELAYS = (5, 15, 30, 60)
+"""Seconds to wait before each retry of a failed API request, so a request is attempted up to 5 times."""
 
 
 class WikiEntry(BaseModel):
@@ -89,9 +96,68 @@ class WikiClient:
         "User-Agent": f'tibiawikisql/{__version__}',  # noqa: Q000
     }
 
-    def __init__(self) -> None:
-        """Creates a new instance of the client."""
+    def __init__(self, sleep: Callable[[float], None] = time.sleep) -> None:
+        """Creates a new instance of the client.
+
+        Args:
+            sleep: The function used to wait between attempts of a request.
+
+        """
         self.session = requests.Session()
+        self._sleep = sleep
+
+    def _get_json(self, params: dict) -> dict:
+        """Request the API and parse its response.
+
+        A request that gets no response, a 429 or 5xx status, or a 200 status with a body that is not JSON is retried
+        after each of the `RETRY_DELAYS`.
+
+        Args:
+            params: The query parameters of the request.
+
+        Returns:
+            The parsed response.
+
+        Raises:
+            WikiApiError: The response had another status or held an API error, or the last attempt failed.
+
+        """
+        attempt = 0
+        while True:
+            attempt += 1
+            cause = None
+            try:
+                response = self.session.get(self.ENDPOINT, params=params, timeout=REQUEST_TIMEOUT)
+            except (requests.ConnectionError, requests.Timeout) as exc:
+                cause = exc
+                status = text = None
+                problem = f"no response ({exc.__class__.__name__}: {exc})"
+            else:
+                status = response.status_code
+                text = response.text
+                if status == 200:
+                    try:
+                        data = json.loads(text)
+                    except ValueError as exc:
+                        cause = exc
+                        problem = "status 200 with a body that is not JSON"
+                    else:
+                        if "error" in data:
+                            error = data["error"]
+                            code = error.get("code") if isinstance(error, dict) else error
+                            msg = f"Wiki API error {code!r} with status 200 for {self.ENDPOINT} with params {params}"
+                            raise WikiApiError(msg, status, text)
+                        return data
+                elif status == 429 or 500 <= status < 600:
+                    problem = f"status {status}"
+                else:
+                    msg = f"Wiki API request failed with status {status} for {self.ENDPOINT} with params {params}"
+                    raise WikiApiError(msg, status, text)
+            if attempt > len(RETRY_DELAYS):
+                msg = (f"Wiki API request failed with {problem} for {self.ENDPOINT} with params {params}, "
+                       f"after {attempt} attempts")
+                raise WikiApiError(msg, status, text) from cause
+            self._sleep(RETRY_DELAYS[attempt - 1])
 
     def get_category_members(self, name: str, skip_index: bool = True) -> Generator[WikiEntry]:
         """Create a generator that obtains entries in a certain category.
@@ -116,8 +182,7 @@ class WikiClient:
         }
         while True:
             params["cmcontinue"] = cmcontinue
-            r = self.session.get(self.ENDPOINT, params=params)
-            data = json.loads(r.text)
+            data = self._get_json(params)
             for member in data["query"]["categorymembers"]:
                 if member["sortkeyprefix"] == "*" and skip_index:
                     continue
@@ -189,10 +254,7 @@ class WikiClient:
                 break
             params["titles"] = "|".join(f"File:{n}" for n in names[i:min(i + 50, len(names))])
 
-            r = self.session.get(self.ENDPOINT, params=params)
-            if r.status_code >= 400:
-                continue
-            data = json.loads(r.text)
+            data = self._get_json(params)
             i += 50
             for image_data in data["query"]["pages"].values():
                 if "missing" in image_data:
@@ -233,8 +295,7 @@ class WikiClient:
                 break
             params["titles"] = "|".join(names[i:min(i + 50, len(names))])
             i += 50
-            r = self.session.get(self.ENDPOINT, params=params)
-            data = json.loads(r.text)
+            data = self._get_json(params)
             for article in data["query"]["pages"].values():
                 if "missing" in article:
                     yield None

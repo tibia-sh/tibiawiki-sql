@@ -1,6 +1,13 @@
 <!-- Changed by tibia.sh in 2026. See "About this copy" in README.md. -->
 # Changelog
 
+## Unreleased
+
+- Retry a TibiaWiki API request that gets no response within 60 seconds, a 429 or 5xx status, or a body that is not
+  JSON, up to 5 attempts, waiting 5, 15, 30 and 60 seconds between them. Any other status, an API error or a fifth
+  failure stops the run with a `WikiApiError` that names the status and the request. Before, articles and category
+  members had no timeout and stopped at the first bad response, and image info retried a failed request forever.
+
 ## 9.0.0+tibiash.7
 
 - Read loot ranges with commas as thousands separators, like `1,000-2,000`, as 1000 to 2000 instead of 0 to 2. This
