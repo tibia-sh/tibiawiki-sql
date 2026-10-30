@@ -8,6 +8,7 @@ import re
 import time
 from collections import defaultdict
 from contextlib import contextmanager
+from itertools import islice
 from typing import Any, Literal, TYPE_CHECKING, overload
 
 import mwparserfromhell
@@ -72,6 +73,13 @@ removed_mapper_coords_rules = (
 before them; at the start of a line or after an opening parenthesis, the spaces after it go; before a space,
 punctuation or the end of the text, the spaces before it go; anywhere else only the template goes."""
 
+
+LOCATION_MARK_ATTEMPTS = 4
+"""How many placeholder marks :func:`parse_location` tries before it reads the location as plain text."""
+
+decimal_reference_pattern = re.compile(r"&#0*([0-9]{1,8})[0-9]*")
+"""A decimal HTML character reference, with its leading zeros and its digits past the eighth significant one outside
+the group. Past seven significant digits the value is above U+10FFFF, so eight are enough to decode it the same."""
 
 class Elapsed:
     """Holds the elapsed time measured by the [tibiawikisql.utils.timed][timed] context manager.
@@ -282,11 +290,20 @@ def _unused_private_characters(value: str) -> Generator[str, None, None]:
     """Get the characters of Unicode's private use area that appear neither in a value nor in its HTML-decoded form.
 
     Cleaning decodes the HTML entities in wiki text, so ``&#xE000;`` reads as the area's first character. Wherever
-    mwparserfromhell decodes an entity to a private-use character, :func:`html.unescape` decodes it to the same one, and
-    it also decodes entities without the final semicolon.
+    mwparserfromhell decodes an entity to a private-use character, :func:`_decode_entities` decodes it to the same one,
+    and it also decodes entities without the final semicolon.
     """
-    taken = set(value) | set(html.unescape(value))
+    taken = set(value) | set(_decode_entities(value))
     return (chr(code) for code in range(0xE000, 0xF900) if chr(code) not in taken)
+
+
+def _decode_entities(text: str) -> str:
+    """Decode the HTML entities in a text as :func:`html.unescape` does, without its error on long decimal references.
+
+    :func:`html.unescape` reads a decimal reference with :class:`int`, which raises :class:`ValueError` past Python's
+    4,300-digit limit, so each is shortened to its first eight significant digits first, which decodes the same.
+    """
+    return html.unescape(decimal_reference_pattern.sub(r"&#\1", text))
 
 
 def parse_location(value: str) -> tuple[str, list[tuple[int, int, int, str | None]]]:
@@ -306,10 +323,12 @@ def parse_location(value: str) -> tuple[str, list[tuple[int, int, int, str | Non
 
     To put a label in, the template is first replaced by its index between two marks. The mark is a private-use
     character that neither the value nor its HTML-decoded form holds, so not the one ``&#xE000;`` decodes to, and that
-    no text about to be cleaned decodes to either, as when removing a template joins ``&#xE0`` and ``00;``. Only the
-    marked indices written into a text are put back in it; any other marked text stays as it is. A value that leaves no
-    such character, such as one holding all 6,400 of them, reads as :func:`clean_text_safely` reads it, coordinates
-    included, and each label is its ``text`` parameter cleaned on its own.
+    no text about to be cleaned decodes to either, as when removing a template joins ``&#xE0`` and ``00;``. A mark one
+    of those texts decodes to is found only once that text is reached, so at most :data:`LOCATION_MARK_ATTEMPTS` marks
+    are tried. Only the marked indices written into a text are put back in it; any other marked text stays as it is. A
+    value that leaves no such character, such as one holding all 6,400 of them, or whose texts decode to every mark
+    tried, reads as :func:`clean_text_safely` reads it, coordinates included, and each label is its ``text`` parameter
+    cleaned on its own.
 
     Where :func:`clean_links` cannot clean the text or a label, :func:`clean_text_safely` gives its plain text instead,
     so such a location gives a text and rows rather than an error. A label :func:`clean_links` drops from the text, as
@@ -324,7 +343,10 @@ def parse_location(value: str) -> tuple[str, list[tuple[int, int, int, str | Non
         the template's place, or ``None`` when it shows none. A template whose position is malformed gives no row.
 
     """
-    for mark in _unused_private_characters(value):
+    # A mark a text decodes to is found only after a whole attempt, so crafted text aiming entities at successive
+    # candidates would make each of the 6,400 cost one. Real wiki text holds no private-use entities, so a few
+    # attempts are plenty, and the cap bounds the work to that many.
+    for mark in islice(_unused_private_characters(value), LOCATION_MARK_ATTEMPTS):
         try:
             return _parse_location_with_mark(value, mark)
         except _MarkCollisionError:
@@ -356,7 +378,7 @@ def _parse_location_with_mark(value: str, mark: str) -> tuple[str, list[tuple[in
     def clean(text: str) -> str:
         for pattern, replacement in removed_mapper_coords_rules:
             text = pattern.sub(replacement, text)
-        if html.unescape(text).count(mark) != text.count(mark):
+        if _decode_entities(text).count(mark) != text.count(mark):
             raise _MarkCollisionError
         written = {match[0] for match in placeholder.finditer(text)}
         return placeholder.sub(

@@ -538,6 +538,30 @@ class TestUtils(unittest.TestCase):
                 parse_location(f"{{{{Mapper Coords|1.3|1.3|7|text=a &#xE000;1&#xE000;}}}} {here}"),
             )
 
+    def test_location_with_a_decimal_reference_past_the_digit_limit(self):
+        digits = "1" * 5000
+        removed = "({{Mapper Coords|1.1|1.1|7}})"
+        self.assertEqual((f"a &#{digits}; b", []), parse_location(f"a &#{digits}; b"))
+        self.assertEqual(
+            (f"a &#{digits}; b", [(257, 257, 7, None)]),
+            parse_location(f"a &#{digits[:2500]}{removed}{digits[2500:]}; b"),
+        )
+        mark = "\ue000"
+        self.assertEqual(
+            (f"a &#{digits}; {mark}0{mark} here", [(258, 258, 7, "here")]),
+            parse_location(f"a &#{digits}; &#xE000;0&#xE000; {{{{Mapper Coords|1.2|1.2|7|text=here}}}}"),
+        )
+
+    def test_location_whose_marks_keep_colliding(self):
+        removed = "({{Mapper Coords|1.1|1.1|7}})"
+        # Each entity, joined once its template is removed, decodes to the next candidate mark.
+        value = " ".join(f"&#x{code:X}"[:-2] + removed + f"{code:X}"[-2:] + ";" for code in range(0xE000, 0xE00A))
+        value += " {{Mapper Coords|1.2|1.2|7|text=here}}"
+        self.assertEqual(
+            (clean_text_safely(value), [(257, 257, 7, None)] * 10 + [(258, 258, 7, "here")]), parse_location(value),
+        )
+        self.assertIn("&#xE0(1.1)00;", parse_location(value)[0])
+
     def test_location_holding_every_private_use_character(self):
         characters = "".join(chr(code) for code in range(0xE000, 0xF900))
         here = " {{Mapper Coords|1.2|1.2|7|text=[[Fortress|here]]}}"
