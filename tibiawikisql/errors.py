@@ -1,3 +1,4 @@
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
 """Custom exceptions used by the package."""
 from __future__ import annotations
 
@@ -55,6 +56,25 @@ class TemplateNotFoundError(ArticleParsingError):
             parser: The parser class used.
         """
         super().__init__(article, f"Template `{parser.template_name}` not found.")
+
+
+class WikiApiError(TibiaWikiSqlError):
+    """Error raised when a request to TibiaWiki's API fails.
+
+    The exception that caused it, if any, is kept as ``__cause__``.
+    """
+
+    def __init__(self, message: str, status: int | None, body: str | None) -> None:
+        """Create an instance of the class.
+
+        Args:
+            message: A description of the failed request.
+            status: The response's HTTP status, or `None` if there was no response.
+            body: The response's text, or `None` if there was no response. Only its first 200 characters are kept.
+        """
+        super().__init__(message)
+        self.status = status
+        self.body = None if body is None else body[:200]
 
 
 class DatabaseError(TibiaWikiSqlError):
