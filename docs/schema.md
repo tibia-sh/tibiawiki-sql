@@ -10,45 +10,48 @@ The generated database has the following tables.
 ## Tables
 
 
-|          Table          |                                     Description                                     |
-| ----------------------- | ----------------------------------------------------------------------------------- |
-| `achievement`           | Contains information for all achievements.                                          |
-| `book`                  | Contains information about books.                                                   |
-| `charm`                 | Contains information for all charms.                                                |
-| `creature`              | Contains information for all creatures.                                             |
-| `creature_ability`      | Contains all the abilities done by creatures.                                       |
-| `creature_drop`         | Contains all the items dropped by creatures.                                        |
-| `creature_max_damage`   | Contains the breakdown of max damage done by creatures.                             |
-| `creature_sound`        | Contains all the sounds made by creatures.                                          |
-| `database_info`         | Contains information about the database itself.                                     |
-| `game_update`           | Contains information about game updates.                                            |
-| `house`                 | Contains all houses and guildhalls.                                                 |
-| `imbuement`             | Contains information for all imbuements.                                            |
-| `imbuement_material`    | Contains the item materials for imbuements.                                         |
-| `item`                  | Contains information for all items.                                                 |
-| `item_attribute`        | Contains extra attributes and properties of items that only apply to certain types. |
-| `item_key`              | Contains the different key variations.                                              |
-| `item_sound`            | Contains all the sounds made by items.                                              |
-| `item_proficiency_perk` | Contains weapon proficiency perks for items.                                        |
-| `item_store_offer`      | Contains all offers for items in the Tibia store.                                   |
-| `map`                   | Contains the world map’s images.                                                    |
-| `mount`                 | Contains information for all mounts.                                                |
-| `npc`                   | Contains information for all NPCs.                                                  |
-| `npc_destination`       | Contains all the NPCs’ travel destinations.                                         |
-| `npc_job`               | Contains all the NPCs’ jobs.                                                        |
-| `npc_location`          | Contains all the NPCs’ positions.                                                   |
-| `npc_offer_buy`         | Contains all the NPCs’ buy offers.                                                  |
-| `npc_offer_sell`        | Contains all the NPCs’ sell offers.                                                 |
-| `npc_race`              | Contains all the NPCs’ races.                                                       |
-| `outfit`                | Contains information for all outfits.                                               |
-| `outfit_image`          | Contains images for all outfits.                                                    |
-| `outfit_quest`          | Contains outfit and addon rewards for quests.                                       |
-| `quest`                 | Contains information for all quests.                                                |
-| `quest_danger`          | Contains creatures that can be found in a quest.                                    |
-| `quest_reward`          | Contains item rewards for quests.                                                   |
-| `rashid_position`       | Contains the positions for the NPC Rashid every day of the week.                    |
-| `spell`                 | Contains information for all spells.                                                |
-| `world`                 | Contains information for all worlds.                                                |
+|             Table              |                                     Description                                     |
+| ------------------------------ | ----------------------------------------------------------------------------------- |
+| `achievement`                  | Contains information for all achievements.                                          |
+| `book`                         | Contains information about books.                                                   |
+| `charm`                        | Contains information for all charms.                                                |
+| `creature`                     | Contains information for all creatures.                                             |
+| `creature_ability`             | Contains all the abilities done by creatures.                                       |
+| `creature_drop`                | Contains all the items dropped by creatures.                                        |
+| `creature_location_coordinate` | Contains the map positions in the locations of creatures.                           |
+| `creature_max_damage`          | Contains the breakdown of max damage done by creatures.                             |
+| `creature_sound`               | Contains all the sounds made by creatures.                                          |
+| `database_info`                | Contains information about the database itself.                                     |
+| `game_update`                  | Contains information about game updates.                                            |
+| `house`                        | Contains all houses and guildhalls.                                                 |
+| `imbuement`                    | Contains information for all imbuements.                                            |
+| `imbuement_material`           | Contains the item materials for imbuements.                                         |
+| `item`                         | Contains information for all items.                                                 |
+| `item_attribute`               | Contains extra attributes and properties of items that only apply to certain types. |
+| `item_client_id`               | Contains every client ID of items, in the order the wiki lists them.                |
+| `item_key`                     | Contains the different key variations.                                              |
+| `item_location_coordinate`     | Contains the map positions in the locations of items.                               |
+| `item_sound`                   | Contains all the sounds made by items.                                              |
+| `item_proficiency_perk`        | Contains weapon proficiency perks for items.                                        |
+| `item_store_offer`             | Contains all offers for items in the Tibia store.                                   |
+| `map`                          | Contains the world map’s images.                                                    |
+| `mount`                        | Contains information for all mounts.                                                |
+| `npc`                          | Contains information for all NPCs.                                                  |
+| `npc_destination`              | Contains all the NPCs’ travel destinations.                                         |
+| `npc_job`                      | Contains all the NPCs’ jobs.                                                        |
+| `npc_location`                 | Contains all the NPCs’ positions.                                                   |
+| `npc_offer_buy`                | Contains all the NPCs’ buy offers.                                                  |
+| `npc_offer_sell`               | Contains all the NPCs’ sell offers.                                                 |
+| `npc_race`                     | Contains all the NPCs’ races.                                                       |
+| `outfit`                       | Contains information for all outfits.                                               |
+| `outfit_image`                 | Contains images for all outfits.                                                    |
+| `outfit_quest`                 | Contains outfit and addon rewards for quests.                                       |
+| `quest`                        | Contains information for all quests.                                                |
+| `quest_danger`                 | Contains creatures that can be found in a quest.                                    |
+| `quest_reward`                 | Contains item rewards for quests.                                                   |
+| `rashid_position`              | Contains the positions for the NPC Rashid every day of the week.                    |
+| `spell`                        | Contains information for all spells.                                                |
+| `world`                        | Contains information for all worlds.                                                |
 
 
 ## Table schemas
@@ -126,80 +129,108 @@ The generated database has the following tables.
 
 ### creature
 
-|       Column        |         Type          |                                                               Description                                                               |
-| ------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| article_id          | `INTEGER` / `PRIMARY` | The id of the article containing this creature.                                                                                         |
-| title               | `TEXT`                | The title of the article containing this creature.                                                                                      |
-| name                | `TEXT`                | The name of the creature in-game.                                                                                                       |
-| plural              | `TEXT`                | The plural of the name.                                                                                                                 |
-| library_race        | `TEXT`                | The race name of the creature in Tibia.com's library.                                                                                   |
-| article             | `TEXT`                | The grammatical article before the creature’s name. This is shown when looking at creatures. Bosses have no article.                    |
-| hitpoints           | `INTEGER`             | The number of hitpoints the creature has. May be `NULL` if unknown.                                                                     |
-| experience          | `INTEGER`             | The number of experience the creature yields . May be `NULL` if unknown.                                                                |
-| armor               | `INTEGER`             | The armor value of the creature. May be `NULL` if unknown.                                                                              |
-| mitigation          | `REAL`                | The creature's mitigation value.                                                                                                        |
-| speed               | `INTEGER`             | The speed value of the creature. May be `NULL` if unknown.                                                                              |
-| creature_class      | `TEXT`                | The class this creature belongs to (e.g. `Demons`, `Humanoids`, `Mammals`).                                                             |
-| type_primary        | `TEXT`                | The type this creature belongs to (e.g. `Archdemons`, `Dwarves`, `Apes`).                                                               |
-| type_secondary      | `TEXT`                | A secondary type this creature belongs to, if any.                                                                                      |
-| bestiary_class      | `TEXT`                | The bestiary category of this creature. `NULL` for creatures not in the bestiary.                                                       |
-| bestiary_level      | `TEXT`                | The bestiary level of this creature. `NULL` for creatures not in the bestiary.                                                          |
-| bestiary_occurrence | `TEXT`                | The bestiary’s rarity value of this creature. `NULL` for creatures not in the bestiary.                                                 |
-| bosstiary_class     | `TEXT`                | The bosstiary category of this creature. `NULL` for creatures not in the bestiary.                                                      |
-| runs_at             | `INTEGER`             | The amount of hitpoints when the creature starts to run away. 0 means it won't run away.                                                |
-| summon_cost         | `INTEGER`             | The mana cost to summon this creature. `0` means it is not summonable.                                                                  |
-| convince_cost       | `INTEGER`             | The mana cost to convince this creature. `0` means it is not convincible.                                                               |
-| illusionable        | `BOOLEAN`             | Whether the player can turn into this creature with Creature Illusion.                                                                  |
-| pushable            | `BOOLEAN`             | Whether this creature can be pushed or not.                                                                                             |
-| push_objects        | `BOOLEAN`             | Whether this creature can push objects or not.                                                                                          |
-| paralysable         | `BOOLEAN`             | Whether this creature can be paralyzed or not.                                                                                          |
-| sees_invisible      | `INTEGER`             | Whether this creature can see invisible players or not.                                                                                 |
-| spawn_type          | `TEXT`                | The way this creature spawns.                                                                                                           |
-| is_boss             | `INTEGER`             | Whether this creature is a boss or not.                                                                                                 |
-| cooldown            | `REAL`                | The cooldown in hours to fight the boss again.                                                                                          |
-| modifier_physical   | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown. |
-| modifier_earth      | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown. |
-| modifier_fire       | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown. |
-| modifier_ice        | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown. |
-| modifier_energy     | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown. |
-| modifier_death      | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown. |
-| modifier_holy       | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown. |
-| modifier_drown      | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown. |
-| modifier_lifedrain  | `INTEGER`             | The healing modifier. `NULL` if unknown.                                                                                                |
-| modifier_healing    | `INTEGER`             | The healing modifier. `NULL` if unknown.                                                                                                |
-| walks_through       | `TEXT`                | The type of fields the creature will walk through.                                                                                      |
-| walks_around        | `TEXT`                | The type of fields the creature will walk around to avoid when possible.                                                                |
-| location            | `TEXT`                | The locations where the creature can be found.                                                                                          |
-| race_id             | `INTEGER`             | The client race ID of the creature, the first integer in the value after wiki comments are removed, `NULL` when there is none.          |
-| version             | `TEXT`                | The client version this creature was introduced to the game.                                                                            |
-| image               | `BLOB`                | The creature’s image bytes.                                                                                                             |
-| status              | `TEXT`                | The status of the creature in game.                                                                                                     |
-| timestamp           | `TIMESTAMP`           | ISO 8601 timestamp of the article's last edit.                                                                                          |
+|        Column         |         Type          |                                                                        Description                                                                         |
+| --------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| article_id            | `INTEGER` / `PRIMARY` | The id of the article containing this creature.                                                                                                            |
+| title                 | `TEXT`                | The title of the article containing this creature.                                                                                                         |
+| name                  | `TEXT`                | The name of the creature in-game.                                                                                                                          |
+| plural                | `TEXT`                | The plural of the name.                                                                                                                                    |
+| library_race          | `TEXT`                | The race name of the creature in Tibia.com's library.                                                                                                      |
+| article               | `TEXT`                | The grammatical article before the creature’s name. This is shown when looking at creatures. Bosses have no article.                                       |
+| hitpoints             | `INTEGER`             | The number of hitpoints the creature has. May be `NULL` if unknown.                                                                                        |
+| experience            | `INTEGER`             | The number of experience the creature yields . May be `NULL` if unknown.                                                                                   |
+| armor                 | `INTEGER`             | The armor value of the creature. May be `NULL` if unknown.                                                                                                 |
+| mitigation            | `REAL`                | The creature's mitigation value. May be `NULL` if unknown.                                                                                                 |
+| speed                 | `INTEGER`             | The speed value of the creature. May be `NULL` if unknown.                                                                                                 |
+| creature_class        | `TEXT`                | The class this creature belongs to (e.g. `Demons`, `Humanoids`, `Mammals`).                                                                                |
+| type_primary          | `TEXT`                | The type this creature belongs to (e.g. `Archdemons`, `Dwarves`, `Apes`).                                                                                  |
+| type_secondary        | `TEXT`                | A secondary type this creature belongs to, if any.                                                                                                         |
+| bestiary_class        | `TEXT`                | The bestiary category of this creature. `NULL` for creatures not in the bestiary.                                                                          |
+| bestiary_level        | `TEXT`                | The bestiary level of this creature. `NULL` for creatures not in the bestiary.                                                                             |
+| bestiary_occurrence   | `TEXT`                | The bestiary’s rarity value of this creature. `NULL` for creatures not in the bestiary.                                                                    |
+| bosstiary_class       | `TEXT`                | The bosstiary category of this creature. `NULL` for creatures not in the bestiary.                                                                         |
+| runs_at               | `INTEGER`             | The amount of hitpoints when the creature starts to run away. 0 means it won't run away. May be `NULL` if unknown.                                         |
+| summon_cost           | `INTEGER`             | The mana cost to summon this creature. `0` means it cannot be summoned. May be `NULL` if unknown.                                                          |
+| convince_cost         | `INTEGER`             | The mana cost to convince this creature. `0` means it cannot be convinced. May be `NULL` if unknown.                                                       |
+| illusionable          | `BOOLEAN`             | Whether the player can turn into this creature with Creature Illusion. May be `NULL` if unknown.                                                           |
+| pushable              | `BOOLEAN`             | Whether this creature can be pushed or not. May be `NULL` if unknown.                                                                                      |
+| push_objects          | `BOOLEAN`             | Whether this creature can push objects or not. May be `NULL` if unknown.                                                                                   |
+| paralysable           | `BOOLEAN`             | Whether this creature can be paralyzed or not. May be `NULL` if unknown.                                                                                   |
+| sees_invisible        | `INTEGER`             | Whether this creature can see invisible players or not. May be `NULL` if unknown.                                                                          |
+| spawn_type            | `TEXT`                | The way this creature spawns.                                                                                                                              |
+| attack_type           | `TEXT`                | How the creature attacks, in lower case (e.g. `melee`). May be `NULL` if unknown.                                                                          |
+| uses_spells           | `BOOLEAN`             | Whether this creature uses spells or not. May be `NULL` if unknown.                                                                                        |
+| is_boss               | `INTEGER`             | Whether this creature is a boss or not.                                                                                                                    |
+| cooldown              | `REAL`                | The cooldown in hours to fight the boss again.                                                                                                             |
+| modifier_physical     | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown.                    |
+| modifier_earth        | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown.                    |
+| modifier_fire         | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown.                    |
+| modifier_ice          | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown.                    |
+| modifier_energy       | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown.                    |
+| modifier_death        | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown.                    |
+| modifier_holy         | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown.                    |
+| modifier_drown        | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown.                    |
+| modifier_lifedrain    | `INTEGER`             | Percentage of damage the creature receives from this damage type. `0` being completely immune, `100` neutral. May be `NULL` if unknown.                    |
+| modifier_healing      | `INTEGER`             | Percentage of healing the creature receives. `0` being completely immune, `100` neutral. May be `NULL` if unknown.                                         |
+| walks_through         | `TEXT`                | The type of fields the creature will walk through.                                                                                                         |
+| walks_around          | `TEXT`                | The type of fields the creature will walk around to avoid when possible.                                                                                   |
+| location              | `TEXT`                | The locations where the creature can be found. Each Mapper Coords position shows as its label, or is left out without one.                                 |
+| race_id               | `INTEGER`             | The client race ID of the creature, the first integer in the value after wiki comments are removed, `NULL` when there is none.                             |
+| loot_statistics_kills | `INTEGER`             | The kills on the creature's Loot Statistics page that its drop chances come from. `NULL` when it has no page, or its page has no positive number of kills. |
+| version               | `TEXT`                | The client version this creature was introduced to the game.                                                                                               |
+| image                 | `BLOB`                | The creature’s image bytes.                                                                                                                                |
+| status                | `TEXT`                | The status of the creature in game.                                                                                                                        |
+| timestamp             | `TIMESTAMP`           | ISO 8601 timestamp of the article's last edit.                                                                                                             |
 
 
 
 
 ### creature_ability
 
-|   Column    |   Type    |                                        Description                                        |
-| ----------- | --------- | ----------------------------------------------------------------------------------------- |
-| creature_id | `INTEGER` | The id of the creature that does this ability.                                            |
-| name        | `TEXT`    | The name of the ability.                                                                  |
-| effect      | `TEXT`    | The effect of the ability, or the damage range.                                           |
-| element     | `TEXT`    | The element of damage type of the ability. This could also be a status condition instead. |
+|     Column      |   Type    |                                                                                                                                                                                                              Description                                                                                                                                                                                                               |
+| --------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| creature_id     | `INTEGER` | The id of the creature that does this ability.                                                                                                                                                                                                                                                                                                                                                                                         |
+| name            | `TEXT`    | The name of the ability.                                                                                                                                                                                                                                                                                                                                                                                                               |
+| effect          | `TEXT`    | The effect of the ability, or the damage range. For a `debuff`, the reduction as `value=<value>; duration=<duration>; flags=<flags>`, without the empty parts, like `value=50%; duration=10; flags=distance,melee`. The flags are the reduced skills, in the order `distance`, `melee`, `magic`, `shielding`. For an `outfit`, `yes` if it changes the victim's outfit and `no` if it changes the creature's own. Empty for a `haste`. |
+| element         | `TEXT`    | The element of damage type of the ability. This could also be a status condition instead. Haste, debuff and outfit change abilities are `haste`, `debuff` and `outfit`, and an outfit change has one row per outfit.                                                                                                                                                                                                                   |
+| condition       | `TEXT`    | The condition the ability causes, in lower case, like `poisoned` or `slowed`. A melee attack that poisons is `poisoned`. `NULL` if unknown or none.                                                                                                                                                                                                                                                                                    |
+| condition_value | `INTEGER` | The poison damage per turn a melee attack starts at, up to. `NULL` if unknown or not a poisoning melee attack.                                                                                                                                                                                                                                                                                                                         |
 
 
 
 ### creature_drop
 
-|   Column    |   Type    |                      Description                       |
-| ----------- | --------- | ------------------------------------------------------ |
-| creature_id | `INTEGER` | The id of the creature that yields this drop.          |
-| item_id     | `INTEGER` | The id of the dropped item.                            |
-| chance      | `REAL`    | The chance percentage of this drop. `NULL` if unknown. |
-| min         | `INTEGER` | The minimum count of the dropped item.                 |
-| max         | `INTEGER` | The maximum count of the dropped item.                 |
+|   Column    |   Type    |                                                                                               Description                                                                                               |
+| ----------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| creature_id | `INTEGER` | The id of the creature that yields this drop.                                                                                                                                                           |
+| item_id     | `INTEGER` | The id of the dropped item.                                                                                                                                                                             |
+| chance      | `REAL`    | The chance percentage of this drop. `NULL` if unknown.                                                                                                                                                  |
+| min         | `INTEGER` | The minimum count of the dropped item.                                                                                                                                                                  |
+| max         | `INTEGER` | The maximum count of the dropped item.                                                                                                                                                                  |
+| rarity      | `TEXT`    | The drop's rarity on the creature's article, in lower case: `always`, `common`, `uncommon`, `semi-rare`, `rare` or `very rare`. `NULL` if unknown, or if the article gives the item different rarities. |
 
+
+
+
+### creature_location_coordinate
+
+|   Column    |   Type    |                                         Description                                         |
+| ----------- | --------- | ------------------------------------------------------------------------------------------- |
+| creature_id | `INTEGER` | The id of the creature whose location has this map position.                                |
+| x           | `INTEGER` | The x coordinate of the position.                                                           |
+| y           | `INTEGER` | The y coordinate of the position.                                                           |
+| z           | `INTEGER` | The floor of the position.                                                                  |
+| label       | `TEXT`    | The text the location shows in place of the position, like `here`. `NULL` if it shows none. |
+| position    | `INTEGER` | The row's place in the order the location lists its map positions, from 0.                  |
+
+Each row is a `{{Mapper Coords}}` template in the creature's `location`, in the order they are written. `x` and `y` are
+read from the wiki's `major.minor` form, so `127.88` is 32600. `label` is the template's `text`, cleaned as the
+location is, so it is the text `creature.location` shows in the template's place: `text={{Hover|here|explanation}}`
+gives `here`. Named parameters do not count as positions, so `{{Mapper Coords|text=here|127.234|127.59|14}}` gives the
+same row as `{{Mapper Coords|127.234|127.59|14|text=here}}`. A template whose `x`, `y` or `z` is missing, malformed or
+off the game's map, `x` and `y` from 0 to 65535 and `z` from 0 to 15, gives no row, like Warlord Ruzad's
+`{{Mapper Coords|128.202,123.233,5-2|text=here}}`. In `creature.location`, each template is replaced by its label, or
+left out when it has none, so no coordinate is left in the text.
 
 
 
@@ -330,6 +361,7 @@ The generated database has the following tables.
 | is_stackable       | `BOOLEAN`             | Whether this item is stackable or not.                                                                                                                                                                                                                                          |
 | is_pickupable      | `BOOLEAN`             | Whether this item can be picked up or not.                                                                                                                                                                                                                                      |
 | is_immobile        | `BOOLEAN`             | Whether the item can be moved around the map or not.                                                                                                                                                                                                                            |
+| is_usable          | `BOOLEAN`             | Whether the item can be used or not. `NULL` if unknown.                                                                                                                                                                                                                         |
 | value_sell         | `INTEGER`             | The maximum value of this item when sold to NPCs                                                                                                                                                                                                                                |
 | value_buy          | `INTEGER`             | The maximum price of this item when bought from NPCs, in `value_buy_currency`.                                                                                                                                                                                                  |
 | value_buy_currency | `TEXT`                | The currency of `value_buy`: the article's `pricecurrency`, otherwise a currency written after the price in `npcprice`, otherwise Gold Coin. A linked currency gives the page it links to, like `Silver Token` for `[[Silver Token]]s`. `NULL` when `value_buy` is `NULL` or 0. |
@@ -337,11 +369,14 @@ The generated database has the following tables.
 | item_class         | `TEXT`                | The class this item belongs to (e.g. `Body Equipment` , `Weapons`).                                                                                                                                                                                                             |
 | item_type          | `TEXT`                | The category this item belongs to (e.g. `Helmets`, `Club Weapons`).                                                                                                                                                                                                             |
 | type_secondary     | `TEXT`                | A secondary type this item belongs to, if any.                                                                                                                                                                                                                                  |
+| slot               | `TEXT`                | The slot this item goes in, in lower case (e.g. `neck`, `weapon hand`). `NULL` if unknown.                                                                                                                                                                                      |
 | flavor_text        | `TEXT`                | The extra text that is displayed when some items are looked at.                                                                                                                                                                                                                 |
 | light_color        | `INTEGER`             | The color of the light emitted by this item, if any.                                                                                                                                                                                                                            |
 | light_radius       | `INTEGER`             | The radius of the light emitted by this item, if any.                                                                                                                                                                                                                           |
 | version            | `TEXT`                | The client version this item was introduced to the game.                                                                                                                                                                                                                        |
-| client_id          | `INTEGER`             | The client id of the item.                                                                                                                                                                                                                                                      |
+| client_id          | `INTEGER`             | The client id of the item, the first integer in `itemid`. `item_client_id` has every client ID.                                                                                                                                                                                 |
+| location           | `TEXT`                | Where the item can be found, cleaned as `creature.location` is. `item_location_coordinate` has its map positions.                                                                                                                                                               |
+| trade_value_note   | `TEXT`                | What players trade this item for, the `value` as written with links and templates cleaned, like `Negotiable` or `55,000,000 - 70,000,000`. A value that cannot be cleaned so, like `1,000 {{GP}}`, drops its templates. `NULL` when it is `?`, `--` or empty.                   |
 | image              | `BLOB`                | The item’s image bytes.                                                                                                                                                                                                                                                         |
 | status             | `TEXT`                | The status of the item in game.                                                                                                                                                                                                                                                 |
 | timestamp          | `TIMESTAMP`           | ISO 8601 timestamp of the article's last edit.                                                                                                                                                                                                                                  |
@@ -364,6 +399,20 @@ that doesn't form a range.
 
 
 
+### item_client_id
+
+|  Column   |   Type    |                                     Description                                      |
+| --------- | --------- | ------------------------------------------------------------------------------------ |
+| item_id   | `INTEGER` | The id of the item this client ID belongs to.                                        |
+| client_id | `INTEGER` | A client ID of the item, a whole number in `itemid` after wiki comments are removed. |
+| position  | `INTEGER` | The ID's place in the `itemid` list, from 0.                                         |
+
+These rows ignore wiki comments, but `item.client_id` keeps its earlier reading, the first integer in the raw value,
+comments included. So when `itemid` starts with a comment holding a number, the two differ: `<!-- 7 -->644,645` gives
+`client_id` 7 and the rows 644 and 645, and `<!-- 7 -->` gives `client_id` 7 and no rows.
+
+
+
 ### item_key
 
 |   Column   |         Type          |                                    Description                                     |
@@ -380,6 +429,21 @@ that doesn't form a range.
 | version    | `TEXT`                | The client version this key was introduced to the game.                            |
 | status     | `TEXT`                | The status of the key in game.                                                     |
 | timestamp  | `TIMESTAMP`           | ISO 8601 timestamp of the article's last edit.                                     |
+
+
+
+### item_location_coordinate
+
+|  Column  |   Type    |                                         Description                                         |
+| -------- | --------- | ------------------------------------------------------------------------------------------- |
+| item_id  | `INTEGER` | The id of the item whose location has this map position.                                    |
+| x        | `INTEGER` | The x coordinate of the position.                                                           |
+| y        | `INTEGER` | The y coordinate of the position.                                                           |
+| z        | `INTEGER` | The floor of the position.                                                                  |
+| label    | `TEXT`    | The text the location shows in place of the position, like `here`. `NULL` if it shows none. |
+| position | `INTEGER` | The row's place in the order the location lists its map positions, from 0.                  |
+
+The rows are read from the item's `location` as `creature_location_coordinate` rows are from a creature's.
 
 
 
@@ -634,40 +698,41 @@ that doesn't form a range.
 
 ### spell
 
-|          Column          |         Type          |                                  Description                                  |
-| ------------------------ | --------------------- | ----------------------------------------------------------------------------- |
-| article_id               | `INTEGER` / `PRIMARY` | The id of the article containing this spell.                                  |
-| title                    | `TEXT`                | The title of the article containing the spell.                                |
-| name                     | `TEXT`                | The name of the spell.                                                        |
-| words                    | `TEXT`                | The words used to cast the spell.                                             |
-| effect                   | `TEXT`                | The effect of this spell.                                                     |
-| spell_type               | `TEXT`                | Whether the spell is `Instant` or a `Rune` spell.                             |
-| group_spell              | `TEXT`                | The cooldown group of this spell.                                             |
-| group_secondary          | `TEXT`                | The secondary cooldown group of this spell.                                   |
-| group_rune               | `TEXT`                | The cooldown group of the rune created by this spell.                         |
-| element                  | `TEXT`                | The type of damage this spell deals, if applicable.                           |
-| base_power               | `INTEGER`             | The spell's base power, if applicable.                                        |
-| level                    | `INTEGER`             | Level required to cast this spell                                             |
-| mana                     | `INTEGER`             | Mana required to cast this spell. `0` means special conditions apply.         |
-| soul                     | `INTEGER`             | Soul points required to cast this spell.                                      |
-| is_premium               | `BOOLEAN`             | Whether this spell requires premium account or not. `0` or `1`.               |
-| is_promotion             | `BOOLEAN`             | Whether this spell requires a promotion or not. `0` or `1`.                   |
-| is_wheel_spell           | `BOOLEAN`             | Whether this spell is acquired through the Wheel of Destiny.                  |
-| is_passive               | `BOOLEAN`             | Whether this spell is triggered automatically without casting.                |
-| cooldown                 | `INTEGER`             | The individual cooldown in seconds of this spell                              |
-| cooldown2                | `INTEGER`             | The spell's individual cooldown for the level 2 perk of the Wheel of Destiny. |
-| cooldown3                | `INTEGER`             | The spell's individual cooldown for the level 3 perk of the Wheel of Destiny. |
-| cooldown_group           | `INTEGER`             | The group cooldown of this spell.                                             |
-| cooldown_group_secondary | `INTEGER`             | The secondary group cooldown of this spell.                                   |
-| knight                   | `BOOLEAN`             | Whether this spell can be used by knights or not.                             |
-| sorcerer                 | `BOOLEAN`             | Whether this spell can be used by sorcerers or not.                           |
-| druid                    | `BOOLEAN`             | Whether this spell can be used by druids or not.                              |
-| paladin                  | `BOOLEAN`             | Whether this spell can be used by paladins or not.                            |
-| monk                     | `BOOLEAN`             | Whether the spell can be used by monks or not.                                |
-| image                    | `BLOB`                | The spell’s image bytes.                                                      |
-| version                  | `TEXT`                | Client version where this spell was implemented.                              |
-| status                   | `TEXT`                | The status of the spell in game.                                              |
-| timestamp                | `TIMESTAMP`           | ISO 8601 timestamp of the article's last edit.                                |
+|          Column          |         Type          |                                                   Description                                                   |
+| ------------------------ | --------------------- | --------------------------------------------------------------------------------------------------------------- |
+| article_id               | `INTEGER` / `PRIMARY` | The id of the article containing this spell.                                                                    |
+| title                    | `TEXT`                | The title of the article containing the spell.                                                                  |
+| name                     | `TEXT`                | The name of the spell.                                                                                          |
+| spell_id                 | `INTEGER`             | The ID of the spell, the first integer in the value after wiki comments are removed, `NULL` when there is none. |
+| words                    | `TEXT`                | The words used to cast the spell.                                                                               |
+| effect                   | `TEXT`                | The effect of this spell.                                                                                       |
+| spell_type               | `TEXT`                | Whether the spell is `Instant` or a `Rune` spell.                                                               |
+| group_spell              | `TEXT`                | The cooldown group of this spell.                                                                               |
+| group_secondary          | `TEXT`                | The secondary cooldown group of this spell.                                                                     |
+| group_rune               | `TEXT`                | The cooldown group of the rune created by this spell.                                                           |
+| element                  | `TEXT`                | The type of damage this spell deals, if applicable.                                                             |
+| base_power               | `INTEGER`             | The spell's base power, if applicable.                                                                          |
+| level                    | `INTEGER`             | Level required to cast this spell                                                                               |
+| mana                     | `INTEGER`             | Mana required to cast this spell. `0` means special conditions apply.                                           |
+| soul                     | `INTEGER`             | Soul points required to cast this spell.                                                                        |
+| is_premium               | `BOOLEAN`             | Whether this spell requires premium account or not. `0` or `1`.                                                 |
+| is_promotion             | `BOOLEAN`             | Whether this spell requires a promotion or not. `0` or `1`.                                                     |
+| is_wheel_spell           | `BOOLEAN`             | Whether this spell is acquired through the Wheel of Destiny.                                                    |
+| is_passive               | `BOOLEAN`             | Whether this spell is triggered automatically without casting.                                                  |
+| cooldown                 | `INTEGER`             | The individual cooldown in seconds of this spell                                                                |
+| cooldown2                | `INTEGER`             | The spell's individual cooldown for the level 2 perk of the Wheel of Destiny.                                   |
+| cooldown3                | `INTEGER`             | The spell's individual cooldown for the level 3 perk of the Wheel of Destiny.                                   |
+| cooldown_group           | `INTEGER`             | The group cooldown of this spell.                                                                               |
+| cooldown_group_secondary | `INTEGER`             | The secondary group cooldown of this spell.                                                                     |
+| knight                   | `BOOLEAN`             | Whether this spell can be used by knights or not.                                                               |
+| sorcerer                 | `BOOLEAN`             | Whether this spell can be used by sorcerers or not.                                                             |
+| druid                    | `BOOLEAN`             | Whether this spell can be used by druids or not.                                                                |
+| paladin                  | `BOOLEAN`             | Whether this spell can be used by paladins or not.                                                              |
+| monk                     | `BOOLEAN`             | Whether the spell can be used by monks or not.                                                                  |
+| image                    | `BLOB`                | The spell’s image bytes.                                                                                        |
+| version                  | `TEXT`                | Client version where this spell was implemented.                                                                |
+| status                   | `TEXT`                | The status of the spell in game.                                                                                |
+| timestamp                | `TIMESTAMP`           | ISO 8601 timestamp of the article's last edit.                                                                  |
 
 
 

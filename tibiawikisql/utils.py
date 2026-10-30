@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import datetime
+import html
 import re
 import time
 from collections import defaultdict
 from contextlib import contextmanager
+from itertools import islice
 from typing import Any, Literal, TYPE_CHECKING, overload
 
 import mwparserfromhell
@@ -24,6 +26,8 @@ the number."""
 min_max_pattern = re.compile(rf"({unsigned_number_rule})-({unsigned_number_rule})")
 """A range of two numbers without a sign, separated by a hyphen, like ``0-40`` or ``1,000-2,000``."""
 int_pattern = re.compile(r"[+-]?\d+")
+whole_number_pattern = re.compile(r"\d+")
+"""A whole number: a run of digits, without a sign or separators."""
 number_pattern = re.compile(rf"[+-]?(?:{unsigned_number_rule})")
 """A number whose thousands may be grouped with commas, like ``50,000``. Other commas end the number."""
 loot_field_separator_pattern = re.compile(r",(?!\d{3}(?!\d))")
@@ -46,6 +50,36 @@ currency_template_pattern = re.compile(r"[Tt]C3?|[Gg]P")
 non_currency_link_pattern = re.compile(r"\s*:?\s*(?:File|Image|Category)\s*:", re.IGNORECASE)
 """The target of a link that cannot name a currency: a file, an image or a category."""
 
+MAPPER_COORDS = "mapper coords"
+"""The name of the template that links a map position, in lower case with spaces."""
+
+MAX_MAP_COORDINATE = 65535
+"""The highest x or y coordinate of the game's map."""
+
+MAX_MAP_FLOOR = 15
+"""The highest floor of the game's map."""
+
+REMOVED_MAPPER_COORDS = "\x00"
+"""Marks where a Mapper Coords template without a label was removed. MediaWiki page text never holds this control
+character, and the C tokenizer also ends a text at it."""
+
+removed_mapper_coords_rules = (
+    (re.compile(r"[ \t]*\([ \t]*\x00+[ \t]*\)"), ""),
+    (re.compile(r"(^|\()[ \t]*\x00+[ \t]*", re.MULTILINE), r"\1"),
+    (re.compile(r"[ \t]*\x00+(?=[\s,.;:!?)]|\Z)"), ""),
+    (re.compile(r"\x00+"), ""),
+)
+"""How the text around a removed Mapper Coords template is tidied, in order: parentheses left empty go with the spaces
+before them; at the start of a line or after an opening parenthesis, the spaces after it go; before a space,
+punctuation or the end of the text, the spaces before it go; anywhere else only the template goes."""
+
+
+LOCATION_MARK_ATTEMPTS = 4
+"""How many placeholder marks :func:`parse_location` tries before it reads the location as plain text."""
+
+decimal_reference_pattern = re.compile(r"&#0*([0-9]{1,8})[0-9]*")
+"""A decimal HTML character reference, with its leading zeros and its digits past the eighth significant one outside
+the group. Past seven significant digits the value is above U+10FFFF, so eight are enough to decode it the same."""
 
 class Elapsed:
     """Holds the elapsed time measured by the [tibiawikisql.utils.timed][timed] context manager.
@@ -169,6 +203,236 @@ def convert_tibiawiki_position(pos: str) -> int:
         return 0
 
 
+def parse_location_coordinate(value: str) -> int | None:
+    """Convert a TibiaWiki ``major.minor`` coordinate, returning ``None`` for anything malformed.
+
+    Unlike :func:`convert_tibiawiki_position`, which falls back to 0, this rejects a non-integer part
+    or more than two parts. An absent or empty minor counts as 0.
+    """
+    parts = value.split(".")
+    if len(parts) > 2:
+        return None
+    major = parse_int(parts[0])
+    minor = parse_int(parts[1]) if len(parts) == 2 and parts[1].strip() else 0
+    if major is None or minor is None:
+        return None
+    return (major << 8) + minor
+
+
+def parse_int(value: str) -> int | None:
+    """Convert a string to an integer, returning ``None`` if it is not one."""
+    try:
+        return int(value)
+    except ValueError:
+        return None
+
+
+def is_mapper_coords(template: Template) -> bool:
+    """Check whether a template is a ``{{Mapper Coords}}``, matching its name as :func:`find_templates` does."""
+    return strip_code(template.name).lower().replace("_", " ") == MAPPER_COORDS
+
+
+def parse_mapper_coords(template: Template) -> tuple[int, int, int] | None:
+    """Read the position a ``{{Mapper Coords|x|y|z|...}}`` template points to.
+
+    ``x`` and ``y`` are TibiaWiki ``major.minor`` coordinates, read by :func:`parse_location_coordinate`, and ``z`` is
+    the floor, read by :func:`parse_int`. Named parameters such as ``text`` do not count as positions, so
+    ``{{Mapper Coords|text=here|127.234|127.59|14}}`` is read like ``{{Mapper Coords|127.234|127.59|14|text=here}}``.
+    Wiki comments in the values are ignored.
+
+    Args:
+        template: The Mapper Coords template.
+
+    Returns:
+        The ``x``, ``y`` and ``z`` of the position, or ``None`` when any of them is missing or malformed, as in
+        Warlord Ruzad's ``{{Mapper Coords|128.202,123.233,5-2|text=here}}``. A position off the game's map, with ``x``
+        or ``y`` outside 0 to :data:`MAX_MAP_COORDINATE` or ``z`` outside 0 to :data:`MAX_MAP_FLOOR`, is malformed.
+
+    """
+    values = [visible_text(str(template.get(name).value)) if template.has(name) else "" for name in ("1", "2", "3")]
+    x = parse_location_coordinate(values[0])
+    y = parse_location_coordinate(values[1])
+    z = parse_int(values[2])
+    if x is None or y is None or z is None:
+        return None
+    if not (0 <= x <= MAX_MAP_COORDINATE and 0 <= y <= MAX_MAP_COORDINATE and 0 <= z <= MAX_MAP_FLOOR):
+        return None
+    return x, y, z
+
+
+def clean_text_safely(value: str) -> str:
+    """Clean wiki text as :func:`clean_links` does, falling back to plain text where :func:`clean_links` fails.
+
+    Args:
+        value: The wiki text.
+
+    Returns:
+        :func:`clean_links` of the value whenever it can clean it, so ``{{Hover|Negotiable|ask}}`` is ``Negotiable``.
+        When it raises :class:`IndexError` or :class:`ValueError`, the two errors it is known to raise on wiki text,
+        the stripped plain text mwparserfromhell's ``strip_code`` gives instead, where links become their text and
+        templates and comments are dropped, so ``1,000 {{GP}}`` is ``1,000`` and ``{{A|x|{{B|y}}}}`` is empty.
+
+    Raises:
+        ValueError: The known limit: the value holds a zero-padded decimal HTML entity of more than 4,300 digits. Both
+            :func:`clean_links` and the fallback decode it with mwparserfromhell's ``HTMLEntity.normalize``, which
+            reads it with :class:`int` past Python's digit limit.
+
+    """
+    try:
+        return clean_links(value)
+    # IndexError: a template without parameters has no first one. ValueError: a template inside another's later
+    # parameter is gone from the text once the outer one is replaced, so it cannot be replaced in turn.
+    except (IndexError, ValueError):
+        return mwparserfromhell.parse(value).strip_code().strip()
+
+
+class _MarkCollisionError(Exception):
+    """A text about to be cleaned decodes to the placeholder mark, so the mark cannot tell its placeholders apart."""
+
+
+def _unused_private_characters(value: str) -> Generator[str, None, None]:
+    """Get the characters of Unicode's private use area that appear neither in a value nor in its HTML-decoded form.
+
+    Cleaning decodes the HTML entities in wiki text, so ``&#xE000;`` reads as the area's first character. Wherever
+    mwparserfromhell decodes an entity to a private-use character, :func:`_decode_entities` decodes it to the same one,
+    and it also decodes entities without the final semicolon.
+    """
+    taken = set(value) | set(_decode_entities(value))
+    return (chr(code) for code in range(0xE000, 0xF900) if chr(code) not in taken)
+
+
+def _decode_entities(text: str) -> str:
+    """Decode the HTML entities in a text as :func:`html.unescape` does, without its error on long decimal references.
+
+    :func:`html.unescape` reads a decimal reference with :class:`int`, which raises :class:`ValueError` past Python's
+    4,300-digit limit, so each is shortened to its first eight significant digits first, which decodes the same.
+    """
+    return html.unescape(decimal_reference_pattern.sub(r"&#\1", text))
+
+
+def parse_location(value: str) -> tuple[str, list[tuple[int, int, int, str | None]]]:
+    """Clean a location and read the positions of its ``{{Mapper Coords}}`` templates.
+
+    Each template's label is its ``text`` parameter, cleaned once, as the rest of the location is: removed templates
+    tidied as below, then :func:`clean_text_safely`. A template inside the label is cleaned the same way first, so in
+    ``text={{Mapper Coords|...|text=here}}`` the label is ``here``. A label that is empty once cleaned counts as none.
+
+    In the text, each template is replaced by its label, so ``Femor Hills ({{Mapper Coords|127.88|124.58|4|
+    text=here}})`` reads ``Femor Hills (here)``, and no coordinate is left in it. A template without a label is
+    removed. Where one is removed, the spaces before it go too when a space, punctuation or the end of the text follows,
+    so ``Mintwallin {{Mapper Coords|...}}.`` reads ``Mintwallin.``; at the start of a line or after an opening
+    parenthesis, the spaces after it go; and parentheses left with nothing in them are removed with the spaces before
+    them. Labels are put in after the rest of the text is cleaned, so each is cleaned once. A location without the
+    template reads as :func:`clean_text_safely` reads it.
+
+    To put a label in, the template is first replaced by its index between two marks. The mark is a private-use
+    character that neither the value nor its HTML-decoded form holds, so not the one ``&#xE000;`` decodes to, and that
+    no text about to be cleaned decodes to either, as when removing a template joins ``&#xE0`` and ``00;``. A mark one
+    of those texts decodes to is found only once that text is reached, so at most :data:`LOCATION_MARK_ATTEMPTS` marks
+    are tried. Only the marked indices written into a text are put back in it; any other marked text stays as it is. A
+    value that leaves no such character, such as one holding all 6,400 of them, or whose texts decode to every mark
+    tried, reads as :func:`clean_text_safely` reads it, coordinates included, and each label is its ``text`` parameter
+    cleaned on its own.
+
+    Where :func:`clean_links` cannot clean the text or a label, :func:`clean_text_safely` gives its plain text instead.
+    A label :func:`clean_links` drops from the text, as in a ``{{Hover}}``'s later parameter, still gives its row a
+    label the text does not show.
+
+    Args:
+        value: The raw location.
+
+    Returns:
+        The clean location, and the ``x``, ``y``, ``z`` and label of each template whose position
+        :func:`parse_mapper_coords` reads, in the order they are written. The label is the text the location shows in
+        the template's place, or ``None`` when it shows none. A template whose position is malformed gives no row.
+
+    Raises:
+        ValueError: The known limit, from :func:`clean_text_safely`: the location holds a zero-padded decimal HTML
+            entity of more than 4,300 digits, written whole or split by a template whose removal joins it.
+
+    """
+    # A mark a text decodes to is found only after a whole attempt, so crafted text aiming entities at successive
+    # candidates would make each of the 6,400 cost one. Real wiki text holds no private-use entities, so a few
+    # attempts are plenty, and the cap bounds the work to that many.
+    for mark in islice(_unused_private_characters(value), LOCATION_MARK_ATTEMPTS):
+        try:
+            return _parse_location_with_mark(value, mark)
+        except _MarkCollisionError:
+            continue
+    templates = mwparserfromhell.parse(value).filter_templates(matches=is_mapper_coords)
+    rows = []
+    for template in templates:
+        position = parse_mapper_coords(template)
+        if position is not None:
+            label = clean_text_safely(str(template.get("text").value)) if template.has("text") else ""
+            rows.append((*position, label or None))
+    return clean_text_safely(value), rows
+
+
+def _parse_location_with_mark(value: str, mark: str) -> tuple[str, list[tuple[int, int, int, str | None]]]:
+    """Do :func:`parse_location`'s work with a placeholder mark absent from the value.
+
+    Raises:
+        _MarkCollisionError: If a text about to be cleaned decodes to the mark.
+
+    """
+    code = mwparserfromhell.parse(value)
+    templates = code.filter_templates(matches=is_mapper_coords)
+    positions = [parse_mapper_coords(template) for template in templates]
+    placeholder = re.compile(f"{mark}[0-9]+{mark}")
+    labels: list[str | None] = [None] * len(templates)
+    expansions: dict[str, str] = {}
+
+    def clean(text: str) -> str:
+        for pattern, replacement in removed_mapper_coords_rules:
+            text = pattern.sub(replacement, text)
+        if _decode_entities(text).count(mark) != text.count(mark):
+            raise _MarkCollisionError
+        written = {match[0] for match in placeholder.finditer(text)}
+        return placeholder.sub(
+            lambda match: expansions[match[0]] if match[0] in written else match[0], clean_text_safely(text),
+        )
+
+    # Innermost first, so a template inside another's label is replaced before that label is cleaned.
+    for index in reversed(range(len(templates))):
+        template = templates[index]
+        label = (clean(str(template.get("text").value)) if template.has("text") else "") or None
+        labels[index] = label
+        if label:
+            expansions[f"{mark}{index}{mark}"] = label
+        code.replace(template, Text(f"{mark}{index}{mark}" if label else REMOVED_MAPPER_COORDS))
+    rows = [(*position, labels[index]) for index, position in enumerate(positions) if position is not None]
+    return clean(str(code)), rows
+
+
+def clean_location(value: str) -> str:
+    """Clean a location, with each ``{{Mapper Coords}}`` template's label in its place, as :func:`parse_location` does.
+
+    Args:
+        value: The raw location.
+
+    Returns:
+        The clean location.
+
+    """
+    return parse_location(value)[0]
+
+
+def parse_location_coordinates(value: str) -> list[tuple[int, int, int, str | None]]:
+    """Read the positions of the ``{{Mapper Coords}}`` templates in a location, as :func:`parse_location` does.
+
+    Args:
+        value: The raw location.
+
+    Returns:
+        The ``x``, ``y``, ``z`` and label of each template whose position :func:`parse_mapper_coords` reads, in the
+        order they are written. The label is the text :func:`clean_location` shows in the template's place, or ``None``
+        when it shows none.
+
+    """
+    return parse_location(value)[1]
+
+
 def find_template(content: str, template_name: str, partial: bool = False, recursive: bool = False) -> Template | None:
     """Find a template in a string containing wiki code.
 
@@ -212,7 +476,7 @@ def find_templates(content: str, template_name: str, partial: bool = False, recu
             yield template
 
 
-def parse_boolean(value: str, default: bool = False, invert: bool = False) -> bool:
+def parse_boolean(value: str, default: bool | None = False, invert: bool = False) -> bool | None:
     """Parse a boolean value from a string.
 
     String must contain "yes" to be considered True.
@@ -271,7 +535,7 @@ def parse_date(value: str) -> datetime.date:
     raise ValueError(msg)
 
 
-def parse_float(value: str, default: float = 0.0) -> float:
+def parse_float(value: str, default: float | None = 0.0) -> float | None:
     """From a string, parses a floating value.
 
     Args:
@@ -343,20 +607,19 @@ def parse_whole_number(value: str) -> int | None:
     return None
 
 
-def parse_client_id(value: str) -> int | None:
-    """Parse a client ID, ignoring wiki comments.
+def visible_text(value: str) -> str:
+    """Remove the wiki comments from a value, leaving the text a reader of the page sees.
 
     Each comment is replaced by a space, so digits on either side of it stay apart. As in MediaWiki, an unclosed
     ``<!--`` hides the rest of the value, even inside a tag, template or link. Inside a ``<nowiki>`` or ``<pre>``,
-    however deeply nested, ``<!--`` is text: it hides nothing, and the digits of an escaped comment count. A value that
-    is only a comment, such as ``<!-- objectID: 51952-->`` or ``<!-- 51952``, counts as absent.
+    however deeply nested, ``<!--`` is text: it hides nothing, and the digits of an escaped comment count.
 
     Args:
-        value: The raw value of a client ID field.
+        value: The raw value of a template field.
 
     Returns:
-        The first integer in the value after comments are removed, or ``None`` if there is none. In a list of IDs like
-        ``421,437,438,747``, that is the first ID.
+        The value without its comments. Markup that is not a comment is kept, and an escaped ``<!--`` gets a
+        zero-width space after its ``!``.
 
     """
     code = mwparserfromhell.parse(value)
@@ -367,7 +630,66 @@ def parse_client_id(value: str) -> int | None:
     for tag in code.filter_tags(matches=lambda tag: str(tag.tag).strip().lower() in escaping_tags):
         if code.contains(tag):
             code.replace(tag, str(tag).replace("<!--", inert_comment_start))
-    return parse_first_integer(str(code).partition("<!--")[0], None)
+    return str(code).partition("<!--")[0]
+
+
+def parse_client_id(value: str) -> int | None:
+    """Parse a client ID, ignoring wiki comments as :func:`visible_text` does.
+
+    A value that is only a comment, such as ``<!-- objectID: 51952-->`` or ``<!-- 51952``, counts as absent.
+
+    Args:
+        value: The raw value of a client ID field.
+
+    Returns:
+        The first integer in the value after comments are removed, or ``None`` if there is none. In a list of IDs like
+        ``421,437,438,747``, that is the first ID.
+
+    """
+    return parse_first_integer(visible_text(value), None)
+
+
+def parse_client_ids(value: str) -> list[int]:
+    """Parse every client ID in a list of IDs, ignoring wiki comments as :func:`visible_text` does.
+
+    Args:
+        value: The raw value of a client ID field, like ``629,630,631``.
+
+    Returns:
+        Every whole number in the value after comments are removed, in listed order. IDs may be separated by commas,
+        spaces or line breaks, and a sign is not read. The list is empty when there is no whole number, as for ``?``.
+
+    """
+    return [int(number) for number in whole_number_pattern.findall(visible_text(value))]
+
+
+def parse_known_boolean(value: str) -> bool | None:
+    """Parse a yes or no field, such as whether a creature is pushable, from the visible text of its value.
+
+    Args:
+        value: The raw value of the field.
+
+    Returns:
+        ``True`` for ``yes``, ``False`` for ``no``, or ``None`` for anything else, such as ``?`` or ``no?``. Wiki
+        comments are ignored, so ``yes <!-- note -->`` is ``True``.
+
+    """
+    return parse_boolean(visible_text(value), None)
+
+
+def parse_known_text(value: str) -> str | None:
+    """Parse a text field, such as an item's slot, from the visible text of its value, in lower case.
+
+    Args:
+        value: The raw value of the field.
+
+    Returns:
+        The text outside wiki comments, stripped and lower-cased, or ``None`` if it is empty or holds a ``?``, as for
+        ``?`` or ``Melee?``.
+
+    """
+    text = clean_question_mark(visible_text(value).strip())
+    return text.lower() if text else None
 
 
 def parse_currency(value: str) -> str | None:

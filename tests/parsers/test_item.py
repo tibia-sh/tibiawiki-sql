@@ -1,9 +1,12 @@
 import datetime
+import os
 import unittest
 
-from tests import load_resource
+from tests import RESOURCES_PATH, load_resource
 from tibiawikisql.api import Article
+from tibiawikisql.models import Item
 from tibiawikisql.parsers import ItemParser
+from tibiawikisql.parsers.item import parse_trade_value_note
 
 
 class TestItemParserRestores(unittest.TestCase):
@@ -260,3 +263,277 @@ class TestItemParserBuyCurrency(unittest.TestCase):
 
         self.assertIsNone(item.value_buy)
         self.assertIsNone(item.value_buy_currency)
+
+
+class TestItemParserSlotAndUsable(unittest.TestCase):
+    def _parse_content(self, title: str, content: str):
+        article = Article(
+            article_id=1,
+            title=title,
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=content,
+        )
+
+        return ItemParser.from_article(article)
+
+    def _edited(self, old: str, new: str):
+        content = load_resource("content_item_amethyst_necklace.txt")
+        self.assertIn(old, content)
+        return self._parse_content("Amethyst Necklace", content.replace(old, new))
+
+    def test_amethyst_necklace(self):
+        item = self._parse_content("Amethyst Necklace", load_resource("content_item_amethyst_necklace.txt"))
+
+        self.assertEqual("neck", item.slot)
+        self.assertIs(False, item.is_usable)
+
+    def test_blade_of_mayhem(self):
+        item = self._parse_content("Blade of Mayhem", load_resource("content_item_blade_of_mayhem.txt"))
+
+        self.assertEqual("weapon hand", item.slot)
+        self.assertIs(True, item.is_usable)
+
+    def test_slot_unknown(self):
+        item = self._edited("| slot          = Neck", "| slot          = ?")
+
+        self.assertIsNone(item.slot)
+
+    def test_slot_uncertain(self):
+        item = self._edited("| slot          = Neck", "| slot          = Neck?")
+
+        self.assertIsNone(item.slot)
+
+    def test_slot_empty(self):
+        item = self._edited("| slot          = Neck", "| slot          =")
+
+        self.assertIsNone(item.slot)
+
+    def test_slot_absent(self):
+        item = self._edited("| slot          = Neck\n", "")
+
+        self.assertIsNone(item.slot)
+
+    def test_slot_ignores_a_trailing_comment(self):
+        item = self._edited("| slot          = Neck", "| slot          = Neck <!-- Ring? -->")
+
+        self.assertEqual("neck", item.slot)
+
+    def test_slot_only_in_a_comment(self):
+        item = self._edited("| slot          = Neck", "| slot          = <!-- Neck -->")
+
+        self.assertIsNone(item.slot)
+
+    def test_usable_unknown(self):
+        item = self._edited("| usable        = no", "| usable        = ?")
+
+        self.assertIsNone(item.is_usable)
+
+    def test_usable_absent(self):
+        item = self._edited("| usable        = no\n", "")
+
+        self.assertIsNone(item.is_usable)
+
+    def test_usable_typo(self):
+        item = self._edited("| usable        = no", "| usable        = noo")
+
+        self.assertIsNone(item.is_usable)
+
+    def test_usable_ignores_a_trailing_comment(self):
+        item = self._edited("| usable        = no", "| usable        = yes <!-- x -->")
+
+        self.assertIs(True, item.is_usable)
+
+
+class TestItemParserClientIds(unittest.TestCase):
+    def _parse_content(self, title: str, content: str):
+        article = Article(
+            article_id=1,
+            title=title,
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=content,
+        )
+
+        return ItemParser.from_article(article)
+
+    def _edited(self, old: str, new: str):
+        content = load_resource("content_item_amethyst_necklace.txt")
+        self.assertIn(old, content)
+        return self._parse_content("Amethyst Necklace", content.replace(old, new))
+
+    def test_shallow_water_keeps_every_id(self):
+        item = self._parse_content("Shallow Water", load_resource("content_item_shallow_water.txt"))
+
+        self.assertEqual([629, 630, 631, 632, 633, 634], item.client_ids)
+        self.assertEqual(item.client_id, item.client_ids[0])
+
+    def test_single_id(self):
+        item = self._parse_content("Amethyst Necklace", load_resource("content_item_amethyst_necklace.txt"))
+
+        self.assertEqual([35609], item.client_ids)
+        self.assertEqual(35609, item.client_id)
+
+    def test_ids_separated_by_comma_and_space(self):
+        item = self._parse_content("Football", load_resource("content_item_no_attrib.txt"))
+
+        self.assertEqual([2990, 9104], item.client_ids)
+
+    def test_absent(self):
+        item = self._edited("| itemid        = 35609\n", "")
+
+        self.assertEqual([], item.client_ids)
+
+    def test_unknown(self):
+        item = self._edited("| itemid        = 35609", "| itemid        = ?")
+
+        self.assertEqual([], item.client_ids)
+
+    def test_only_in_a_comment(self):
+        item = self._edited("| itemid        = 35609", "| itemid        = <!-- 35609 -->")
+
+        self.assertEqual([], item.client_ids)
+
+    def test_ignores_a_trailing_comment(self):
+        item = self._edited("| itemid        = 35609", "| itemid        = 35609 <!-- 35610 -->")
+
+        self.assertEqual([35609], item.client_ids)
+
+    def test_client_id_reads_a_leading_comment_the_rows_ignore(self):
+        item = self._edited("| itemid        = 35609", "| itemid        = <!-- 7 -->644,645")
+
+        self.assertEqual(7, item.client_id)
+        self.assertEqual([644, 645], item.client_ids)
+
+    def test_client_id_reads_a_comment_only_value_with_no_rows(self):
+        item = self._edited("| itemid        = 35609", "| itemid        = <!-- 7 -->")
+
+        self.assertEqual(7, item.client_id)
+        self.assertEqual([], item.client_ids)
+
+    def _item_fixtures(self) -> list[str]:
+        resources = sorted(
+            name for name in os.listdir(RESOURCES_PATH)
+            if name.startswith("content_item") and "{{Infobox Object" in load_resource(name)
+        )
+        self.assertGreaterEqual(len(resources), 19)
+        return resources
+
+    def test_every_item_fixture_has_a_client_id(self):
+        for resource in self._item_fixtures():
+            with self.subTest(resource=resource):
+                item = self._parse_content(resource, load_resource(resource))
+
+                self.assertTrue(item.client_ids)
+
+    def test_first_id_matches_client_id_in_every_item_fixture(self):
+        for resource in self._item_fixtures():
+            with self.subTest(resource=resource):
+                item = self._parse_content(resource, load_resource(resource))
+
+                if item.client_ids:
+                    self.assertEqual(item.client_id, item.client_ids[0])
+
+
+class TestItemParserLocation(unittest.TestCase):
+    def _parse(self, title: str, resource: str) -> Item:
+        article = Article(
+            article_id=1,
+            title=title,
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource(resource),
+        )
+        return ItemParser.from_article(article)
+
+    def test_sneeze_blossom_location_and_coordinates(self):
+        item = self._parse("Sneeze Blossom", "content_item_sneeze_blossom.txt")
+
+        self.assertEqual("An example can be found at spot.", item.location)
+        self.assertEqual([(32709, 31842, 7, "spot")], [(c.x, c.y, c.z, c.label) for c in item.location_coordinates])
+
+    def test_location_without_mapper_coords(self):
+        item = self._parse("Shallow Water", "content_item_shallow_water.txt")
+
+        self.assertEqual("All around the land of Tibia, rivers and water falls.", item.location)
+        self.assertEqual([], item.location_coordinates)
+
+    def test_no_location(self):
+        item = self._parse("Amethyst Necklace", "content_item_amethyst_necklace.txt")
+
+        self.assertIsNone(item.location)
+        self.assertEqual([], item.location_coordinates)
+
+
+class TestItemParserTradeValueNote(unittest.TestCase):
+    def _parse(self, title: str, content: str) -> Item:
+        article = Article(
+            article_id=1,
+            title=title,
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=content,
+        )
+        return ItemParser.from_article(article)
+
+    def _edited(self, value: str) -> Item:
+        content = load_resource("content_item_amethyst_necklace.txt")
+        old = "| value         = Negotiable\n"
+        self.assertIn(old, content)
+        return self._parse("Amethyst Necklace", content.replace(old, value))
+
+    def test_fixtures_keep_the_note_as_written(self):
+        expected = {
+            "content_item_amazon_armor.txt": "55,000,000 - 70,000,000",
+            "content_item_amethyst_necklace.txt": "Negotiable",
+            "content_item_damage_reflection.txt": "Negotiable gp",
+            "content_item.txt": "4,000 - 8,000",
+            "content_item_store.txt": "< 50",
+            "content_item_adventurers_stone.txt": "0",
+            "content_item_potion_superior_mana_potion.txt": None,
+            "content_item_shallow_water.txt": None,
+        }
+        for resource, note in expected.items():
+            with self.subTest(resource=resource):
+                self.assertEqual(note, self._parse(resource, load_resource(resource)).trade_value_note)
+
+    def test_unknown(self):
+        self.assertIsNone(self._edited("| value         = ?\n").trade_value_note)
+        self.assertIsNone(self._edited("| value         = --\n").trade_value_note)
+        self.assertIsNone(self._edited("| value         = ? <!-- unknown -->\n").trade_value_note)
+        self.assertIsNone(self._edited("| value         =  \n").trade_value_note)
+
+    def test_absent(self):
+        self.assertIsNone(self._edited("").trade_value_note)
+
+    def test_cleans_links_and_templates(self):
+        self.assertEqual(
+            "About 5,000",
+            self._edited("| value         = About [[Gold Coin|5,000]] {{GP}} <!-- x -->\n").trade_value_note,
+        )
+
+    def test_keeps_the_clean_links_reading(self):
+        # The reading of 39c17a7: a template with parameters gives its first one, and <br> a line break.
+        self.assertEqual("Negotiable", parse_trade_value_note("{{Hover|Negotiable|ask}}"))
+        self.assertEqual("Negotiable", self._edited("| value         = {{Hover|Negotiable|ask}}\n").trade_value_note)
+        self.assertEqual("Negotiable\n(~5k)", parse_trade_value_note("Negotiable<br>(~5k)"))
+
+    def test_keeps_the_note_past_a_template_without_parameters(self):
+        self.assertEqual("1,000", parse_trade_value_note("1,000 {{GP}}"))
+        self.assertEqual("1,000", self._edited("| value         = 1,000 {{GP}}\n").trade_value_note)
+
+    def test_nested_templates_do_not_raise(self):
+        self.assertIsNone(parse_trade_value_note("{{A|x|{{B|y}}}}"))
+        self.assertEqual("5,000", parse_trade_value_note("5,000 {{A|x|{{B|y}}}}"))
+        self.assertEqual("5,000", self._edited("| value         = 5,000 {{A|x|{{B|y}}}}\n").trade_value_note)
+        self.assertIsNone(self._edited("| value         = {{A|x|{{B|y}}}}\n").trade_value_note)
+
+    def test_only_a_template(self):
+        self.assertIsNone(parse_trade_value_note("{{GP}}"))
+        self.assertIsNone(self._edited("| value         = {{GP}}\n").trade_value_note)
+
+    def test_parse_trade_value_note(self):
+        self.assertEqual("Negotiable", parse_trade_value_note(" Negotiable "))
+        self.assertEqual("55,000,000 - 70,000,000", parse_trade_value_note("55,000,000 - 70,000,000"))
+        self.assertEqual("Negotiable?", parse_trade_value_note("Negotiable?"))
+        self.assertEqual("-", parse_trade_value_note("-"))
+        self.assertIsNone(parse_trade_value_note("?"))
+        self.assertIsNone(parse_trade_value_note("--"))
+        self.assertIsNone(parse_trade_value_note(""))
+        self.assertIsNone(parse_trade_value_note("<!-- 5,000 -->"))

@@ -2,6 +2,7 @@
 """Contains all the models representing TibiaWiki articles."""
 
 from tibiawikisql.models.achievement import Achievement
+from tibiawikisql.models.base import LocationCoordinate
 from tibiawikisql.models.charm import Charm
 from tibiawikisql.models.creature import Creature, CreatureAbility, CreatureDrop, CreatureMaxDamage
 from tibiawikisql.models.house import House

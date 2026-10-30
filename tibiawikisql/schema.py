@@ -71,6 +71,8 @@ class CreatureTable(Table):
     paralysable = Column(Boolean)
     sees_invisible = Column(Integer)
     spawn_type = Column(Text)
+    attack_type = Column(Text)
+    uses_spells = Column(Boolean)
     is_boss = Column(Integer)
     cooldown = Column(Real)
     modifier_physical = Column(Integer)
@@ -87,6 +89,7 @@ class CreatureTable(Table):
     walks_around = Column(Text)
     location = Column(Text)
     race_id = Column(Integer)
+    loot_statistics_kills = Column(Integer)
     version = Column(Text, index=True)
     image = Column(Blob)
     status = Column(Text, default="active", nullable=False)
@@ -99,6 +102,8 @@ class CreatureAbilityTable(Table, table_name="creature_ability"):
     name = Column(Text, nullable=False)
     effect = Column(Text)
     element = Column(Text)
+    condition = Column(Text)
+    condition_value = Column(Integer)
 
 
 class CreatureMaxDamageTable(Table, table_name="creature_max_damage"):
@@ -124,6 +129,16 @@ class CreatureSoundTable(Table, table_name="creature_sound"):
     content = Column(Text, nullable=False)
 
 
+class CreatureLocationCoordinateTable(Table, table_name="creature_location_coordinate"):
+    """Contains the map positions in a creature's location, in the order the wiki lists them."""
+    creature_id = Column(ForeignKey(Integer, table="creature", column="article_id"), index=True)
+    x = Column(Integer, nullable=False)
+    y = Column(Integer, nullable=False)
+    z = Column(Integer, nullable=False)
+    label = Column(Text)
+    position = Column(Integer, nullable=False)
+
+
 class ItemTable(Table):
     """Contains information about items and objects."""
     article_id = Column(Integer, primary_key=True)
@@ -136,6 +151,7 @@ class ItemTable(Table):
     is_stackable = Column(Boolean, default=False)
     is_pickupable = Column(Boolean, default=True)
     is_immobile = Column(Boolean, default=True)
+    is_usable = Column(Boolean)
     value_sell = Column(Integer)
     value_buy = Column(Integer)
     value_buy_currency = Column(Text)
@@ -143,11 +159,14 @@ class ItemTable(Table):
     item_class = Column(Text, index=True)
     item_type = Column(Text, index=True)
     type_secondary = Column(Text, index=True)
+    slot = Column(Text)
     flavor_text = Column(Text)
     light_color = Column(Integer)
     light_radius = Column(Integer)
     version = Column(Text, index=True)
     client_id = Column(Integer)
+    location = Column(Text)
+    trade_value_note = Column(Text)
     image = Column(Blob)
     status = Column(Text, default="active", nullable=False)
     timestamp = Column(Timestamp, nullable=False)
@@ -157,6 +176,23 @@ class ItemSoundTable(Table, table_name="item_sound"):
     """Contains the "sounds" an item can do when used."""
     item_id = Column(ForeignKey(Integer, table="item", column="article_id"), index=True)
     content = Column(Text, nullable=False)
+
+
+class ItemClientIdTable(Table, table_name="item_client_id"):
+    """Contains every client ID of an item, in the order the wiki lists them."""
+    item_id = Column(ForeignKey(Integer, table="item", column="article_id"), index=True)
+    client_id = Column(Integer, nullable=False)
+    position = Column(Integer, nullable=False)
+
+
+class ItemLocationCoordinateTable(Table, table_name="item_location_coordinate"):
+    """Contains the map positions in an item's location, in the order the wiki lists them."""
+    item_id = Column(ForeignKey(Integer, table="item", column="article_id"), index=True)
+    x = Column(Integer, nullable=False)
+    y = Column(Integer, nullable=False)
+    z = Column(Integer, nullable=False)
+    label = Column(Text)
+    position = Column(Integer, nullable=False)
 
 
 class ItemStoreOfferTable(Table, table_name="item_store_offer"):
@@ -183,6 +219,7 @@ class CreatureDropTable(Table, table_name="creature_drop"):
     chance = Column(Real)
     min = Column(Integer, nullable=False)
     max = Column(Integer, nullable=False)
+    rarity = Column(Text)
 
     @classmethod
     def get_by_creature_id(cls, conn: Connection | Cursor, creature_id: int):
@@ -196,6 +233,7 @@ class CreatureDropTable(Table, table_name="creature_drop"):
                 this.min,
                 this.max,
                 this.chance,
+                this.rarity,
             )
             .join(item).on(this.item_id == item.article_id)
         )
@@ -213,6 +251,7 @@ class CreatureDropTable(Table, table_name="creature_drop"):
                 this.min,
                 this.max,
                 this.chance,
+                this.rarity,
             )
             .join(creature).on(this.creature_id == creature.article_id)
         )
@@ -338,6 +377,7 @@ class SpellTable(Table):
     article_id = Column(Integer, primary_key=True)
     title = Column(Text, unique=True)
     name = Column(Text, no_case=True, index=True)
+    spell_id = Column(Integer)
     words = Column(Text, index=True)
     effect = Column(Text)
     spell_type = Column(Text, index=True)

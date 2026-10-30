@@ -11,6 +11,8 @@ class Spell(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=Spell
 
     name: str
     """The name of the spell."""
+    spell_id: int | None = Field(None)
+    """The spell's ID. ``None`` if unknown."""
     words: str | None = Field(None)
     """The spell's invocation words."""
     effect: str | None = Field(None)

@@ -2,13 +2,21 @@
 import unittest
 
 import datetime
+from unittest import mock
+
+import mwparserfromhell
+from mwparserfromhell.nodes import Template
 
 import tibiawikisql
 from tests import load_resource
-from tibiawikisql.utils import (clean_links, client_color_to_rgb, parse_boolean, parse_client_id, parse_currency,
+from tibiawikisql import utils
+from tibiawikisql.utils import (clean_links, clean_location, clean_text_safely, client_color_to_rgb, parse_boolean,
+                                parse_client_id, parse_client_ids, parse_currency, parse_int, parse_location,
+                                parse_location_coordinate, parse_location_coordinates, parse_mapper_coords,
                                 parse_first_integer, parse_float, parse_integer,
                                 parse_date, parse_loot_statistics, parse_min_max, parse_sounds,
-                                parse_weapon_proficiency_name, parse_weapon_proficiency_tables)
+                                parse_known_boolean, parse_known_text, parse_weapon_proficiency_name,
+                                parse_weapon_proficiency_tables, visible_text)
 
 
 class TestUtils(unittest.TestCase):
@@ -78,6 +86,32 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(0, parse_first_integer("--"))
         self.assertIsNone(parse_first_integer("--", None))
 
+    def test_visible_text(self):
+        self.assertEqual("35  7", visible_text("35<!-- note --> 7"))
+        self.assertEqual("\n \n", visible_text("\n<!--objectID: 51192-->\n"))
+        self.assertEqual("35 ", visible_text("35 <!-- 7"))
+        self.assertEqual("--", visible_text("--"))
+
+    def test_parse_known_boolean(self):
+        self.assertIs(True, parse_known_boolean("yes"))
+        self.assertIs(True, parse_known_boolean(" Yes "))
+        self.assertIs(False, parse_known_boolean("no"))
+        self.assertIs(True, parse_known_boolean("yes <!-- note -->"))
+        self.assertIsNone(parse_known_boolean("?"))
+        self.assertIsNone(parse_known_boolean("no?"))
+        self.assertIsNone(parse_known_boolean(""))
+        self.assertIsNone(parse_known_boolean("<!-- yes -->"))
+
+    def test_parse_known_text(self):
+        self.assertEqual("weapon hand", parse_known_text("Weapon Hand"))
+        self.assertEqual("melee", parse_known_text(" Melee <!-- note -->"))
+        self.assertIsNone(parse_known_text("?"))
+        self.assertIsNone(parse_known_text("Melee?"))
+        self.assertIsNone(parse_known_text(""))
+        self.assertIsNone(parse_known_text(" "))
+        self.assertIsNone(parse_known_text("<!-- Melee -->"))
+        self.assertIsNone(parse_known_text("<!-- Melee"))
+
     def test_parse_client_id(self):
         self.assertEqual(35, parse_client_id("35"))
         self.assertEqual(35, parse_client_id(" 35 <!-- note -->"))
@@ -106,6 +140,19 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(35, parse_client_id('<pre title="<nowiki>x</nowiki>">35</pre>'))
         self.assertIsNone(parse_client_id("abc"))
         self.assertIsNone(parse_client_id(""))
+
+    def test_parse_client_ids(self):
+        self.assertEqual([629, 630, 631, 632, 633, 634], parse_client_ids("629,630,631,632,633,634"))
+        self.assertEqual([32759, 32760], parse_client_ids(" 32759, 32760"))
+        self.assertEqual([35], parse_client_ids("35"))
+        self.assertEqual([35, 36, 37], parse_client_ids("35<br>36<br />37"))
+        self.assertEqual([35, 36], parse_client_ids("35 36"))
+        self.assertEqual([35, 7], parse_client_ids("35<!-- note -->7"))
+        self.assertEqual([644, 645], parse_client_ids("<!-- 7 -->644, <!-- 8 -->645"))
+        self.assertEqual([35], parse_client_ids("35 <!-- 36"))
+        self.assertEqual([], parse_client_ids("<!-- objectID: 51952-->"))
+        self.assertEqual([], parse_client_ids("?"))
+        self.assertEqual([], parse_client_ids(""))
 
     def test_parse_date_ignores_comma_separated_time(self):
         self.assertEqual(datetime.date(2026, 1, 27), parse_date("January 27, 2026, 16:00"))
@@ -294,6 +341,284 @@ class TestUtils(unittest.TestCase):
         self.assertIn("Sanguine 1H Axe", tables)
         self.assertIn(1, tables["Sanguine 1H Axe"])
         self.assertEqual("+1 Axe Fighting", tables["Sanguine 1H Axe"][1][0]["effect"])
+
+    def test_parse_location_coordinate(self):
+        self.assertEqual(31754, parse_location_coordinate("124.10"))
+        self.assertEqual(32000, parse_location_coordinate("125"))
+        self.assertEqual(32000, parse_location_coordinate("125."))
+        self.assertEqual(32000, parse_location_coordinate(" 125 . "))
+        self.assertIsNone(parse_location_coordinate("125.1.2"))
+        self.assertIsNone(parse_location_coordinate("128.202,123.233,5-2"))
+        self.assertIsNone(parse_location_coordinate("abc"))
+        self.assertIsNone(parse_location_coordinate("125.abc"))
+        self.assertIsNone(parse_location_coordinate(""))
+
+    def test_parse_int(self):
+        self.assertEqual(7, parse_int("7"))
+        self.assertEqual(7, parse_int(" 7 "))
+        self.assertEqual(-1, parse_int("-1"))
+        self.assertIsNone(parse_int(""))
+        self.assertIsNone(parse_int("7a"))
+        self.assertIsNone(parse_int("1,000"))
+
+    def _mapper_coords(self, wikitext: str) -> Template:
+        return mwparserfromhell.parse(wikitext).filter_templates()[0]
+
+    def test_parse_mapper_coords(self):
+        self.assertEqual(
+            ((127 << 8) + 88, (124 << 8) + 58, 4),
+            parse_mapper_coords(self._mapper_coords("{{Mapper Coords|127.88|124.58|4|4|text=here}}")),
+        )
+
+    def test_parse_mapper_coords_named_text_first(self):
+        template = self._mapper_coords("{{Mapper Coords|text=here|127.234|127.59|14|2|1|0.50.5}}")
+
+        self.assertEqual(((127 << 8) + 234, (127 << 8) + 59, 14), parse_mapper_coords(template))
+
+    def test_parse_mapper_coords_malformed(self):
+        # Warlord Ruzad writes the whole set in one parameter.
+        self.assertIsNone(parse_mapper_coords(self._mapper_coords("{{Mapper Coords|128.202,123.233,5-2|text=here}}")))
+        self.assertIsNone(parse_mapper_coords(self._mapper_coords("{{Mapper Coords|127.88|124.58}}")))
+        self.assertIsNone(parse_mapper_coords(self._mapper_coords("{{Mapper Coords|127.88|124.58|?}}")))
+        self.assertIsNone(parse_mapper_coords(self._mapper_coords("{{Mapper Coords|127.88|abc|7}}")))
+        self.assertIsNone(parse_mapper_coords(self._mapper_coords("{{Mapper Coords}}")))
+
+    def test_parse_mapper_coords_bounds(self):
+        # The game's map: x and y from 0 to 65535, floors from 0 to 15.
+        self.assertEqual((0, 65535, 0), parse_mapper_coords(self._mapper_coords("{{Mapper Coords|0.0|255.255|0}}")))
+        self.assertEqual((32000, 32000, 15), parse_mapper_coords(self._mapper_coords("{{Mapper Coords|125|125|15}}")))
+        for template in (
+            "{{Mapper Coords|" + "9" * 30 + ".1|124.58|7}}",
+            "{{Mapper Coords|127.88|" + "9" * 5000 + "|7}}",
+            "{{Mapper Coords|256.0|124.58|7}}",
+            "{{Mapper Coords|-1.0|124.58|7}}",
+            "{{Mapper Coords|127.88|-1.58|7}}",
+            "{{Mapper Coords|127.88|124.58|16}}",
+            "{{Mapper Coords|127.88|124.58|-1}}",
+            "{{Mapper Coords|127.88|124.58|99999999999999999999}}",
+        ):
+            with self.subTest(template=template):
+                self.assertIsNone(parse_mapper_coords(self._mapper_coords(template)))
+
+    def test_parse_mapper_coords_ignores_comments(self):
+        template = self._mapper_coords("{{Mapper Coords|127.88<!-- x -->|124.58|7 <!-- floor -->}}")
+
+        self.assertEqual(((127 << 8) + 88, (124 << 8) + 58, 7), parse_mapper_coords(template))
+
+    def test_clean_location_uses_labels(self):
+        self.assertEqual(
+            "Femor Hills (here), cultist cave in Liberty Bay (here), Drefia",
+            clean_location(
+                "[[Femor Hills]] ({{Mapper Coords|127.88|124.58|4|4|text=here}}), cultist cave in [[Liberty Bay]] "
+                "({{Mapper Coords|126.192|127.255|7|2|text=here}}), [[Drefia]]",
+            ),
+        )
+        self.assertEqual(
+            "in front of the mirror, exactly here.",
+            clean_location("in front of the mirror, {{Mapper Coords|128.204|126.162|15|8|text= exactly here }}."),
+        )
+        self.assertEqual(
+            "Orc Fortress, here.",
+            clean_location("[[Orc Fortress]], {{Mapper Coords|128.202,123.233,5-2|text=here}}."),
+        )
+        self.assertEqual("the Fortress here", clean_location("the {{Mapper Coords|1.1|1.1|7|text=[[Fortress]]}} here"))
+
+    def test_clean_location_matches_template_name_like_find_templates(self):
+        self.assertEqual("at here.", clean_location("at {{mapper_coords|127.88|124.58|4|text=here}}."))
+        self.assertEqual("at here.", clean_location("at {{ Mapper Coords |127.88|124.58|4|text=here}}."))
+
+    def test_clean_location_removes_unlabelled(self):
+        self.assertEqual("Mintwallin.", clean_location("[[Mintwallin]] {{Mapper Coords|126.167|125.95|15}}."))
+        self.assertEqual("Mintwallin", clean_location("[[Mintwallin]] {{Mapper Coords|126.167|125.95|15}}"))
+        self.assertEqual("Mintwallin.", clean_location("[[Mintwallin]] {{Mapper Coords|126.167|125.95|15|text=}}."))
+        self.assertEqual(
+            "single spawn, double spawn",
+            clean_location("single spawn {{Mapper Coords|127.220|127.89|14}}, double spawn"),
+        )
+        self.assertEqual(
+            "Tyrsung, Okolnir and Helheim.",
+            clean_location(
+                "[[Tyrsung]] ({{Mapper Coords|126.76|121.254|7}}), [[Okolnir]] ( {{Mapper Coords|125.224|122.150|7}} ) "
+                "and [[Helheim]].",
+            ),
+        )
+        self.assertEqual(
+            "in a cave that is north", clean_location("in a cave {{Mapper Coords|1.1|1.1|7}} that is north"),
+        )
+        self.assertEqual("north of the town", clean_location("{{Mapper Coords|1.1|1.1|7}} north of the town"))
+        self.assertEqual(
+            "Folda.\nnorth",
+            clean_location("[[Folda]] {{Mapper Coords|1.1|1.1|7}}.\n{{Mapper Coords|1.1|1.1|7}} north"),
+        )
+        self.assertEqual("Folda.", clean_location("[[Folda]] {{Mapper Coords|1.1|1.1|7}} {{Mapper Coords|1.2|1.2|7}}."))
+        self.assertEqual(
+            "Folda (and here)",
+            clean_location("[[Folda]] ({{Mapper Coords|1.1|1.1|7}} and {{Mapper Coords|1.2|1.2|7|text=here}})"),
+        )
+
+    def test_clean_location_replaces_a_template_inside_a_label(self):
+        value = "[[Femor Hills]] ({{Mapper Coords|1.1|1.1|7|text={{Mapper Coords|1.2|1.2|7|text=here}}}})"
+        self.assertEqual("Femor Hills (here)", clean_location(value))
+        self.assertEqual([(257, 257, 7, "here"), (258, 258, 7, "here")], parse_location_coordinates(value))
+        value = "the {{Mapper Coords|1.1|1.1|7|text=[[Fortress|{{Mapper Coords|1.2|1.2|7|text=Fortress}}]]}}"
+        self.assertEqual("the Fortress", clean_location(value))
+        self.assertEqual([(257, 257, 7, "Fortress"), (258, 258, 7, "Fortress")], parse_location_coordinates(value))
+        value = "at {{Mapper Coords|1.1|1.1|7|text=({{Mapper Coords|1.2|1.2|7}})}}."
+        self.assertEqual("at.", clean_location(value))
+        self.assertEqual([(257, 257, 7, None), (258, 258, 7, None)], parse_location_coordinates(value))
+
+    def test_clean_text_safely(self):
+        for value in ("[[Holy Damage]]", "{{Hover|Negotiable|ask}}", "Negotiable<br>(~5k)", "Hello <!-- world -->", ""):
+            with self.subTest(value=value):
+                self.assertEqual(clean_links(value), clean_text_safely(value))
+        self.assertEqual("1,000", clean_text_safely("1,000 {{GP}}"))
+        self.assertEqual("5,000", clean_text_safely("5,000 {{A|x|{{B|y}}}}"))
+        self.assertEqual("", clean_text_safely("{{Hover|here|reached via {{Item|Rope}}}}"))
+
+    def test_location_labels_are_cleaned_once(self):
+        for value, text, label in (
+            ("at {{Mapper Coords|127.88|124.58|4|text=<nowiki>{{GP}}</nowiki>}}.", "at {{GP}}.", "{{GP}}"),
+            ("at {{Mapper Coords|127.88|124.58|4|text=&amp;lt;b&amp;gt;}}.", "at &lt;b&gt;.", "&lt;b&gt;"),
+        ):
+            with self.subTest(value=value):
+                self.assertEqual(text, clean_location(value))
+                self.assertEqual([(32600, 31802, 4, label)], parse_location_coordinates(value))
+
+    def test_location_that_clean_links_cannot_read(self):
+        value = (
+            "[[Femor Hills]] ({{Mapper Coords|127.88|124.58|4|4|text={{Hover|here|reached via {{Item|Rope}}}}}}), "
+            "[[Thais]] {{Hover|north|x {{Item|Rope}}}}, {{Mapper Coords|126.192|127.255|7|2|text=here}}"
+        )
+
+        self.assertEqual("Femor Hills, Thais , here", clean_location(value))
+        self.assertEqual([(32600, 31802, 4, None), (32448, 32767, 7, "here")], parse_location_coordinates(value))
+
+    def test_location_keeps_decoded_private_use_text(self):
+        mark = "\ue000"
+        removed = "&#xE0({{Mapper Coords|1.1|1.1|7}})00;"
+        for value, rows in (
+            ("a &#xE000;3&#xE000; b", []),
+            ("a &#57344;3&#57344; b", []),
+            ("a &#xe000;3&#xe000; b", []),
+            (f"a {removed}3{removed} b", [(257, 257, 7, None), (257, 257, 7, None)]),
+        ):
+            with self.subTest(value=value):
+                self.assertEqual((f"a {mark}3{mark} b", rows), parse_location(value))
+
+    def test_location_label_goes_only_where_its_template_was(self):
+        mark = "\ue000"
+        here = "{{Mapper Coords|1.2|1.2|7|text=here}}"
+        removed = "&#xE0({{Mapper Coords|1.1|1.1|7}})00;"
+        for value, text, rows in (
+            (f"a &#xE000;0&#xE000; {here}", f"a {mark}0{mark} here", [(258, 258, 7, "here")]),
+            (f"a &#57344;0&#57344; {here}", f"a {mark}0{mark} here", [(258, 258, 7, "here")]),
+            (
+                f"a {removed}2{removed} {here}",
+                f"a {mark}2{mark} here",
+                [(257, 257, 7, None), (257, 257, 7, None), (258, 258, 7, "here")],
+            ),
+            (
+                f"{{{{Mapper Coords|1.3|1.3|7|text=a {removed}3{removed}}}}} {here}",
+                f"a {mark}3{mark} here",
+                [(259, 259, 7, f"a {mark}3{mark}"), (257, 257, 7, None), (257, 257, 7, None), (258, 258, 7, "here")],
+            ),
+        ):
+            with self.subTest(value=value):
+                self.assertEqual((text, rows), parse_location(value))
+                self.assertEqual(1, parse_location(value)[0].count("here"))
+
+    def test_location_puts_labels_back_only_where_written(self):
+        # With the decoding check blinded, a decoded mark reaches the expansion, which must leave it as written.
+        mark = "\ue000"
+        here = "{{Mapper Coords|1.2|1.2|7|text=here}}"
+        with mock.patch.object(utils.html, "unescape", lambda text: text):
+            self.assertEqual((f"a {mark}3{mark} b", []), parse_location("a &#xE000;3&#xE000; b"))
+            self.assertEqual(
+                (f"a {mark}1{mark} here", [(259, 259, 7, f"a {mark}1{mark}"), (258, 258, 7, "here")]),
+                parse_location(f"{{{{Mapper Coords|1.3|1.3|7|text=a &#xE000;1&#xE000;}}}} {here}"),
+            )
+
+    def test_location_with_a_decimal_reference_past_the_digit_limit(self):
+        digits = "1" * 5000
+        removed = "({{Mapper Coords|1.1|1.1|7}})"
+        self.assertEqual((f"a &#{digits}; b", []), parse_location(f"a &#{digits}; b"))
+        self.assertEqual(
+            (f"a &#{digits}; b", [(257, 257, 7, None)]),
+            parse_location(f"a &#{digits[:2500]}{removed}{digits[2500:]}; b"),
+        )
+        mark = "\ue000"
+        self.assertEqual(
+            (f"a &#{digits}; {mark}0{mark} here", [(258, 258, 7, "here")]),
+            parse_location(f"a &#{digits}; &#xE000;0&#xE000; {{{{Mapper Coords|1.2|1.2|7|text=here}}}}"),
+        )
+
+    def test_location_whose_marks_keep_colliding(self):
+        removed = "({{Mapper Coords|1.1|1.1|7}})"
+        # Each entity, joined once its template is removed, decodes to the next candidate mark.
+        value = " ".join(f"&#x{code:X}"[:-2] + removed + f"{code:X}"[-2:] + ";" for code in range(0xE000, 0xE00A))
+        value += " {{Mapper Coords|1.2|1.2|7|text=here}}"
+        self.assertEqual(
+            (clean_text_safely(value), [(257, 257, 7, None)] * 10 + [(258, 258, 7, "here")]), parse_location(value),
+        )
+        self.assertIn("&#xE0(1.1)00;", parse_location(value)[0])
+
+    def test_location_holding_every_private_use_character(self):
+        characters = "".join(chr(code) for code in range(0xE000, 0xF900))
+        here = " {{Mapper Coords|1.2|1.2|7|text=[[Fortress|here]]}}"
+        for value in (
+            characters + here,
+            characters[:-1] + "&#xF8FF;" + here,
+            characters[:-1] + "&#xF8({{Mapper Coords|1.1|1.1|7}})FF;" + here,
+        ):
+            with self.subTest(value=value[-60:]):
+                rows = [(258, 258, 7, "here")]
+                if "&#xF8(" in value:
+                    rows.insert(0, (257, 257, 7, None))
+                self.assertEqual((clean_text_safely(value), rows), parse_location(value))
+
+    def test_label_is_the_text_the_location_shows(self):
+        for value, text, label in (
+            ("at {{Mapper Coords|127.88|124.58|4|text={{Hover|here|explanation}}}}.", "at here.", "here"),
+            ("at {{Mapper Coords|127.88|124.58|4|text=[[Femor Hills|the hills]]}}.", "at the hills.", "the hills"),
+            ("at {{Mapper Coords|127.88|124.58|4|text=here <!-- note -->}}.", "at here.", "here"),
+            ("at {{Mapper Coords|127.88|124.58|4|text=<!-- here -->}}.", "at.", None),
+            ("at {{Mapper Coords|127.88|124.58|4|text={{GP}}}}.", "at.", None),
+        ):
+            with self.subTest(value=value):
+                self.assertEqual(text, clean_location(value))
+                self.assertEqual([(32600, 31802, 4, label)], parse_location_coordinates(value))
+
+    def test_clean_location_without_mapper_coords_is_clean_links(self):
+        for value in (
+            "[[Hero Cave]], [[Kharos|Ferumbras' Citadel]], deep  in   [[Pits of Inferno]] ( ) .",
+            "Isle ( {{Hover|x|y}} ) , here",
+            "[[Svargrond]] <!-- note -->, {{Mapper Coord|1.1|1.1|7}}",
+            "",
+        ):
+            with self.subTest(value=value):
+                self.assertEqual(clean_links(value), clean_location(value))
+
+    def test_parse_location_coordinates(self):
+        value = (
+            "[[Deeper Banuta]] (single spawn {{Mapper Coords|127.220|127.89|14|2|text=here}}, double spawn "
+            "{{Mapper Coords|text=here|127.234|127.59|14|2|1|0.50.5}}), "
+            "{{Mapper Coords|128.202,123.233,5-2|text=here}}, "
+            "{{Mapper Coords|128.1|123.94|11|4}}, {{Mapper Coords|128.204|126.162|15|8|text=[[Mirror|exactly here]]}}"
+        )
+
+        self.assertEqual(
+            [
+                ((127 << 8) + 220, (127 << 8) + 89, 14, "here"),
+                ((127 << 8) + 234, (127 << 8) + 59, 14, "here"),
+                ((128 << 8) + 1, (123 << 8) + 94, 11, None),
+                ((128 << 8) + 204, (126 << 8) + 162, 15, "exactly here"),
+            ],
+            parse_location_coordinates(value),
+        )
+
+    def test_parse_location_coordinates_none(self):
+        self.assertEqual([], parse_location_coordinates("[[Thais]], [[Carlin]] (128.58)"))
+        self.assertEqual([], parse_location_coordinates(""))
 
     def test_version_is_tibia_sh_build(self):
         # A release PR sets X.Y.Z+tibiash.N. An upstream sync takes upstream's bare X.Y.Z until the next release.

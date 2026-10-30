@@ -10,12 +10,14 @@ from pypika.terms import LiteralValue, ValueWrapper
 from typing_extensions import Self
 
 from tibiawikisql.api import WikiEntry
-from tibiawikisql.models.base import RowModel, WithImage, WithStatus, WithVersion
+from tibiawikisql.models.base import LocationCoordinate, RowModel, WithImage, WithStatus, WithVersion
 from tibiawikisql.schema import (
     BookTable,
     CreatureDropTable,
     ItemAttributeTable,
+    ItemClientIdTable,
     ItemKeyTable,
+    ItemLocationCoordinateTable,
     ItemProficiencyPerkTable,
     ItemSoundTable,
     ItemStoreOfferTable,
@@ -93,6 +95,8 @@ class ItemDrop(BaseModel):
     """The maximum possible amount of the dropped item."""
     chance: float | None = None
     """The chance percentage of getting this item dropped by this creature."""
+    rarity: str | None = None
+    """The rarity of the drop, in lower case, like ``common`` or ``very rare``. ``None`` if unknown."""
 
 class ItemQuestReward(BaseModel):
     """A quest where the item is awarded."""
@@ -134,6 +138,8 @@ class Item(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=ItemTa
     """Whether the item can be picked up or not."""
     is_immobile: bool
     """Whether the item can be moved around the map or not."""
+    is_usable: bool | None = None
+    """Whether the item can be used or not. `None` if unknown."""
     value_sell: int | None
     """The highest price an NPC will buy this item for."""
     value_buy: int | None
@@ -148,6 +154,8 @@ class Item(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=ItemTa
     """The item's type."""
     type_secondary: str | None
     """The item's secondary type, if any."""
+    slot: str | None = None
+    """The slot the item goes in, in lower case, like `neck` or `weapon hand`. `None` if unknown."""
     flavor_text: str | None
     """The extra text that is displayed when some items are looked at."""
     light_color: int | None = None
@@ -156,6 +164,14 @@ class Item(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=ItemTa
     """The radius of the light emitted by this item, if any."""
     client_id: int | None
     """The internal id of the item in the client."""
+    client_ids: list[int] = Field(default_factory=list)
+    """Every client id of the item, in the order the wiki lists them."""
+    location: str | None = None
+    """Where the item can be found. Each map position is replaced by its label, if it has one."""
+    location_coordinates: list[LocationCoordinate] = Field(default_factory=list)
+    """The map positions in the item's location, in the order the wiki lists them."""
+    trade_value_note: str | None = None
+    """What players trade the item for, as the wiki writes it, like `Negotiable`. `None` if unknown."""
     attributes: list[ItemAttribute] = Field(default_factory=list)
     """The item's attributes."""
     dropped_by: list[ItemDrop] = Field(default_factory=list)
@@ -288,6 +304,12 @@ class Item(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=ItemTa
             ItemAttributeTable.insert(conn, item_id=self.article_id, **attribute.model_dump())
         for sound in self.sounds:
             ItemSoundTable.insert(conn, item_id=self.article_id, content=sound)
+        for position, client_id in enumerate(self.client_ids):
+            ItemClientIdTable.insert(conn, item_id=self.article_id, client_id=client_id, position=position)
+        for position, coordinate in enumerate(self.location_coordinates):
+            ItemLocationCoordinateTable.insert(
+                conn, item_id=self.article_id, position=position, **coordinate.model_dump(),
+            )
         for offer in self.store_offers:
             ItemStoreOfferTable.insert(conn, item_id=self.article_id, **offer.model_dump())
 
@@ -315,6 +337,14 @@ class Item(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=ItemTa
 
         sounds = ItemSoundTable.get_list_by_field(conn, "item_id", item.article_id)
         item.sounds = [r["content"] for r in sounds]
+
+        client_ids = ItemClientIdTable.get_list_by_field(conn, "item_id", item.article_id, sort_by="position")
+        item.client_ids = [r["client_id"] for r in client_ids]
+
+        coordinates = ItemLocationCoordinateTable.get_list_by_field(
+            conn, "item_id", item.article_id, sort_by="position",
+        )
+        item.location_coordinates = [LocationCoordinate(**dict(r)) for r in coordinates]
 
         item.bought_by = [
             ItemOffer(

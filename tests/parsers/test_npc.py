@@ -107,6 +107,49 @@ class TestNpcParser(unittest.TestCase):
         self.assertEqual(31754, position_7.y)
         self.assertIsNone(position_7.z)
 
+    def test_npc_location_text_keeps_its_reading(self):
+        # NPC locations are cleaned as before: map coordinates are not replaced by their labels here.
+        article = Article(
+            article_id=1,
+            title="Buddel",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource("content_npc_locations.txt"),
+        )
+
+        npc = NpcParser.from_article(article)
+
+        self.assertEqual(
+            "South of Svargrond, Tyrsung (126.76), Okolnir (125.224), Barbarian Settlements (125.20) and Helheim "
+            "(126.209).",
+            npc.location,
+        )
+
+    def test_npc_positions_in_every_fixture(self):
+        expected = {
+            "content_npc.txt": [(33045, 32620, 2)],
+            "content_npc_a_blue_stone.txt": [],
+            "content_npc_locations.txt": [
+                (32254, 31195, 7), (32225, 31381, 7), (32464, 31172, 7), (32332, 31229, 7), (32019, 31293, 7),
+            ],
+            "content_npc_multi_origin.txt": [(32347, 32623, 7), (32027, 32814, 7)],
+            "content_npc_origin_note.txt": [(32649, 31293, 6), (32638, 31438, 7), (32563, 31313, 7)],
+            "content_npc_origin_position.txt": [(32856, 31548, 7), (32837, 31365, 7)],
+            "content_npc_shuttle.txt": [(32917, 31199, 7), (32940, 31182, 7)],
+            "content_npc_travel.txt": [(32310, 32210, 6)],
+        }
+        for resource, positions in expected.items():
+            with self.subTest(resource=resource):
+                article = Article(
+                    article_id=1,
+                    title=resource,
+                    timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+                    content=load_resource(resource),
+                )
+
+                npc = NpcParser.from_article(article)
+
+                self.assertEqual(positions, [(p.x, p.y, p.z) for p in npc.locations])
+
     def test_npc_parser_locations_malformed_and_gaps(self):
         content = load_resource("content_npc_locations.txt")
         content = re.sub(r"^\| posx2\s*=.*$", "| posx2        = 125", content, flags=re.MULTILINE)

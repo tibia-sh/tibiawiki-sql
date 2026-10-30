@@ -10,6 +10,7 @@ from typing_extensions import Self
 
 from tibiawikisql.api import WikiEntry
 from tibiawikisql.models.base import (
+    LocationCoordinate,
     RowModel,
     WithImage,
     WithStatus,
@@ -18,6 +19,7 @@ from tibiawikisql.models.base import (
 from tibiawikisql.schema import (
     CreatureAbilityTable,
     CreatureDropTable,
+    CreatureLocationCoordinateTable,
     CreatureMaxDamageTable,
     CreatureSoundTable,
     CreatureTable,
@@ -51,12 +53,19 @@ class CreatureAbility(BaseModel):
     name: str
     """The name of the ability."""
     effect: str | None = None
-    """The effect of the ability, or the damage range."""
+    """The effect of the ability, or the damage range.
+    For a ``debuff``, the reduction as ``value=<value>; duration=<duration>; flags=<flags>``, without the empty parts.
+    For an ``outfit``, ``yes`` if it changes the victim's outfit and ``no`` if it changes the creature's own."""
     element: str
     """The element of damage type of the ability. This could also be a status condition instead.
+    Haste, debuff and outfit change abilities are ``haste``, ``debuff`` and ``outfit``.
     For abilities that are just plain text, ``plain_text`` is set.
     For abilities that are not using the abilities templates in TibiaWiki, they are saved as a single entry
     with element: ``no_template``."""
+    condition: str | None = None
+    """The condition the ability causes, in lower case, like ``poisoned`` or ``slowed``. ``None`` if unknown or none."""
+    condition_value: int | None = None
+    """The poison damage per turn a melee attack starts at, up to. ``None`` if unknown or not a poisoning melee."""
 
 
 class CreatureDrop(BaseModel):
@@ -72,6 +81,8 @@ class CreatureDrop(BaseModel):
     """The maximum possible amount of the dropped item."""
     chance: float | None = None
     """The chance percentage of getting this item dropped by this creature."""
+    rarity: str | None = None
+    """The rarity of the drop, in lower case, like ``common`` or ``very rare``. ``None`` if unknown."""
 
     def insert(self, conn: sqlite3.Connection | sqlite3.Cursor, creature_id: int) -> None:
         if self.item_id is not None:
@@ -87,6 +98,7 @@ class CreatureDrop(BaseModel):
                 "min",
                 "max",
                 "chance",
+                "rarity",
             )
             .insert(
                 Parameter(":creature_id"),
@@ -98,6 +110,7 @@ class CreatureDrop(BaseModel):
                 Parameter(":min"),
                 Parameter(":max"),
                 Parameter(":chance"),
+                Parameter(":rarity"),
             )
         )
         query_str = q.get_sql()
@@ -178,55 +191,59 @@ class Creature(WikiEntry, WithStatus, WithVersion, WithImage, RowModel, table=Cr
     hitpoints: int | None
     """The creature's hitpoints, may be `None` if unknown."""
     experience: int | None
-    """Experience points yielded by the creature. Might be `None` if unknown."""
+    """Experience points yielded by the creature. ``None`` if unknown."""
     armor: int | None
-    """The creature's armor value."""
+    """The creature's armor value. ``None`` if unknown."""
     mitigation: float | None
-    """The creature's mitigation value."""
+    """The creature's mitigation value. ``None`` if unknown."""
     speed: int | None
-    """The creature's speed value."""
+    """The creature's speed value. ``None`` if unknown."""
     runs_at: int | None
-    """The amount of hitpoints when the creature starts to run away. 0 means it won't run away."""
+    """The amount of hitpoints when the creature starts to run away. 0 means it won't run away. ``None`` if unknown."""
     summon_cost: int | None
-    """The mana needed to summon this creature. 0 if not summonable."""
+    """The mana needed to summon this creature. 0 if it cannot be summoned, ``None`` if unknown."""
     convince_cost: int | None
-    """The mana needed to convince this creature. 0 if not convincible."""
+    """The mana needed to convince this creature. 0 if it cannot be convinced, ``None`` if unknown."""
     illusionable: bool | None
-    """Whether the creature can be illusioned into using `Creature Illusion`."""
+    """Whether the creature can be illusioned into using `Creature Illusion`. ``None`` if unknown."""
     pushable: bool | None
-    """Whether the creature can be pushed or not."""
+    """Whether the creature can be pushed or not. ``None`` if unknown."""
     push_objects: bool | None
-    """Whether the creature can push objects or not."""
+    """Whether the creature can push objects or not. ``None`` if unknown."""
     sees_invisible: bool | None
-    """Whether the creature can see invisible players or not."""
+    """Whether the creature can see invisible players or not. ``None`` if unknown."""
     paralysable: bool | None
-    """Whether the creature can be paralyzed or not."""
+    """Whether the creature can be paralyzed or not. ``None`` if unknown."""
     spawn_type: str | None
     """The way this creature spawns."""
+    attack_type: str | None = None
+    """How the creature attacks, in lower case, like ``melee`` or ``distance``. ``None`` if unknown."""
+    uses_spells: bool | None = None
+    """Whether the creature uses spells or not. ``None`` if unknown."""
     is_boss: bool
     """Whether the creature is a boss or not."""
     cooldown: float | None
     """The cooldown in hours to fight the boss again."""
     modifier_physical: int | None
-    """The percentage of damage received of physical damage. ``None`` if unknown."""
+    """The percentage of damage received of physical damage. 0 if immune, ``None`` if unknown."""
     modifier_earth: int | None
-    """The percentage of damage received of earth damage. ``None`` if unknown."""
+    """The percentage of damage received of earth damage. 0 if immune, ``None`` if unknown."""
     modifier_fire: int | None
-    """The percentage of damage received of fire damage. ``None`` if unknown."""
+    """The percentage of damage received of fire damage. 0 if immune, ``None`` if unknown."""
     modifier_energy: int | None
-    """The percentage of damage received of energy damage. ``None`` if unknown."""
+    """The percentage of damage received of energy damage. 0 if immune, ``None`` if unknown."""
     modifier_ice: int | None
-    """The percentage of damage received of ice damage. ``None`` if unknown."""
+    """The percentage of damage received of ice damage. 0 if immune, ``None`` if unknown."""
     modifier_death: int | None
-    """The percentage of damage received of death damage. ``None`` if unknown."""
+    """The percentage of damage received of death damage. 0 if immune, ``None`` if unknown."""
     modifier_holy: int | None
-    """The percentage of damage received of holy damage. ``None`` if unknown."""
+    """The percentage of damage received of holy damage. 0 if immune, ``None`` if unknown."""
     modifier_drown: int | None
-    """The percentage of damage received of drown damage. ``None`` if unknown."""
+    """The percentage of damage received of drown damage. 0 if immune, ``None`` if unknown."""
     modifier_lifedrain: int | None
-    """The percentage of damage received of life drain damage. ``None`` if unknown."""
+    """The percentage of damage received of life drain damage. 0 if immune, ``None`` if unknown."""
     modifier_healing: int | None
-    """The healing modifier. ``None`` if unknown."""
+    """The percentage of healing received. 0 if immune, ``None`` if unknown."""
     abilities: list[CreatureAbility] = Field([])
     """A list of the creature abilities."""
     max_damage: CreatureMaxDamage | None = None
@@ -238,9 +255,13 @@ class Creature(WikiEntry, WithStatus, WithVersion, WithImage, RowModel, table=Cr
     sounds: list[str] = Field([])
     """The "sounds" made by the creature."""
     location: str | None
-    """The locations where the creature can be found."""
+    """The locations where the creature can be found. Each map position is replaced by its label, if it has one."""
+    location_coordinates: list[LocationCoordinate] = Field(default_factory=list)
+    """The map positions in the creature's location, in the order the wiki lists them."""
     race_id: int | None = None
     """The client race ID of the creature."""
+    loot_statistics_kills: int | None = None
+    """The kills on the creature's Loot Statistics page that its drop chances come from. ``None`` without a page."""
     loot: list[CreatureDrop] = Field([])
     """The items dropped by this creature."""
 
@@ -293,6 +314,10 @@ class Creature(WikiEntry, WithStatus, WithVersion, WithImage, RowModel, table=Cr
             CreatureSoundTable.insert(conn, creature_id=self.article_id, content=sound)
         for ability in self.abilities:
             CreatureAbilityTable.insert(conn, creature_id=self.article_id, **ability.model_dump())
+        for position, coordinate in enumerate(self.location_coordinates):
+            CreatureLocationCoordinateTable.insert(
+                conn, creature_id=self.article_id, position=position, **coordinate.model_dump(),
+            )
         if self.max_damage:
             CreatureMaxDamageTable.insert(conn, creature_id=self.article_id, **self.max_damage.model_dump())
 
@@ -310,6 +335,11 @@ class Creature(WikiEntry, WithStatus, WithVersion, WithImage, RowModel, table=Cr
 
         abilities = CreatureAbilityTable.get_list_by_field(conn, "creature_id", creature.article_id)
         creature.abilities = [CreatureAbility(**dict(r)) for r in abilities]
+
+        coordinates = CreatureLocationCoordinateTable.get_list_by_field(
+            conn, "creature_id", creature.article_id, sort_by="position",
+        )
+        creature.location_coordinates = [LocationCoordinate(**dict(r)) for r in coordinates]
 
         drops = CreatureDropTable.get_by_creature_id(conn, creature.article_id)
         creature.loot = [CreatureDrop(**dict(r)) for r in drops]

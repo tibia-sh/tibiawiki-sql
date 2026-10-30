@@ -1,3 +1,4 @@
+# Changed by tibia.sh in 2026. See "About this copy" in README.md.
 """Module with base classes used by models."""
 from __future__ import annotations
 
@@ -31,6 +32,19 @@ class WithImage(BaseModel):
 
     image: bytes | None = Field(None, exclude=True)
     """An image representing this article."""
+
+
+class LocationCoordinate(BaseModel):
+    """A map position written with ``{{Mapper Coords}}`` in a location."""
+
+    x: int
+    """The x coordinate of the position."""
+    y: int
+    """The y coordinate of the position."""
+    z: int
+    """The floor of the position."""
+    label: str | None = None
+    """The text the location shows for the position, like ``here``. ``None`` if it shows none."""
 
 
 class RowModel(BaseModel):

@@ -6,7 +6,7 @@ from tibiawikisql.models.spell import Spell
 import tibiawikisql.schema
 from tibiawikisql.parsers.base import AttributeParser
 from tibiawikisql.parsers import BaseParser
-from tibiawikisql.utils import clean_links, parse_boolean, parse_integer, parse_whole_number
+from tibiawikisql.utils import clean_links, parse_boolean, parse_client_id, parse_integer, parse_whole_number
 
 
 class SpellParser(BaseParser):
@@ -17,6 +17,7 @@ class SpellParser(BaseParser):
     template_name = "Infobox_Spell"
     attribute_map: ClassVar = {
         "name": AttributeParser.required("name"),
+        "spell_id": AttributeParser.optional("spellid", parse_client_id),
         "effect": AttributeParser.optional("effect", clean_links),
         "words": AttributeParser.optional("words"),
         "spell_type": AttributeParser.optional("type"),

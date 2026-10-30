@@ -22,6 +22,22 @@ The copy adds this data to the database:
   `NULL` when the mount has no price.
 * The `item.value_buy_currency` column. It holds the currency of an item's NPC price, like `Gold Coin` or `Theons`,
   `NULL` when NPCs do not sell the item.
+* The `item.slot` and `item.is_usable` columns. They hold the slot an item goes in, in lower case, like `neck`, and
+  whether it can be used, `NULL` when the wiki does not say.
+* The `spell.spell_id` column. It holds the ID of a spell, `NULL` when the wiki has none or only a comment.
+* The `creature.attack_type` and `creature.uses_spells` columns. They hold how a creature attacks, in lower case, like
+  `melee`, and whether it uses spells, `NULL` when the wiki does not say.
+* The `item_client_id` table. It keeps every client ID of an item, in the order the wiki lists them, from position 0.
+* The `creature_drop.rarity` and `creature.loot_statistics_kills` columns. They hold the rarity a creature's article
+  gives a drop, like `common`, and the kills on its Loot Statistics page that the drop chances come from.
+* The `creature_ability.condition` and `creature_ability.condition_value` columns, and the `haste`, `debuff` and
+  `outfit` abilities. The columns hold the condition an ability causes, like `poisoned`, and the poison damage a melee
+  attack starts at.
+* The `item.location` column and the `creature_location_coordinate` and `item_location_coordinate` tables. The tables
+  keep the map positions written with `{{Mapper Coords}}` in a creature's or item's location, with their labels, and
+  the location text shows each label in place of its position.
+* The `item.trade_value_note` column. It holds what players trade an item for, as the wiki writes it, like `Negotiable`
+  or `55,000,000 - 70,000,000`.
 
 The [database schema](docs/schema.md) describes each of them.
 

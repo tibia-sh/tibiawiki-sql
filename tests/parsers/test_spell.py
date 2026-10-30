@@ -84,6 +84,58 @@ class TestSpellParserMissingFields(unittest.TestCase):
         self.assertIsNone(spell.effect)
 
 
+class TestSpellParserSpellId(unittest.TestCase):
+    def _parse(self, title: str, content: str) -> Spell:
+        article = Article(
+            article_id=1,
+            title=title,
+            timestamp=datetime.datetime.fromisoformat("2026-08-06T21:35:46+00:00"),
+            content=content,
+        )
+
+        return SpellParser.from_article(article)
+
+    def _edited(self, old: str, new: str) -> Spell:
+        content = load_resource("content_spell.txt")
+        self.assertIn(old, content)
+        return self._parse("Flame Strike", content.replace(old, new))
+
+    def test_flame_strike(self):
+        spell = self._parse("Flame Strike", load_resource("content_spell.txt"))
+
+        self.assertEqual(89, spell.spell_id)
+
+    def test_ultimate_explosion(self):
+        spell = self._parse("Ultimate Explosion", load_resource("content_spell_ultimate_explosion.txt"))
+
+        self.assertEqual(24, spell.spell_id)
+
+    def test_second_wind_empty(self):
+        spell = self._parse("Second Wind", load_resource("content_spell_second_wind.txt"))
+
+        self.assertIsNone(spell.spell_id)
+
+    def test_absent(self):
+        spell = self._parse("Train Party", MANA_VARIES_CONTENT)
+
+        self.assertIsNone(spell.spell_id)
+
+    def test_unknown(self):
+        spell = self._edited("| spellid       = 89", "| spellid       = ?")
+
+        self.assertIsNone(spell.spell_id)
+
+    def test_ignores_a_trailing_comment(self):
+        spell = self._edited("| spellid       = 89", "| spellid       = 89 <!-- 90 -->")
+
+        self.assertEqual(89, spell.spell_id)
+
+    def test_only_in_a_comment(self):
+        spell = self._edited("| spellid       = 89", "| spellid       = <!-- 89 -->")
+
+        self.assertIsNone(spell.spell_id)
+
+
 class TestParseWholeNumber(unittest.TestCase):
     def test_parse_whole_number(self):
         self.assertEqual(4, parse_whole_number("4"))

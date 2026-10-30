@@ -2,8 +2,12 @@ import datetime
 import sqlite3
 import unittest
 
+from tests import load_resource
 from tibiawikisql import schema
-from tibiawikisql.models import Creature
+from tibiawikisql.api import Article
+from tibiawikisql.models import Creature, CreatureAbility, CreatureDrop, Item, LocationCoordinate
+from tibiawikisql.parsers import CreatureParser, ItemParser
+from tibiawikisql.schema import ItemTable
 
 
 class TestCreature(unittest.TestCase):
@@ -12,7 +16,14 @@ class TestCreature(unittest.TestCase):
         self.conn.row_factory = sqlite3.Row
         schema.create_tables(self.conn)
 
-    def _creature(self, race_id: int | None) -> Creature:
+    def _creature(
+        self,
+        race_id: int | None,
+        attack_type: str | None = None,
+        uses_spells: bool | None = None,
+        loot_statistics_kills: int | None = None,
+        loot: list[CreatureDrop] | None = None,
+    ) -> Creature:
         return Creature(
             article_id=1,
             title="Demon",
@@ -41,6 +52,8 @@ class TestCreature(unittest.TestCase):
             sees_invisible=True,
             paralysable=False,
             spawn_type=None,
+            attack_type=attack_type,
+            uses_spells=uses_spells,
             is_boss=False,
             cooldown=None,
             modifier_physical=75,
@@ -57,6 +70,8 @@ class TestCreature(unittest.TestCase):
             walks_around=None,
             location="Demona, Edron Demon Forge.",
             race_id=race_id,
+            loot_statistics_kills=loot_statistics_kills,
+            loot=loot or [],
             version="4.0",
             status="active",
             timestamp=datetime.datetime.fromisoformat("2024-07-29T16:37:09+00:00"),
@@ -75,3 +90,220 @@ class TestCreature(unittest.TestCase):
         loaded = Creature.get_one_by_field(self.conn, "article_id", 1)
 
         self.assertIsNone(loaded.race_id)
+
+    def test_creature_attack_type_and_uses_spells_round_trip(self):
+        self._creature(35, attack_type="melee", uses_spells=False).insert(self.conn)
+
+        loaded = Creature.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertEqual("melee", loaded.attack_type)
+        self.assertIs(False, loaded.uses_spells)
+
+    def test_creature_attack_type_and_uses_spells_round_trip_none(self):
+        self._creature(35).insert(self.conn)
+
+        loaded = Creature.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertIsNone(loaded.attack_type)
+        self.assertIsNone(loaded.uses_spells)
+
+    def test_creature_loot_statistics_kills_round_trip(self):
+        self._creature(35, loot_statistics_kills=36488).insert(self.conn)
+
+        loaded = Creature.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertEqual(36488, loaded.loot_statistics_kills)
+
+    def test_creature_loot_statistics_kills_round_trip_none(self):
+        self._creature(35).insert(self.conn)
+
+        loaded = Creature.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertIsNone(loaded.loot_statistics_kills)
+
+    def test_creature_drop_rarity_round_trip(self):
+        timestamp = datetime.datetime.fromisoformat("2024-07-29T16:37:09+00:00")
+        ItemTable.insert(self.conn, article_id=2, title="Gold Coin", name="Gold Coin", timestamp=timestamp)
+        ItemTable.insert(self.conn, article_id=3, title="Demon Horn", name="Demon Horn", timestamp=timestamp)
+        ItemTable.insert(self.conn, article_id=4, title="Talon", name="Talon", timestamp=timestamp)
+        self._creature(35, loot=[
+            CreatureDrop(item_title="Gold Coin", min=0, max=100, rarity="common"),
+            CreatureDrop(item_id=3, item_title="Demon Horn", min=0, max=1, rarity="uncommon"),
+            CreatureDrop(item_title="Talon", min=0, max=1),
+        ]).insert(self.conn)
+
+        loaded = Creature.get_one_by_field(self.conn, "article_id", 1)
+        gold_coin = Item.get_one_by_field(self.conn, "article_id", 2)
+
+        self.assertEqual(
+            [("Gold Coin", 0, 100, "common"), ("Demon Horn", 0, 1, "uncommon"), ("Talon", 0, 1, None)],
+            [(drop.item_title, drop.min, drop.max, drop.rarity) for drop in loaded.loot],
+        )
+        self.assertEqual(
+            [("Demon", 0, 100, "common")],
+            [(drop.creature_title, drop.min, drop.max, drop.rarity) for drop in gold_coin.dropped_by],
+        )
+
+    def test_creature_ability_condition_round_trip(self):
+        creature = self._creature(35)
+        creature.abilities = [
+            CreatureAbility(
+                name="Melee", effect="0-3098", element="physical", condition="poisoned", condition_value=25,
+            ),
+            CreatureAbility(name="Debuff", effect="value=80-100%; duration=10", element="debuff"),
+        ]
+        creature.insert(self.conn)
+
+        loaded = Creature.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertEqual(
+            [
+                ("Melee", "0-3098", "physical", "poisoned", 25),
+                ("Debuff", "value=80-100%; duration=10", "debuff", None, None),
+            ],
+            [
+                (ability.name, ability.effect, ability.element, ability.condition, ability.condition_value)
+                for ability in loaded.abilities
+            ],
+        )
+
+    def test_creature_location_coordinates_round_trip(self):
+        creature = self._creature(35)
+        creature.location_coordinates = [
+            LocationCoordinate(x=32732, y=32601, z=14, label="here"),
+            LocationCoordinate(x=32600, y=31802, z=4, label=None),
+            LocationCoordinate(x=32448, y=32767, z=7, label="exactly here"),
+        ]
+        creature.insert(self.conn)
+
+        loaded = Creature.get_one_by_field(self.conn, "article_id", 1)
+        rows = self.conn.execute(
+            "SELECT creature_id, x, y, z, label, position FROM creature_location_coordinate ORDER BY position",
+        ).fetchall()
+
+        self.assertEqual(creature.location_coordinates, loaded.location_coordinates)
+        self.assertEqual(
+            [
+                (1, 32732, 32601, 14, "here", 0),
+                (1, 32600, 31802, 4, None, 1),
+                (1, 32448, 32767, 7, "exactly here", 2),
+            ],
+            [tuple(row) for row in rows],
+        )
+
+    def test_creature_location_coordinates_round_trip_none(self):
+        self._creature(35).insert(self.conn)
+
+        loaded = Creature.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertEqual([], loaded.location_coordinates)
+        self.assertEqual([], self.conn.execute("SELECT * FROM creature_location_coordinate").fetchall())
+
+    def test_out_of_range_coordinates_insert_no_row(self):
+        content = load_resource("content_creature_black_sheep.txt")
+        coordinates = "{{Mapper Coords|127.88|124.58|4|4|text=here}}"
+        self.assertIn(coordinates, content)
+        for bad in (
+            "{{Mapper Coords|" + "9" * 30 + ".88|124.58|4|text=here}}",
+            "{{Mapper Coords|127.88|124.58|" + "9" * 30 + "|text=here}}",
+            "{{Mapper Coords|-127.88|124.58|4|text=here}}",
+            "{{Mapper Coords|127.88|124.58|16|text=here}}",
+        ):
+            with self.subTest(bad=bad):
+                schema.create_tables(self.conn)
+                article = Article(
+                    article_id=1,
+                    title="Black Sheep",
+                    timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+                    content=content.replace(coordinates, bad),
+                )
+
+                CreatureParser.from_article(article).insert(self.conn)
+                loaded = Creature.get_one_by_field(self.conn, "article_id", 1)
+
+                self.assertEqual("Femor Hills (here), cultist cave in Liberty Bay (here), Drefia", loaded.location)
+                self.assertEqual(
+                    [(32448, 32767, 7, "here")],
+                    [(c.x, c.y, c.z, c.label) for c in loaded.location_coordinates],
+                )
+
+    def test_out_of_range_item_coordinates_insert_no_row(self):
+        content = load_resource("content_item_sneeze_blossom.txt")
+        coordinates = "{{Mapper Coords|127.197|124.98|7|3|text=spot}}"
+        self.assertIn(coordinates, content)
+        article = Article(
+            article_id=1,
+            title="Sneeze Blossom",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=content.replace(coordinates, "{{Mapper Coords|127.197|" + "9" * 30 + ".98|7|text=spot}}"),
+        )
+
+        ItemParser.from_article(article).insert(self.conn)
+        loaded = Item.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertEqual("An example can be found at spot.", loaded.location)
+        self.assertEqual([], loaded.location_coordinates)
+
+    def _black_sheep_with(self, written: str, replacement: str) -> Creature:
+        content = load_resource("content_creature_black_sheep.txt")
+        self.assertIn(written, content)
+        article = Article(
+            article_id=1,
+            title="Black Sheep",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=content.replace(written, replacement),
+        )
+        CreatureParser.from_article(article).insert(self.conn)
+        return Creature.get_one_by_field(self.conn, "article_id", 1)
+
+    def _black_sheep_with_first_label(self, label: str) -> Creature:
+        return self._black_sheep_with(
+            "{{Mapper Coords|127.88|124.58|4|4|text=here}}", "{{Mapper Coords|127.88|124.58|4|4|text=" + label + "}}",
+        )
+
+    def test_label_clean_links_cannot_read_keeps_the_article(self):
+        loaded = self._black_sheep_with_first_label("{{Hover|here|reached via {{Item|Rope}}}}")
+
+        self.assertEqual("Femor Hills, cultist cave in Liberty Bay (here), Drefia", loaded.location)
+        self.assertEqual(
+            [(32600, 31802, 4, None), (32448, 32767, 7, "here")],
+            [(c.x, c.y, c.z, c.label) for c in loaded.location_coordinates],
+        )
+
+    def test_label_cleaned_once_keeps_the_location(self):
+        loaded = self._black_sheep_with_first_label("<nowiki>{{GP}}</nowiki>")
+
+        self.assertEqual("Femor Hills ({{GP}}), cultist cave in Liberty Bay (here), Drefia", loaded.location)
+        self.assertEqual(
+            [(32600, 31802, 4, "{{GP}}"), (32448, 32767, 7, "here")],
+            [(c.x, c.y, c.z, c.label) for c in loaded.location_coordinates],
+        )
+
+    def test_decoded_private_use_text_keeps_the_article(self):
+        mark = "\ue000"
+        for index, count in (("3", 2), ("0", 2)):
+            with self.subTest(index=index):
+                schema.create_tables(self.conn)
+                loaded = self._black_sheep_with("[[Drefia]]", f"[[Drefia]] &#xE000;{index}&#xE000;")
+
+                self.assertEqual(
+                    f"Femor Hills (here), cultist cave in Liberty Bay (here), Drefia {mark}{index}{mark}",
+                    loaded.location,
+                )
+                self.assertEqual(count, loaded.location.count("here"))
+                self.assertEqual(
+                    [(32600, 31802, 4, "here"), (32448, 32767, 7, "here")],
+                    [(c.x, c.y, c.z, c.label) for c in loaded.location_coordinates],
+                )
+
+    def test_location_holding_every_private_use_character_keeps_the_article(self):
+        characters = "".join(chr(code) for code in range(0xE000, 0xF900))
+        loaded = self._black_sheep_with("[[Drefia]]", "[[Drefia]] " + characters)
+
+        self.assertEqual(
+            "Femor Hills (127.88), cultist cave in Liberty Bay (126.192), Drefia " + characters, loaded.location,
+        )
+        self.assertEqual(
+            [(32600, 31802, 4, "here"), (32448, 32767, 7, "here")],
+            [(c.x, c.y, c.z, c.label) for c in loaded.location_coordinates],
+        )

@@ -1,0 +1,65 @@
+{{Infobox Creature|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name           = Gnorre Chyllson
+| actualname     = Gnorre Chyllson
+| hp             = 7150
+| exp            = 4000
+| armor          = ?
+| summon         = --
+| convince       = --
+| illusionable   = no
+| creatureclass  = Humans
+| primarytype    = Outlaws
+| spawntype      = Unique, Triggered
+| isboss         = yes
+| isarenaboss    = yes
+| abilities      = {{Ability List
+ |{{Melee|0-450+}}
+ |{{Ability|Musical Notes Beam|121-257|element=life drain
+  |scene={{Scene|spell=9sqmbeam|caster=Gnorre Chyllson|look_direction=east|effect=Blue Notes Effect|damage_effect=Red Sparkles Effect}}}}
+ |{{Ability|Berserk|65-191|element=life drain
+  |scene={{Scene|spell=3x3spell|caster=Gnorre Chyllson|effect=Trembling Effect|damage_effect=Red Sparkles Effect|effect_on_caster=yes}}}}
+ |{{Ability|Smoke Wave|? turns|element=drowning
+  |scene={{Scene|spell=7sqmwave|caster=Gnorre Chyllson|look_direction=east|effect=Poof Effect|damage_effect=None}}}}
+ |{{Ability|Hot Water Storm|? turns|element=drowning
+  |scene={{Scene|spell=2sqmballself|caster=Gnorre Chyllson|effect=Ripple Effect|damage_effect=Unknown|effect_on_caster=yes}}}}
+|{{Debuff|melee=yes|distance=yes|shielding=yes|value=34-54%|duration=4
+  |scene={{Scene|spell=3sqmball2self|caster=Gnorre Chyllson|effect=Poof Effect|damage_effect=None|effect_on_caster=yes}}}}
+ |{{Ability|Death Snowball|0-16|element=physical
+  |scene={{Scene|spell=5sqmstrike|caster=Gnorre Chyllson|look_direction=south|effect=Death Effect|missile=Snowball Missile|missile_direction=south-east|missile_distance=5/5}}}}
+ |{{Ability|Paralyze|element=|condition=slowed|scene={{Scene|spell=5sqmstrike|caster=Gnorre Chyllson|look_direction=south|effect=Death Effect|missile=Snowball Missile|missile_direction=south-east|missile_distance=5/5}}}}
+ |{{Healing|range=97-124
+  |scene={{Scene|spell=buffspell|effect=Red Sparkles Effect|caster=Gnorre Chyllson|look_direction=south|effect_on_caster=yes}}}}
+ |{{Haste|[[Strong Haste]]|
+  |scene={{Scene|spell=buffspell|effect=Red Sparkles Effect|caster=Gnorre Chyllson|look_direction=south|effect_on_caster=yes}}}}
+ |{{Ability|Snowball|element=None
+  |scene={{Scene|spell=5sqmstrike|caster=Gnorre Chyllson|look_direction=south|effect=Ripple Effect|missile=Snowball Missile|missile_direction=south-east|missile_distance=5/5}}}}
+}}
+| usedelements   = Physical, Life Drain, Drowning
+| maxdmg         = 1100+
+| pushable       = no
+| pushobjects    = yes
+| walksaround    = Energy, Poison
+| walksthrough   = Fire
+| paraimmune     = yes
+| senseinvis     = yes
+| physicalDmgMod = 101%>?
+| earthDmgMod    = 0%
+| fireDmgMod     = 0%
+| deathDmgMod    = 100%?
+| energyDmgMod   = 110%
+| holyDmgMod     = 99%<?
+| iceDmgMod      = 0%
+| hpDrainDmgMod  = 100%?
+| drownDmgMod    = 100%?
+| healMod        = 100%?
+| sounds         = {{Sound List|I am like the merciless northwind.|Snow will be your death shroud.|Feel the wrath of father chyll!}}
+| implemented    = 8.00
+| race_id        = 366
+| notes          = Is the boss of Warlord Level, Pit #7. <br> [[Fallen Mooh'Tah Master Ghar|Next #8.]]
+| runsat         = 0
+| behaviour      = 
+| speed          = ?
+| strategy       = '''Although he shoots beams and waves, BE SURE THAT HIS FIELD ATTACKS are very strong.''' Keeping in diagonal helps to avoid waves. Also is '''recommended''' to use [[Protection Amulet]] to reduce physical damage.<br>[[Knight]]s should use [[Fierce Berserk]] since it is weak to [[Physical Damage]]. [[Paladin]]s may use [[Assassin Star]]s.
+| location       = In the [[Svargrond Arena]].
+| loot           = {{Loot Table}}
+}}

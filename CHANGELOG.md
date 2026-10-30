@@ -1,6 +1,70 @@
 <!-- Changed by tibia.sh in 2026. See "About this copy" in README.md. -->
 # Changelog
 
+## Unreleased
+
+- Read creature `paralysable` from `paraimmune` the right way round, and store an unknown creature value as `NULL`
+  instead of a real-looking `0` or `false`. `paraimmune = yes` (immune) is `false` and `no` is `true`; before, an
+  immune creature like Dragon read `true`, a regression from upstream `1a6dabf`. `hitpoints`, `experience`, `armor`,
+  `mitigation`, `speed`, `runs_at` and every `modifier_*` keep a number, including 0, and are `NULL` for `?`, an empty
+  value, `--` or a colour word like `deep red` in `runsat`. `illusionable`, `pushable`, `push_objects`,
+  `sees_invisible` and `paralysable` are `NULL` for anything but `yes` or `no`, such as `?` or `no?`. `summon_cost` and
+  `convince_cost` keep 0 for `--` or `no`, which the wiki shows as "cannot", and are `NULL` for `?`, an empty value or
+  `yes`. Wiki comments are ignored in all of these fields, so `yes <!-- note -->` reads as `yes`, and an `exp` found
+  only inside a comment, as on Bonelord Totem, is `NULL` instead of the comment's number. An absent value was already
+  `NULL`, and `is_boss` is unchanged.
+- Add `item.slot`, `item.is_usable`, `spell.spell_id`, `creature.attack_type` and `creature.uses_spells`, read from
+  the `slot`, `usable`, `spellid`, `attacktype` and `usespells` fields. `slot` and `attack_type` are lower-cased, like
+  `neck` or `melee`, and `NULL` for an empty value or one with a `?`. `is_usable` and `uses_spells` are `true` for
+  `yes`, `false` for `no` and `NULL` for anything else, such as `?`. `spell_id` is the first number in the value and
+  `NULL` when there is none, as for `?`. Wiki comments are ignored in all of these fields, and an absent value is
+  `NULL`.
+- Add the `item_client_id` table, with every client ID in an item's `itemid` in listed order, from position 0. Shallow
+  Water's `629,630,631,632,633,634` gives six rows. Wiki comments are ignored, and an `itemid` with no whole number,
+  like `?`, gives no rows. `item.client_id` is unchanged and still holds the first ID.
+  It keeps its earlier reading, which counts comments, so when `itemid` starts with a comment holding a number, like
+  `<!-- 7 -->644`, `client_id` is 7 while the rows start at 644.
+- Add `creature_drop.rarity` and `creature.loot_statistics_kills`. `rarity` is the rarity word of a `{{Loot Item}}`,
+  with or without an amount, as in `{{Loot Item|1-3|Gold Coin|common}}` and `{{Loot Item|Gold Coin|common}}`, in lower
+  case: `always`, `common`, `uncommon`, `semi-rare`, `rare` or `very rare`. Any other word, `?`, an empty or absent
+  rarity is `NULL`, and wiki comments are ignored. When a Loot Statistics page replaces a drop's rows, the new row keeps
+  the rarity the old rows share, `NULL` included, and is `NULL` when they disagree, like Court Warlock's crystal coin
+  listed both `common` and `very rare`, or when the article does not list the item. `loot_statistics_kills` holds the
+  kills of the page the chances come from, and is `NULL` for a creature without a page or whose page has no positive
+  number of kills. Loot `min` and `max`, and the number of drop rows, are unchanged.
+- Add `creature_ability.condition` and `creature_ability.condition_value`, and keep the `{{Haste}}`, `{{Debuff}}` and
+  `{{Outfit}}` abilities, which were dropped. `condition` is the `condition` of a `{{Melee}}` or `{{Ability}}` in lower
+  case, like `poisoned` or `slowed`, and `NULL` for `?`, an empty or absent value. A `{{Melee}}` with `poison=` is
+  `poisoned`, with the number in `condition_value`, which is `NULL` for `poison=?` and on every other row. Wiki
+  comments are ignored. A Haste row has the element `haste`, its spell as the name, like `Strong Haste`, or `Haste`,
+  and an empty effect. A Debuff row has the element `debuff`, its name or `Debuff`, and the effect
+  `value=<value>; duration=<duration>; flags=<flags>`, like `value=50%; duration=10; flags=distance,melee`: the values
+  are copied as written, the flags set to `yes` are listed in the order `distance`, `melee`, `magic`, `shielding`, and
+  an empty part is left out. Flags given without a name, as in `{{Debuff|Debuff|yes}}`, are not read. An Outfit gives
+  one row per outfit, from parameter 2 or `thing`, then parameters 4 and up or `thing2` and up, with the element
+  `outfit` and the effect `yes` when it changes the victim and `no` when it changes the creature. Template names must
+  match exactly, as before, and the existing rows keep their values.
+- Keep map coordinates out of `creature.location`, and add `item.location` and the `creature_location_coordinate` and
+  `item_location_coordinate` tables. Each `{{Mapper Coords}}` template in a location is replaced by its label, its
+  `text` cleaned once, like the rest of the location, so Black Sheep's `Femor Hills (127.88), cultist cave in Liberty
+  Bay (126.192), Drefia` reads `Femor Hills (here), cultist cave in Liberty Bay (here), Drefia`, and Behemoth's `double
+  spawn text=here` reads `double spawn here`. A template without a label, or whose label is empty once cleaned, is
+  removed, with the spaces before it when a space, punctuation or the end follows, and with parentheses it leaves empty.
+  The rest of the text is cleaned as before, so a location without the template is unchanged, and NPC, house and key
+  locations are unchanged, except that a creature or item location the cleaning cannot read, such as one holding a
+  template inside another's later parameter, is read as plain text with its templates dropped instead of being `NULL`.
+  Each template whose `x`, `y` and `z` read as numbers on the game's map, `x` and `y` from 0 to 65535 and `z` from 0 to
+  15, gives a row with the position, the label the text shows or `NULL`, and its place in the list from 0. `x` and `y`
+  are read from the wiki's `major.minor` form, so `127.88` is 32600, and a malformed set like Warlord Ruzad's
+  `128.202,123.233,5-2`, or one off the map, gives no row, while its label still replaces it in the text.
+  `item.location` is the item's `location`, cleaned the same way.
+- Add `item.trade_value_note`, the item's `value` as the wiki writes it, with links and templates cleaned and wiki
+  comments dropped, like `Negotiable`, `Negotiable gp` or Amazon Armor's `55,000,000 - 70,000,000`. A template gives its
+  first parameter, so `{{Hover|Negotiable|ask}}` is `Negotiable`, and a value that cleaning cannot read, such as one
+  holding a template without parameters or a template inside another's later parameter, is read as plain text with its
+  templates dropped, so `1,000 {{GP}}` is `1,000`. It is never read as a number, so a range or `0` is kept as written,
+  and it is `NULL` when the value is absent, `?`, `--` or empty once cleaned.
+
 ## 9.0.0+tibiash.9
 
 - Send the `tibiawikisql/<version> (+https://github.com/tibia-sh/tibiawiki-sql)` User-Agent with every TibiaWiki API

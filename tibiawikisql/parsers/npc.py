@@ -8,7 +8,14 @@ from tibiawikisql.api import Article
 from tibiawikisql.models.npc import Npc, NpcDestination, NpcLocation
 from tibiawikisql.parsers import BaseParser
 from tibiawikisql.parsers.base import AttributeParser
-from tibiawikisql.utils import clean_links, convert_tibiawiki_position, find_template, strip_code
+from tibiawikisql.utils import (
+    clean_links,
+    convert_tibiawiki_position,
+    find_template,
+    parse_int,
+    parse_location_coordinate,
+    strip_code,
+)
 
 ORIGIN_NOTE_PATTERN = re.compile(r"^\s*[Ff]rom\s+\[\[([^\]|]+)(?:\|[^\]]*)?\]\]\s*$")
 """A TransportCell note that consists only of a link to the place the leg starts from."""
@@ -104,34 +111,10 @@ class NpcParser(BaseParser):
                 city=clean_links(fields["city"]) or None,
                 subarea=clean_links(fields["subarea"]) or None,
                 geolabel=clean_links(fields["geolabel"]) or None,
-                x=cls._parse_location_coordinate(fields["posx"]),
-                y=cls._parse_location_coordinate(fields["posy"]),
-                z=cls._parse_int(fields["posz"]),
+                x=parse_location_coordinate(fields["posx"]),
+                y=parse_location_coordinate(fields["posy"]),
+                z=parse_int(fields["posz"]),
             ))
-
-    @classmethod
-    def _parse_location_coordinate(cls, value: str) -> int | None:
-        """Convert a TibiaWiki ``major.minor`` coordinate, returning ``None`` for anything malformed.
-
-        Unlike :func:`convert_tibiawiki_position`, which falls back to 0, this rejects a non-integer part
-        or more than two parts. An absent or empty minor counts as 0.
-        """
-        parts = value.split(".")
-        if len(parts) > 2:
-            return None
-        major = cls._parse_int(parts[0])
-        minor = cls._parse_int(parts[1]) if len(parts) == 2 and parts[1].strip() else 0
-        if major is None or minor is None:
-            return None
-        return (major << 8) + minor
-
-    @classmethod
-    def _parse_int(cls, value: str) -> int | None:
-        """Convert a string to an integer, returning ``None`` if it is not one."""
-        try:
-            return int(value)
-        except ValueError:
-            return None
 
     @classmethod
     def _parse_shuttle_starts(cls, destinations: list[str], locations: list[NpcLocation]) -> list[str | None]:

@@ -456,6 +456,111 @@ class TestGenerateLootStatistics(unittest.TestCase):
         )
         self.assertEqual([self.DRAGON_ROW], rows)
 
+    def seed_rows(self, *rows: tuple) -> None:
+        """Store drops the creatures' articles gave, as (creature_id, item_id, min, max, rarity) rows."""
+        self.conn.executemany(
+            "INSERT INTO creature_drop(creature_id, item_id, min, max, rarity) VALUES(?,?,?,?,?)",
+            rows,
+        )
+
+    def rarities(self) -> list[tuple]:
+        return self.conn.execute(
+            "SELECT creature_id, item_id, rarity FROM creature_drop ORDER BY creature_id, item_id, rarity",
+        ).fetchall()
+
+    def kills(self) -> list[tuple]:
+        return self.conn.execute(
+            "SELECT article_id, loot_statistics_kills FROM creature ORDER BY article_id",
+        ).fetchall()
+
+    def test_keeps_rarity_and_stores_kills(self):
+        self.seed_rows((11, 20, 0, 105, "common"))
+
+        rows = self.generate(("Dragon", self.DRAGON_PAGE))
+
+        self.assertEqual([self.DRAGON_ROW], rows)
+        self.assertEqual([(11, 20, "common")], self.rarities())
+        self.assertEqual([(10, None), (11, 200)], self.kills())
+
+    def test_keeps_rarity_all_rows_agree_on(self):
+        self.seed_rows((11, 20, 0, 105, "common"), (11, 20, 0, 3, "common"))
+
+        rows = self.generate(("Dragon", self.DRAGON_PAGE))
+
+        self.assertEqual([self.DRAGON_ROW], rows)
+        self.assertEqual([(11, 20, "common")], self.rarities())
+
+    def test_disagreeing_rarities_give_null(self):
+        # Court Warlock lists its crystal coin both common and very rare.
+        self.seed_rows((11, 20, 0, 1, "common"), (11, 20, 0, 1, "very rare"))
+
+        rows = self.generate(("Dragon", self.DRAGON_PAGE))
+
+        self.assertEqual([self.DRAGON_ROW], rows)
+        self.assertEqual([(11, 20, None)], self.rarities())
+
+    def test_rarity_and_null_disagree(self):
+        self.seed_rows((11, 20, 0, 1, None), (11, 20, 0, 1, "common"))
+
+        self.generate(("Dragon", self.DRAGON_PAGE))
+
+        self.assertEqual([(11, 20, None)], self.rarities())
+
+    def test_drop_missing_from_the_article_has_null_rarity(self):
+        rows = self.generate(("Dragon", self.DRAGON_PAGE))
+
+        self.assertEqual([self.DRAGON_ROW], rows)
+        self.assertEqual([(11, 20, None)], self.rarities())
+        self.assertEqual([(10, None), (11, 200)], self.kills())
+
+    def test_item_listed_twice_keeps_its_rarity(self):
+        self.seed_rows((11, 20, 0, 105, "common"))
+
+        rows = self.generate(("Dragon", ("{{Loot2\n|kills=200\n|Gold Coin, times:100, amount:1-50\n"
+                                         "|Gold Coin, times:20, amount:51-100\n}}")))
+
+        self.assertEqual([(11, 20, 10.0, 51, 100), self.DRAGON_ROW], sorted(rows, key=lambda row: row[2]))
+        self.assertEqual([(11, 20, "common"), (11, 20, "common")], self.rarities())
+
+    def test_creature_without_page_keeps_null_kills(self):
+        self.seed_rows((10, 20, 1, 3, "uncommon"))
+
+        self.generate(("Dragon", self.DRAGON_PAGE))
+
+        self.assertEqual([(10, 20, "uncommon"), (11, 20, None)], self.rarities())
+        self.assertEqual([(10, None), (11, 200)], self.kills())
+
+    def test_skipped_page_keeps_null_kills_and_rarity(self):
+        self.seed_rows((10, 20, 1, 3, "uncommon"))
+
+        rows = self.generate(
+            ("Demon", "{{Loot2\n|kills=0\n|Gold Coin, times:5, amount:1-120\n}}"),
+            ("Dragon", self.DRAGON_PAGE),
+        )
+
+        self.assertEqual([(10, 20, None, 1, 3), self.DRAGON_ROW], rows)
+        self.assertEqual([(10, 20, "uncommon"), (11, 20, None)], self.rarities())
+        self.assertEqual([(10, None), (11, 200)], self.kills())
+
+    def test_page_without_kills_keeps_null_kills(self):
+        self.generate(("Demon", "{{Loot2\n|Gold Coin, times:5, amount:1-120\n}}"))
+
+        self.assertEqual([(10, None), (11, None)], self.kills())
+
+    def test_rewritten_pair_min_max_pinned(self):
+        # The task wrote these exact rows before rarity was kept: min and max come from the page, not the article.
+        self.seed_rows((10, 20, 0, 100, "common"), (10, 21, 3, 6, "common"))
+
+        rows = self.generate(
+            ("Demon", ("{{Loot2\n|kills=36,488\n|Gold Coin, times:36,000, amount:1-199\n"
+                       "|Platinum Coin, times:14,511, amount:1,000-2,000\n}}")),
+        )
+
+        self.assertEqual(
+            [(10, 20, 98.6625739969305, 1, 199), (10, 21, 39.7692392019294, 1000, 2000)],
+            rows,
+        )
+
 
 class TestGenerateCommand(unittest.TestCase):
     def setUp(self):

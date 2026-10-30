@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 import mwparserfromhell
 from tibiawikisql.api import Article
+from tibiawikisql.models.base import LocationCoordinate
 from tibiawikisql.models.item import Item, ItemAttribute, ItemStoreOffer
 from tibiawikisql.parsers import BaseParser
 from tibiawikisql.parsers.base import AttributeParser
@@ -11,15 +12,21 @@ from tibiawikisql.schema import ItemTable
 from tibiawikisql.utils import (
     GOLD_COIN,
     clean_links,
+    clean_location,
     clean_question_mark,
+    clean_text_safely,
     client_color_to_rgb,
     find_templates,
     number_pattern,
     parse_boolean,
+    parse_client_ids,
     parse_currency,
     parse_float,
     parse_first_integer,
     parse_integer,
+    parse_known_boolean,
+    parse_known_text,
+    parse_location_coordinates,
     parse_sounds,
     strip_code,
 )
@@ -57,6 +64,26 @@ MARKUP_PATTERN = re.compile(r"<!--.*?(?:-->|$)|</?[A-Za-z][^<>]*>", re.DOTALL)
 NOTE_PATTERN = re.compile(r"\([^()]*\)")
 """A note in parentheses, without parentheses inside."""
 
+UNKNOWN_TRADE_VALUES = frozenset(("", "?", "--"))
+"""The cleaned ``value`` texts that say nothing about an item's trade value."""
+
+
+def parse_trade_value_note(value: str) -> str | None:
+    """Parse what players trade an item for, from its ``value`` field.
+
+    Args:
+        value: The raw value of the field.
+
+    Returns:
+        The value as written, like ``Negotiable`` or ``55,000,000 - 70,000,000``, cleaned by :func:`clean_text_safely`:
+        as :func:`clean_links` cleans it, so ``{{Hover|Negotiable|ask}}`` is ``Negotiable``, or, where that fails, as
+        plain text with templates dropped, so ``1,000 {{GP}}`` is ``1,000``. Wiki comments are dropped either way. It
+        is never read as a number. ``None`` when nothing is left, or the value is ``?`` or ``--``.
+
+    """
+    note = clean_text_safely(value)
+    return None if note in UNKNOWN_TRADE_VALUES else note
+
 
 class ItemParser(BaseParser):
     """Parses items and objects."""
@@ -72,6 +99,7 @@ class ItemParser(BaseParser):
         "is_stackable": AttributeParser.optional("stackable", parse_boolean, False),
         "is_pickupable": AttributeParser.optional("pickupable", parse_boolean, False),
         "is_immobile": AttributeParser.optional("immobile", parse_boolean, False),
+        "is_usable": AttributeParser.optional("usable", parse_known_boolean),
         "value_sell": AttributeParser.optional("npcvalue", parse_integer),
         "value_buy": AttributeParser.optional("npcprice", parse_integer),
         "weight": AttributeParser.optional("weight", parse_float),
@@ -79,10 +107,13 @@ class ItemParser(BaseParser):
         "item_class": AttributeParser.optional("objectclass"),
         "item_type": AttributeParser.optional("primarytype"),
         "type_secondary": AttributeParser.optional("secondarytype"),
+        "slot": AttributeParser.optional("slot", parse_known_text),
         "light_color": AttributeParser.optional("lightcolor", lambda x: client_color_to_rgb(parse_integer(x))),
         "light_radius": AttributeParser.optional("lightradius", parse_integer),
         "version": AttributeParser.optional("implemented"),
         "client_id": AttributeParser.optional("itemid", parse_first_integer),
+        "location": AttributeParser.optional("location", clean_location),
+        "trade_value_note": AttributeParser.optional("value", parse_trade_value_note),
         "status": AttributeParser.status(),
     }
 
@@ -159,6 +190,8 @@ class ItemParser(BaseParser):
         cls.parse_resistances(row)
         cls.parse_restores(row)
         cls.parse_sounds(row)
+        cls.parse_client_ids(row)
+        cls.parse_location_coordinates(row)
         cls.parse_store_value(row)
         return row
 
@@ -308,6 +341,23 @@ class ItemParser(BaseParser):
         if "sounds" not in row["_raw_attributes"]:
             return
         row["sounds"] = parse_sounds(row["_raw_attributes"]["sounds"])
+
+    @classmethod
+    def parse_client_ids(cls, row: dict[str, Any]) -> None:
+        """Read every client ID in the item's ``itemid`` into ``client_ids``, in listed order."""
+        if "itemid" not in row["_raw_attributes"]:
+            return
+        row["client_ids"] = parse_client_ids(row["_raw_attributes"]["itemid"])
+
+    @classmethod
+    def parse_location_coordinates(cls, row: dict[str, Any]) -> None:
+        """Read the map positions in the item's ``location`` into ``location_coordinates``, in listed order."""
+        if "location" not in row["_raw_attributes"]:
+            return
+        row["location_coordinates"] = [
+            LocationCoordinate(x=x, y=y, z=z, label=label)
+            for x, y, z, label in parse_location_coordinates(row["_raw_attributes"]["location"])
+        ]
 
     @classmethod
     def parse_store_value(cls, row):
