@@ -129,6 +129,16 @@ class CreatureSoundTable(Table, table_name="creature_sound"):
     content = Column(Text, nullable=False)
 
 
+class CreatureLocationCoordinateTable(Table, table_name="creature_location_coordinate"):
+    """Contains the map positions in a creature's location, in the order the wiki lists them."""
+    creature_id = Column(ForeignKey(Integer, table="creature", column="article_id"), index=True)
+    x = Column(Integer, nullable=False)
+    y = Column(Integer, nullable=False)
+    z = Column(Integer, nullable=False)
+    label = Column(Text)
+    position = Column(Integer, nullable=False)
+
+
 class ItemTable(Table):
     """Contains information about items and objects."""
     article_id = Column(Integer, primary_key=True)
@@ -155,6 +165,7 @@ class ItemTable(Table):
     light_radius = Column(Integer)
     version = Column(Text, index=True)
     client_id = Column(Integer)
+    location = Column(Text)
     image = Column(Blob)
     status = Column(Text, default="active", nullable=False)
     timestamp = Column(Timestamp, nullable=False)
@@ -170,6 +181,16 @@ class ItemClientIdTable(Table, table_name="item_client_id"):
     """Contains every client ID of an item, in the order the wiki lists them."""
     item_id = Column(ForeignKey(Integer, table="item", column="article_id"), index=True)
     client_id = Column(Integer, nullable=False)
+    position = Column(Integer, nullable=False)
+
+
+class ItemLocationCoordinateTable(Table, table_name="item_location_coordinate"):
+    """Contains the map positions in an item's location, in the order the wiki lists them."""
+    item_id = Column(ForeignKey(Integer, table="item", column="article_id"), index=True)
+    x = Column(Integer, nullable=False)
+    y = Column(Integer, nullable=False)
+    z = Column(Integer, nullable=False)
+    label = Column(Text)
     position = Column(Integer, nullable=False)
 
 

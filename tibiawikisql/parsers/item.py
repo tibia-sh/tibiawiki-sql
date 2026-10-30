@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 import mwparserfromhell
 from tibiawikisql.api import Article
+from tibiawikisql.models.base import LocationCoordinate
 from tibiawikisql.models.item import Item, ItemAttribute, ItemStoreOffer
 from tibiawikisql.parsers import BaseParser
 from tibiawikisql.parsers.base import AttributeParser
@@ -11,6 +12,7 @@ from tibiawikisql.schema import ItemTable
 from tibiawikisql.utils import (
     GOLD_COIN,
     clean_links,
+    clean_location,
     clean_question_mark,
     client_color_to_rgb,
     find_templates,
@@ -23,6 +25,7 @@ from tibiawikisql.utils import (
     parse_integer,
     parse_known_boolean,
     parse_known_text,
+    parse_location_coordinates,
     parse_sounds,
     strip_code,
 )
@@ -88,6 +91,7 @@ class ItemParser(BaseParser):
         "light_radius": AttributeParser.optional("lightradius", parse_integer),
         "version": AttributeParser.optional("implemented"),
         "client_id": AttributeParser.optional("itemid", parse_first_integer),
+        "location": AttributeParser.optional("location", clean_location),
         "status": AttributeParser.status(),
     }
 
@@ -165,6 +169,7 @@ class ItemParser(BaseParser):
         cls.parse_restores(row)
         cls.parse_sounds(row)
         cls.parse_client_ids(row)
+        cls.parse_location_coordinates(row)
         cls.parse_store_value(row)
         return row
 
@@ -321,6 +326,16 @@ class ItemParser(BaseParser):
         if "itemid" not in row["_raw_attributes"]:
             return
         row["client_ids"] = parse_client_ids(row["_raw_attributes"]["itemid"])
+
+    @classmethod
+    def parse_location_coordinates(cls, row: dict[str, Any]) -> None:
+        """Read the map positions in the item's ``location`` into ``location_coordinates``, in listed order."""
+        if "location" not in row["_raw_attributes"]:
+            return
+        row["location_coordinates"] = [
+            LocationCoordinate(x=x, y=y, z=z, label=label)
+            for x, y, z, label in parse_location_coordinates(row["_raw_attributes"]["location"])
+        ]
 
     @classmethod
     def parse_store_value(cls, row):

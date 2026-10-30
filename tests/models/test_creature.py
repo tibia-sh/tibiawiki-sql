@@ -3,7 +3,7 @@ import sqlite3
 import unittest
 
 from tibiawikisql import schema
-from tibiawikisql.models import Creature, CreatureAbility, CreatureDrop, Item
+from tibiawikisql.models import Creature, CreatureAbility, CreatureDrop, Item, LocationCoordinate
 from tibiawikisql.schema import ItemTable
 
 
@@ -163,3 +163,35 @@ class TestCreature(unittest.TestCase):
                 for ability in loaded.abilities
             ],
         )
+
+    def test_creature_location_coordinates_round_trip(self):
+        creature = self._creature(35)
+        creature.location_coordinates = [
+            LocationCoordinate(x=32732, y=32601, z=14, label="here"),
+            LocationCoordinate(x=32600, y=31802, z=4, label=None),
+            LocationCoordinate(x=32448, y=32767, z=7, label="exactly here"),
+        ]
+        creature.insert(self.conn)
+
+        loaded = Creature.get_one_by_field(self.conn, "article_id", 1)
+        rows = self.conn.execute(
+            "SELECT creature_id, x, y, z, label, position FROM creature_location_coordinate ORDER BY position",
+        ).fetchall()
+
+        self.assertEqual(creature.location_coordinates, loaded.location_coordinates)
+        self.assertEqual(
+            [
+                (1, 32732, 32601, 14, "here", 0),
+                (1, 32600, 31802, 4, None, 1),
+                (1, 32448, 32767, 7, "exactly here", 2),
+            ],
+            [tuple(row) for row in rows],
+        )
+
+    def test_creature_location_coordinates_round_trip_none(self):
+        self._creature(35).insert(self.conn)
+
+        loaded = Creature.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertEqual([], loaded.location_coordinates)
+        self.assertEqual([], self.conn.execute("SELECT * FROM creature_location_coordinate").fetchall())

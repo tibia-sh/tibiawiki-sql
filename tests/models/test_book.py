@@ -9,6 +9,7 @@ from tibiawikisql.schema import (
     BookTable,
     ItemAttributeTable,
     ItemClientIdTable,
+    ItemLocationCoordinateTable,
     ItemSoundTable,
     ItemStoreOfferTable,
     ItemTable,
@@ -40,6 +41,7 @@ class TestBook(unittest.TestCase):
         self.conn.executescript(ItemStoreOfferTable.get_create_table_statement())
         self.conn.executescript(ItemSoundTable.get_create_table_statement())
         self.conn.executescript(ItemClientIdTable.get_create_table_statement())
+        self.conn.executescript(ItemLocationCoordinateTable.get_create_table_statement())
         self.conn.executescript(BookTable.get_create_table_statement())
 
 

@@ -44,6 +44,17 @@
   one row per outfit, from parameter 2 or `thing`, then parameters 4 and up or `thing2` and up, with the element
   `outfit` and the effect `yes` when it changes the victim and `no` when it changes the creature. Template names must
   match exactly, as before, and the existing rows keep their values.
+- Keep map coordinates out of `creature.location`, and add `item.location` and the `creature_location_coordinate` and
+  `item_location_coordinate` tables. Each `{{Mapper Coords}}` template in a location is replaced by its `text` label,
+  so Black Sheep's `Femor Hills (127.88), cultist cave in Liberty Bay (126.192), Drefia` reads `Femor Hills (here),
+  cultist cave in Liberty Bay (here), Drefia`, and Behemoth's `double spawn text=here` reads `double spawn here`. A
+  template without a label is removed, with the spaces before it when a space, punctuation or the end follows, and
+  with parentheses it leaves empty. The rest of the text is cleaned as before, so a location without the template is
+  unchanged, and NPC, house and key locations are unchanged. Each template whose `x`, `y` and `z` read as numbers
+  gives a row with the position, its plain-text label or `NULL`, and its place in the list from 0. `x` and `y` are
+  read from the wiki's `major.minor` form, so `127.88` is 32600, and a malformed set like Warlord Ruzad's
+  `128.202,123.233,5-2` gives no row, while its label still replaces it in the text. `item.location` is the item's
+  `location`, cleaned the same way.
 
 ## 9.0.0+tibiash.9
 

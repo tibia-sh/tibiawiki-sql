@@ -1,0 +1,84 @@
+{{Infobox Creature|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name           = Behemoth
+| article        = a
+| actualname     = behemoth
+| plural         = behemoths
+| hp             = 4000
+| exp            = 2500
+| armor          = 50
+| mitigation     = 2.76
+| summon         = --
+| convince       = --
+| illusionable   = no
+| creatureclass  = Humanoids
+| primarytype    = Giants
+| bestiaryclass  = Giant
+| bestiarylevel  = Medium
+| occurrence     = Common
+| spawntype      = Regular, Unblockable
+| isboss         = no
+| abilities      = {{Ability List
+ |{{Melee|0-455}}
+ |{{Ability|Boulder throw|0-200|element=physical
+  |scene={{Scene|spell=5sqmstrike|background=canvas|caster=Behemoth|look_direction=south|missile=Stone Missile|missile_direction=south-east|missile_distance=5/5}}}}
+ |{{Haste}}
+}}
+| usedelements   = Physical
+| maxdmg         = {{Max Damage|physical=635}}
+| pushable       = No
+| pushobjects    = Yes
+| walksaround    = Energy
+| walksthrough   = Fire, Poison
+| paraimmune     = yes
+| senseinvis     = yes
+| physicalDmgMod = 90%
+| earthDmgMod    = 20%
+| fireDmgMod     = 70%
+| deathDmgMod    = 105%
+| energyDmgMod   = 90%
+| holyDmgMod     = 70%
+| iceDmgMod      = 110%
+| hpDrainDmgMod  = 100%?
+| drownDmgMod    = 100%?
+| healMod        = 100%
+| bestiaryname   = behemoth
+| bestiarytext   = Behemoths are giant monsters that live in the ancient town deep below Edron. They look a bit like cross-breeds of humans and bulls and even talk in human language, but nobody knows yet where they come from. Although they are of minor intelligence, they are very strong fighters and throw huge stones at their opponents.
+| sounds         = {{Sound List|Crush the intruders!|You're so little!|Human flesh -  delicious!}}
+| implemented    = 6.4
+| race_id        = 55
+| notes          = It can be [[Skinning|skinned]] in order to get [[Behemoth Fang]]s (see: [[Perfect Behemoth Fang/Skinning]]).
+
+You may hunt 700 of these as a task of the [[Killing in the Name of... Quest]]. Upon completion of the task you will face [[Stonecracker]].
+| behaviour      = Behemoths attack their enemies and chase them with their great speed.
+| runsat         = 0
+| speed          = 170
+| location       = [[Cyclopolis]], deepest part of [[Tarpit Tomb]] after the flame, [[Forbidden Lands]], [[Vandura Mountain]], [[Deeper Banuta]] (single spawn {{Mapper Coords|127.220|127.89|14|2|text=here}}, double spawn {{Mapper Coords|text=here|127.234|127.59|14|2|1|0.50.5}}), [[Serpentine Tower]] (unreachable), deep into the [[Formorgar Mines]], [[Arena and Zoo Quarter]], [[Demon Forge|The Dark Path]], [[Lower Spike]], [[Chyllfroest]], [[Medusa Tower]] and [[Underground Glooth Factory]] (west side).
+| loot           = {{Loot Table
+ |{{Loot Item|1-200|Gold Coin|common}}
+ |{{Loot Item|1-5|Platinum Coin|common}}
+ |{{Loot Item|1-6|Meat|common}}
+ |{{Loot Item|Battle Stone|uncommon}}
+ |{{Loot Item|Double Axe|uncommon}}
+ |{{Loot Item|1-5|Assassin Star|uncommon}}
+ |{{Loot Item|1-5|Small Amethyst|uncommon}}
+ |{{Loot Item|Two Handed Sword|uncommon}}
+ |{{Loot Item|Great Health Potion|semi-rare}}
+ |{{Loot Item|Dark Armor|semi-rare}}
+ |{{Loot Item|Plate Armor|semi-rare}}
+ |{{Loot Item|Crystal Necklace|semi-rare}}
+ |{{Loot Item|Perfect Behemoth Fang|rare}}
+ |{{Loot Item|Giant Sword|rare}}
+ |{{Loot Item|Strange Symbol|rare}}
+ |{{Loot Item|Big Bone|rare}}
+ |{{Loot Item|Pick|rare}}
+ |{{Loot Item|Behemoth Claw|rare}}
+ |{{Loot Item|Steel Boots|very rare}}
+ |{{Loot Item|Behemoth Trophy|very rare}}
+ |{{Loot Item|Amphora|very rare}}
+ |{{Loot Item|Crowbar|very rare}}
+ |{{Loot Item|Titan Axe|very rare}}
+ |{{Loot Item|War Axe|very rare}}
+}}
+| usespells    = yes
+| attacktype    = Melee
+}}

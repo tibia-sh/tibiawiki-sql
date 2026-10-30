@@ -10,46 +10,48 @@ The generated database has the following tables.
 ## Tables
 
 
-|          Table          |                                     Description                                     |
-| ----------------------- | ----------------------------------------------------------------------------------- |
-| `achievement`           | Contains information for all achievements.                                          |
-| `book`                  | Contains information about books.                                                   |
-| `charm`                 | Contains information for all charms.                                                |
-| `creature`              | Contains information for all creatures.                                             |
-| `creature_ability`      | Contains all the abilities done by creatures.                                       |
-| `creature_drop`         | Contains all the items dropped by creatures.                                        |
-| `creature_max_damage`   | Contains the breakdown of max damage done by creatures.                             |
-| `creature_sound`        | Contains all the sounds made by creatures.                                          |
-| `database_info`         | Contains information about the database itself.                                     |
-| `game_update`           | Contains information about game updates.                                            |
-| `house`                 | Contains all houses and guildhalls.                                                 |
-| `imbuement`             | Contains information for all imbuements.                                            |
-| `imbuement_material`    | Contains the item materials for imbuements.                                         |
-| `item`                  | Contains information for all items.                                                 |
-| `item_attribute`        | Contains extra attributes and properties of items that only apply to certain types. |
-| `item_client_id`        | Contains every client ID of items, in the order the wiki lists them.                |
-| `item_key`              | Contains the different key variations.                                              |
-| `item_sound`            | Contains all the sounds made by items.                                              |
-| `item_proficiency_perk` | Contains weapon proficiency perks for items.                                        |
-| `item_store_offer`      | Contains all offers for items in the Tibia store.                                   |
-| `map`                   | Contains the world map’s images.                                                    |
-| `mount`                 | Contains information for all mounts.                                                |
-| `npc`                   | Contains information for all NPCs.                                                  |
-| `npc_destination`       | Contains all the NPCs’ travel destinations.                                         |
-| `npc_job`               | Contains all the NPCs’ jobs.                                                        |
-| `npc_location`          | Contains all the NPCs’ positions.                                                   |
-| `npc_offer_buy`         | Contains all the NPCs’ buy offers.                                                  |
-| `npc_offer_sell`        | Contains all the NPCs’ sell offers.                                                 |
-| `npc_race`              | Contains all the NPCs’ races.                                                       |
-| `outfit`                | Contains information for all outfits.                                               |
-| `outfit_image`          | Contains images for all outfits.                                                    |
-| `outfit_quest`          | Contains outfit and addon rewards for quests.                                       |
-| `quest`                 | Contains information for all quests.                                                |
-| `quest_danger`          | Contains creatures that can be found in a quest.                                    |
-| `quest_reward`          | Contains item rewards for quests.                                                   |
-| `rashid_position`       | Contains the positions for the NPC Rashid every day of the week.                    |
-| `spell`                 | Contains information for all spells.                                                |
-| `world`                 | Contains information for all worlds.                                                |
+|             Table              |                                     Description                                     |
+| ------------------------------ | ----------------------------------------------------------------------------------- |
+| `achievement`                  | Contains information for all achievements.                                          |
+| `book`                         | Contains information about books.                                                   |
+| `charm`                        | Contains information for all charms.                                                |
+| `creature`                     | Contains information for all creatures.                                             |
+| `creature_ability`             | Contains all the abilities done by creatures.                                       |
+| `creature_drop`                | Contains all the items dropped by creatures.                                        |
+| `creature_location_coordinate` | Contains the map positions in the locations of creatures.                           |
+| `creature_max_damage`          | Contains the breakdown of max damage done by creatures.                             |
+| `creature_sound`               | Contains all the sounds made by creatures.                                          |
+| `database_info`                | Contains information about the database itself.                                     |
+| `game_update`                  | Contains information about game updates.                                            |
+| `house`                        | Contains all houses and guildhalls.                                                 |
+| `imbuement`                    | Contains information for all imbuements.                                            |
+| `imbuement_material`           | Contains the item materials for imbuements.                                         |
+| `item`                         | Contains information for all items.                                                 |
+| `item_attribute`               | Contains extra attributes and properties of items that only apply to certain types. |
+| `item_client_id`               | Contains every client ID of items, in the order the wiki lists them.                |
+| `item_key`                     | Contains the different key variations.                                              |
+| `item_location_coordinate`     | Contains the map positions in the locations of items.                               |
+| `item_sound`                   | Contains all the sounds made by items.                                              |
+| `item_proficiency_perk`        | Contains weapon proficiency perks for items.                                        |
+| `item_store_offer`             | Contains all offers for items in the Tibia store.                                   |
+| `map`                          | Contains the world map’s images.                                                    |
+| `mount`                        | Contains information for all mounts.                                                |
+| `npc`                          | Contains information for all NPCs.                                                  |
+| `npc_destination`              | Contains all the NPCs’ travel destinations.                                         |
+| `npc_job`                      | Contains all the NPCs’ jobs.                                                        |
+| `npc_location`                 | Contains all the NPCs’ positions.                                                   |
+| `npc_offer_buy`                | Contains all the NPCs’ buy offers.                                                  |
+| `npc_offer_sell`               | Contains all the NPCs’ sell offers.                                                 |
+| `npc_race`                     | Contains all the NPCs’ races.                                                       |
+| `outfit`                       | Contains information for all outfits.                                               |
+| `outfit_image`                 | Contains images for all outfits.                                                    |
+| `outfit_quest`                 | Contains outfit and addon rewards for quests.                                       |
+| `quest`                        | Contains information for all quests.                                                |
+| `quest_danger`                 | Contains creatures that can be found in a quest.                                    |
+| `quest_reward`                 | Contains item rewards for quests.                                                   |
+| `rashid_position`              | Contains the positions for the NPC Rashid every day of the week.                    |
+| `spell`                        | Contains information for all spells.                                                |
+| `world`                        | Contains information for all worlds.                                                |
 
 
 ## Table schemas
@@ -172,7 +174,7 @@ The generated database has the following tables.
 | modifier_healing      | `INTEGER`             | Percentage of healing the creature receives. `0` being completely immune, `100` neutral. May be `NULL` if unknown.                                         |
 | walks_through         | `TEXT`                | The type of fields the creature will walk through.                                                                                                         |
 | walks_around          | `TEXT`                | The type of fields the creature will walk around to avoid when possible.                                                                                   |
-| location              | `TEXT`                | The locations where the creature can be found.                                                                                                             |
+| location              | `TEXT`                | The locations where the creature can be found. Each Mapper Coords position shows as its label, or is left out without one.                                 |
 | race_id               | `INTEGER`             | The client race ID of the creature, the first integer in the value after wiki comments are removed, `NULL` when there is none.                             |
 | loot_statistics_kills | `INTEGER`             | The kills on the creature's Loot Statistics page that its drop chances come from. `NULL` when it has no page, or its page has no positive number of kills. |
 | version               | `TEXT`                | The client version this creature was introduced to the game.                                                                                               |
@@ -207,6 +209,26 @@ The generated database has the following tables.
 | max         | `INTEGER` | The maximum count of the dropped item.                                                                                                                                                                  |
 | rarity      | `TEXT`    | The drop's rarity on the creature's article, in lower case: `always`, `common`, `uncommon`, `semi-rare`, `rare` or `very rare`. `NULL` if unknown, or if the article gives the item different rarities. |
 
+
+
+
+### creature_location_coordinate
+
+|   Column    |   Type    |                                         Description                                         |
+| ----------- | --------- | ------------------------------------------------------------------------------------------- |
+| creature_id | `INTEGER` | The id of the creature whose location has this map position.                                |
+| x           | `INTEGER` | The x coordinate of the position.                                                           |
+| y           | `INTEGER` | The y coordinate of the position.                                                           |
+| z           | `INTEGER` | The floor of the position.                                                                  |
+| label       | `TEXT`    | The text the location shows in place of the position, like `here`. `NULL` if it shows none. |
+| position    | `INTEGER` | The row's place in the order the location lists its map positions, from 0.                  |
+
+Each row is a `{{Mapper Coords}}` template in the creature's `location`, in the order they are written. `x` and `y` are
+read from the wiki's `major.minor` form, so `127.88` is 32600, and `label` is the plain text of the template's `text`.
+Named parameters do not count as positions, so `{{Mapper Coords|text=here|127.234|127.59|14}}` gives the same row as
+`{{Mapper Coords|127.234|127.59|14|text=here}}`. A template whose `x`, `y` or `z` is missing or malformed, like Warlord
+Ruzad's `{{Mapper Coords|128.202,123.233,5-2|text=here}}`, gives no row. In `creature.location`, each template is
+replaced by its label, or left out when it has none, so no coordinate is left in the text.
 
 
 
@@ -351,6 +373,7 @@ The generated database has the following tables.
 | light_radius       | `INTEGER`             | The radius of the light emitted by this item, if any.                                                                                                                                                                                                                           |
 | version            | `TEXT`                | The client version this item was introduced to the game.                                                                                                                                                                                                                        |
 | client_id          | `INTEGER`             | The client id of the item, the first integer in `itemid`. `item_client_id` has every client ID.                                                                                                                                                                                 |
+| location           | `TEXT`                | Where the item can be found, cleaned as `creature.location` is. `item_location_coordinate` has its map positions.                                                                                                                                                               |
 | image              | `BLOB`                | The item’s image bytes.                                                                                                                                                                                                                                                         |
 | status             | `TEXT`                | The status of the item in game.                                                                                                                                                                                                                                                 |
 | timestamp          | `TIMESTAMP`           | ISO 8601 timestamp of the article's last edit.                                                                                                                                                                                                                                  |
@@ -403,6 +426,21 @@ comments included. So when `itemid` starts with a comment holding a number, the 
 | version    | `TEXT`                | The client version this key was introduced to the game.                            |
 | status     | `TEXT`                | The status of the key in game.                                                     |
 | timestamp  | `TIMESTAMP`           | ISO 8601 timestamp of the article's last edit.                                     |
+
+
+
+### item_location_coordinate
+
+|  Column  |   Type    |                                         Description                                         |
+| -------- | --------- | ------------------------------------------------------------------------------------------- |
+| item_id  | `INTEGER` | The id of the item whose location has this map position.                                    |
+| x        | `INTEGER` | The x coordinate of the position.                                                           |
+| y        | `INTEGER` | The y coordinate of the position.                                                           |
+| z        | `INTEGER` | The floor of the position.                                                                  |
+| label    | `TEXT`    | The text the location shows in place of the position, like `here`. `NULL` if it shows none. |
+| position | `INTEGER` | The row's place in the order the location lists its map positions, from 0.                  |
+
+The rows are read from the item's `location` as `creature_location_coordinate` rows are from a creature's.
 
 
 

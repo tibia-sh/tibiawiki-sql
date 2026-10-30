@@ -48,6 +48,23 @@ currency_template_pattern = re.compile(r"[Tt]C3?|[Gg]P")
 non_currency_link_pattern = re.compile(r"\s*:?\s*(?:File|Image|Category)\s*:", re.IGNORECASE)
 """The target of a link that cannot name a currency: a file, an image or a category."""
 
+MAPPER_COORDS = "mapper coords"
+"""The name of the template that links a map position, in lower case with spaces."""
+
+REMOVED_MAPPER_COORDS = "\x00"
+"""Marks where a Mapper Coords template without a label was removed. The parser ends a text at this character, so a
+parsed location never holds one of its own."""
+
+removed_mapper_coords_rules = (
+    (re.compile(r"[ \t]*\([ \t]*\x00+[ \t]*\)"), ""),
+    (re.compile(r"(^|\()[ \t]*\x00+[ \t]*", re.MULTILINE), r"\1"),
+    (re.compile(r"[ \t]*\x00+(?=[\s,.;:!?)]|\Z)"), ""),
+    (re.compile(r"\x00+"), ""),
+)
+"""How the text around a removed Mapper Coords template is tidied, in order: parentheses left empty go with the spaces
+before them; at the start of a line or after an opening parenthesis, the spaces after it go; before a space,
+punctuation or the end of the text, the spaces before it go; anywhere else only the template goes."""
+
 
 class Elapsed:
     """Holds the elapsed time measured by the [tibiawikisql.utils.timed][timed] context manager.
@@ -169,6 +186,114 @@ def convert_tibiawiki_position(pos: str) -> int:
         return coordinate
     except (ValueError, IndexError):
         return 0
+
+
+def parse_location_coordinate(value: str) -> int | None:
+    """Convert a TibiaWiki ``major.minor`` coordinate, returning ``None`` for anything malformed.
+
+    Unlike :func:`convert_tibiawiki_position`, which falls back to 0, this rejects a non-integer part
+    or more than two parts. An absent or empty minor counts as 0.
+    """
+    parts = value.split(".")
+    if len(parts) > 2:
+        return None
+    major = parse_int(parts[0])
+    minor = parse_int(parts[1]) if len(parts) == 2 and parts[1].strip() else 0
+    if major is None or minor is None:
+        return None
+    return (major << 8) + minor
+
+
+def parse_int(value: str) -> int | None:
+    """Convert a string to an integer, returning ``None`` if it is not one."""
+    try:
+        return int(value)
+    except ValueError:
+        return None
+
+
+def is_mapper_coords(template: Template) -> bool:
+    """Check whether a template is a ``{{Mapper Coords}}``, matching its name as :func:`find_templates` does."""
+    return strip_code(template.name).lower().replace("_", " ") == MAPPER_COORDS
+
+
+def parse_mapper_coords(template: Template) -> tuple[int, int, int] | None:
+    """Read the position a ``{{Mapper Coords|x|y|z|...}}`` template points to.
+
+    ``x`` and ``y`` are TibiaWiki ``major.minor`` coordinates, read by :func:`parse_location_coordinate`, and ``z`` is
+    the floor, read by :func:`parse_int`. Named parameters such as ``text`` do not count as positions, so
+    ``{{Mapper Coords|text=here|127.234|127.59|14}}`` is read like ``{{Mapper Coords|127.234|127.59|14|text=here}}``.
+    Wiki comments in the values are ignored.
+
+    Args:
+        template: The Mapper Coords template.
+
+    Returns:
+        The ``x``, ``y`` and ``z`` of the position, or ``None`` when any of them is missing or malformed, as in
+        Warlord Ruzad's ``{{Mapper Coords|128.202,123.233,5-2|text=here}}``.
+
+    """
+    values = [visible_text(str(template.get(name).value)) if template.has(name) else "" for name in ("1", "2", "3")]
+    x = parse_location_coordinate(values[0])
+    y = parse_location_coordinate(values[1])
+    z = parse_int(values[2])
+    if x is None or y is None or z is None:
+        return None
+    return x, y, z
+
+
+def _mapper_coords_label(template: Template) -> str:
+    """Get the raw ``text`` parameter of a Mapper Coords template, stripped, or an empty string without one."""
+    return str(template.get("text").value).strip() if template.has("text") else ""
+
+
+def clean_location(value: str) -> str:
+    """Clean a location as :func:`clean_links` does, putting each ``{{Mapper Coords}}`` template's label in its place.
+
+    A Mapper Coords template is replaced by its ``text`` parameter, so ``Femor Hills ({{Mapper Coords|127.88|124.58|4|
+    text=here}})`` reads ``Femor Hills (here)``, and no coordinate is left in the text. A template without a label is
+    removed. Where one is removed, the spaces before it go too when a space, punctuation or the end of the text
+    follows, so ``Mintwallin {{Mapper Coords|...}}.`` reads ``Mintwallin.``; at the start of a line or after an opening
+    parenthesis, the spaces after it go; and parentheses left with nothing in them are removed with the spaces before
+    them. The rest of the text is cleaned exactly as :func:`clean_links` cleans it.
+
+    Args:
+        value: The raw location.
+
+    Returns:
+        The clean location.
+
+    """
+    code = mwparserfromhell.parse(value)
+    # Innermost first, so a template inside another's label is replaced before the label takes the outer one's place.
+    for template in reversed(code.filter_templates(matches=is_mapper_coords)):
+        code.replace(template, _mapper_coords_label(template) or Text(REMOVED_MAPPER_COORDS))
+    text = str(code)
+    for pattern, replacement in removed_mapper_coords_rules:
+        text = pattern.sub(replacement, text)
+    return clean_links(text)
+
+
+def parse_location_coordinates(value: str) -> list[tuple[int, int, int, str | None]]:
+    """Read the positions of the ``{{Mapper Coords}}`` templates in a location, in the order they are written.
+
+    Args:
+        value: The raw location.
+
+    Returns:
+        The ``x``, ``y``, ``z`` and label of each template whose position :func:`parse_mapper_coords` reads. The label
+        is the plain text of the ``text`` parameter, or ``None`` when it is absent or empty. A template whose position
+        is malformed gives nothing.
+
+    """
+    coordinates = []
+    for template in mwparserfromhell.parse(value).filter_templates(matches=is_mapper_coords):
+        position = parse_mapper_coords(template)
+        if position is None:
+            continue
+        label = strip_code(mwparserfromhell.parse(_mapper_coords_label(template))) or None
+        coordinates.append((*position, label))
+    return coordinates
 
 
 def find_template(content: str, template_name: str, partial: bool = False, recursive: bool = False) -> Template | None:

@@ -33,6 +33,9 @@ The copy adds this data to the database:
 * The `creature_ability.condition` and `creature_ability.condition_value` columns, and the `haste`, `debuff` and
   `outfit` abilities. The columns hold the condition an ability causes, like `poisoned`, and the poison damage a melee
   attack starts at.
+* The `item.location` column and the `creature_location_coordinate` and `item_location_coordinate` tables. The tables
+  keep the map positions written with `{{Mapper Coords}}` in a creature's or item's location, with their labels, and
+  the location text shows each label in place of its position.
 
 The [database schema](docs/schema.md) describes each of them.
 

@@ -156,6 +156,62 @@ class TestItem(unittest.TestCase):
         self.assertEqual([35609], loaded.client_ids)
         self.assertEqual([(1, 35609, 0)], [tuple(row) for row in rows])
 
+    def test_item_location_round_trip(self):
+        article = Article(
+            article_id=1,
+            title="Sneeze Blossom",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource("content_item_sneeze_blossom.txt"),
+        )
+        ItemParser.from_article(article).insert(self.conn)
+
+        loaded = Item.get_one_by_field(self.conn, "article_id", 1)
+        rows = self.conn.execute(
+            "SELECT item_id, x, y, z, label, position FROM item_location_coordinate ORDER BY position",
+        ).fetchall()
+
+        self.assertEqual("An example can be found at spot.", loaded.location)
+        self.assertEqual([(32709, 31842, 7, "spot")], [(c.x, c.y, c.z, c.label) for c in loaded.location_coordinates])
+        self.assertEqual([(1, 32709, 31842, 7, "spot", 0)], [tuple(row) for row in rows])
+
+    def test_item_location_coordinates_round_trip_in_listed_order(self):
+        content = load_resource("content_item_sneeze_blossom.txt")
+        location = "{{Mapper Coords|127.197|124.98|7|3|text=spot}}"
+        self.assertIn(location, content)
+        article = Article(
+            article_id=1,
+            title="Sneeze Blossom",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=content.replace(
+                location,
+                location + ", {{Mapper Coords|126.4|128.108|7|2}} and {{Mapper Coords|125.1|128.109|3|4|text=x}}",
+            ),
+        )
+        ItemParser.from_article(article).insert(self.conn)
+
+        loaded = Item.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertEqual("An example can be found at spot, and x.", loaded.location)
+        self.assertEqual(
+            [(32709, 31842, 7, "spot"), (32260, 32876, 7, None), (32001, 32877, 3, "x")],
+            [(c.x, c.y, c.z, c.label) for c in loaded.location_coordinates],
+        )
+
+    def test_item_location_round_trip_none(self):
+        article = Article(
+            article_id=1,
+            title="Amethyst Necklace",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource("content_item_amethyst_necklace.txt"),
+        )
+        ItemParser.from_article(article).insert(self.conn)
+
+        loaded = Item.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertIsNone(loaded.location)
+        self.assertEqual([], loaded.location_coordinates)
+        self.assertEqual([], self.conn.execute("SELECT * FROM item_location_coordinate").fetchall())
+
     def _insert_amethyst_necklace_with_itemid(self, itemid: str) -> None:
         content = load_resource("content_item_amethyst_necklace.txt")
         self.assertIn("| itemid        = 35609", content)

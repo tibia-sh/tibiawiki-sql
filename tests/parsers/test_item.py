@@ -4,6 +4,7 @@ import unittest
 
 from tests import RESOURCES_PATH, load_resource
 from tibiawikisql.api import Article
+from tibiawikisql.models import Item
 from tibiawikisql.parsers import ItemParser
 
 
@@ -429,3 +430,32 @@ class TestItemParserClientIds(unittest.TestCase):
 
                 if item.client_ids:
                     self.assertEqual(item.client_id, item.client_ids[0])
+
+
+class TestItemParserLocation(unittest.TestCase):
+    def _parse(self, title: str, resource: str) -> Item:
+        article = Article(
+            article_id=1,
+            title=title,
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource(resource),
+        )
+        return ItemParser.from_article(article)
+
+    def test_sneeze_blossom_location_and_coordinates(self):
+        item = self._parse("Sneeze Blossom", "content_item_sneeze_blossom.txt")
+
+        self.assertEqual("An example can be found at spot.", item.location)
+        self.assertEqual([(32709, 31842, 7, "spot")], [(c.x, c.y, c.z, c.label) for c in item.location_coordinates])
+
+    def test_location_without_mapper_coords(self):
+        item = self._parse("Shallow Water", "content_item_shallow_water.txt")
+
+        self.assertEqual("All around the land of Tibia, rivers and water falls.", item.location)
+        self.assertEqual([], item.location_coordinates)
+
+    def test_no_location(self):
+        item = self._parse("Amethyst Necklace", "content_item_amethyst_necklace.txt")
+
+        self.assertIsNone(item.location)
+        self.assertEqual([], item.location_coordinates)

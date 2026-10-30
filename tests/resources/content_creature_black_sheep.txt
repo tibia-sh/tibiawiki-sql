@@ -1,0 +1,53 @@
+{{Infobox Creature|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name           = Black Sheep
+| article        = a
+| actualname     = black sheep
+| plural         = black sheep
+| hp             = 20
+| exp            = 0
+| armor          = 1
+| mitigation     = 0.08
+| summon         = 250
+| convince       = 250
+| illusionable   = yes
+| creatureclass  = Mammals
+| primarytype    = Ungulates
+| bestiaryclass  = Mammal
+| bestiarylevel  = Trivial
+| occurrence     = Uncommon
+| spawntype      = Regular
+| isboss         = no
+| abilities      = {{Ability List|None}}
+| maxdmg         = 0
+| pushable       = yes
+| pushobjects    = no
+| walksaround    = Fire, Energy, Poison
+| walksthrough   = --
+| paraimmune     = no
+| senseinvis     = no
+| physicalDmgMod = 100%
+| earthDmgMod    = 100%
+| fireDmgMod     = 105%
+| deathDmgMod    = 100%
+| energyDmgMod   = 100%
+| holyDmgMod     = 100%
+| iceDmgMod      = 100%
+| hpDrainDmgMod  = 100%
+| drownDmgMod    = 100%
+| healMod        = 100%
+| sounds         = {{Sound List|Maeh}}
+| implemented    = 6.1
+| race_id	     = 13
+| notes          = They are the same as [[sheep]], with the exception of their color.<br />To tame this creature, use a [[Reins]] on it. For additional details, refer to the article on [[Black Sheep (Mount)]].<br /> By successfully taming the [[Black Sheep]] you will earn the achievement [[Little Ball of Wool]].
+| behaviour      = Black sheep will always run.
+| speed          = 58
+| strategy       = Just attack them, they are slow.
+| location       = [[Femor Hills]] ({{Mapper Coords|127.88|124.58|4|4|text=here}}), cultist cave in [[Liberty Bay]] ({{Mapper Coords|126.192|127.255|7|2|text=here}}), [[Drefia]]
+| loot           = {{Loot Table
+ |{{Loot Item|1-5|Meat|common}}
+ |{{Loot Item|Black Wool|rare}}
+}}
+| history        = In the early years of Tibia, many myths surrounded the black sheep. They were fairly rare, with only a couple known spawns, the most famous being in the [[Femor Hills]].
+| usespells      = no
+| attacktype     = Melee
+}}

@@ -1,0 +1,16 @@
+{{Infobox Object|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name          = Sneeze Blossom
+| article       =  
+| itemid        = 3891
+| objectclass   = Flora and Minerals
+| primarytype   = Flowers
+| secondarytype = Steppe Plants
+| implemented   = 7.5
+| immobile      = 
+| walkable      = yes
+| walkingspeed  =  
+| pickupable    = no
+| attrib        =  
+| location      = An example can be found at {{Mapper Coords|127.197|124.98|7|3|text=spot}}.
+| notes         =  
+}}

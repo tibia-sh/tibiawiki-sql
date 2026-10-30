@@ -764,3 +764,69 @@ class TestCreatureParserAbilities(unittest.TestCase):
     def test_outfit_extras_with_a_gap(self):
         self.assertEqual([("A", "no", "outfit", None, None), ("B", "no", "outfit", None, None)],
                          self._rows("{{Ability List|{{Outfit|no|thing2=A|thing5=B}}}}"))
+
+
+class TestCreatureParserLocation(unittest.TestCase):
+    def _parse(self, title: str, resource: str) -> Creature:
+        article = Article(
+            article_id=1,
+            title=title,
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=load_resource(resource),
+        )
+        return CreatureParser.from_article(article)
+
+    def _coordinates(self, creature: Creature) -> list[tuple[int, int, int, str | None]]:
+        return [(c.x, c.y, c.z, c.label) for c in creature.location_coordinates]
+
+    def test_black_sheep_has_two_coordinates_and_clean_text(self):
+        creature = self._parse("Black Sheep", "content_creature_black_sheep.txt")
+
+        self.assertEqual("Femor Hills (here), cultist cave in Liberty Bay (here), Drefia", creature.location)
+        self.assertEqual(
+            [(32600, 31802, 4, "here"), (32448, 32767, 7, "here")],
+            self._coordinates(creature),
+        )
+
+    def test_behemoth_reads_a_label_given_before_the_coordinates(self):
+        creature = self._parse("Behemoth", "content_creature_behemoth.txt")
+
+        self.assertEqual(
+            "Cyclopolis, deepest part of Tarpit Tomb after the flame, Forbidden Lands, Vandura Mountain, Deeper Banuta "
+            "(single spawn here, double spawn here), Serpentine Tower (unreachable), deep into the Formorgar Mines, "
+            "Arena and Zoo Quarter, The Dark Path, Lower Spike, Chyllfroest, Medusa Tower and Underground Glooth "
+            "Factory (west side).",
+            creature.location,
+        )
+        self.assertEqual(
+            [(32732, 32601, 14, "here"), (32746, 32571, 14, "here")],
+            self._coordinates(creature),
+        )
+
+    def test_warlord_ruzad_keeps_the_label_but_no_malformed_coordinates(self):
+        creature = self._parse("Warlord Ruzad", "content_creature_warlord_ruzad.txt")
+
+        self.assertEqual("Orc Fortress, in the tower near Orc Powder Quest Room, here.", creature.location)
+        self.assertEqual([], creature.location_coordinates)
+
+    def test_location_without_mapper_coords_is_unchanged(self):
+        creature = self._parse("Dragon", "content_creature_dragon.txt")
+
+        self.assertTrue(creature.location.startswith("Thais, Ancient Temple, Darashia Dragon Lair, "))
+        self.assertEqual([], creature.location_coordinates)
+
+    def test_no_location(self):
+        content = load_resource("content_creature_mimic.txt")
+        location = "| location       = Third dream in the [[Dream Realm]]\n"
+        self.assertIn(location, content)
+        article = Article(
+            article_id=1,
+            title="Mimic",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=content.replace(location, ""),
+        )
+
+        creature = CreatureParser.from_article(article)
+
+        self.assertIsNone(creature.location)
+        self.assertEqual([], creature.location_coordinates)

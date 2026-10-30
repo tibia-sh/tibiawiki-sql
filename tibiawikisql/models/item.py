@@ -10,13 +10,14 @@ from pypika.terms import LiteralValue, ValueWrapper
 from typing_extensions import Self
 
 from tibiawikisql.api import WikiEntry
-from tibiawikisql.models.base import RowModel, WithImage, WithStatus, WithVersion
+from tibiawikisql.models.base import LocationCoordinate, RowModel, WithImage, WithStatus, WithVersion
 from tibiawikisql.schema import (
     BookTable,
     CreatureDropTable,
     ItemAttributeTable,
     ItemClientIdTable,
     ItemKeyTable,
+    ItemLocationCoordinateTable,
     ItemProficiencyPerkTable,
     ItemSoundTable,
     ItemStoreOfferTable,
@@ -165,6 +166,10 @@ class Item(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=ItemTa
     """The internal id of the item in the client."""
     client_ids: list[int] = Field(default_factory=list)
     """Every client id of the item, in the order the wiki lists them."""
+    location: str | None = None
+    """Where the item can be found. Each map position is replaced by its label, if it has one."""
+    location_coordinates: list[LocationCoordinate] = Field(default_factory=list)
+    """The map positions in the item's location, in the order the wiki lists them."""
     attributes: list[ItemAttribute] = Field(default_factory=list)
     """The item's attributes."""
     dropped_by: list[ItemDrop] = Field(default_factory=list)
@@ -299,6 +304,10 @@ class Item(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=ItemTa
             ItemSoundTable.insert(conn, item_id=self.article_id, content=sound)
         for position, client_id in enumerate(self.client_ids):
             ItemClientIdTable.insert(conn, item_id=self.article_id, client_id=client_id, position=position)
+        for position, coordinate in enumerate(self.location_coordinates):
+            ItemLocationCoordinateTable.insert(
+                conn, item_id=self.article_id, position=position, **coordinate.model_dump(),
+            )
         for offer in self.store_offers:
             ItemStoreOfferTable.insert(conn, item_id=self.article_id, **offer.model_dump())
 
@@ -329,6 +338,11 @@ class Item(WikiEntry, WithVersion, WithStatus, WithImage, RowModel, table=ItemTa
 
         client_ids = ItemClientIdTable.get_list_by_field(conn, "item_id", item.article_id, sort_by="position")
         item.client_ids = [r["client_id"] for r in client_ids]
+
+        coordinates = ItemLocationCoordinateTable.get_list_by_field(
+            conn, "item_id", item.article_id, sort_by="position",
+        )
+        item.location_coordinates = [LocationCoordinate(**dict(r)) for r in coordinates]
 
         item.bought_by = [
             ItemOffer(

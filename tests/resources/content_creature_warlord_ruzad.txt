@@ -1,0 +1,61 @@
+{{Infobox Creature|List={{{1|}}}|GetValue={{{GetValue|}}}
+| name           = Warlord Ruzad
+| hp             = 1500
+| exp            = 1700
+| armor          = ?
+| summon         = --
+| convince       = --
+| illusionable   = no
+| creatureclass  = Humanoids
+| primarytype    = Orcs
+| spawntype      = Raid, Unique
+| isboss         = yes
+| isarenaboss    = no
+| abilities      = {{Ability List| {{Melee|0-300?}}|{{Summon|Orc Berserker|2}} |{{Healing|range=?-75}}}}
+| maxdmg         = ?
+| pushable       = ?
+| pushobjects    = ?
+| walksaround    = Poison
+| walksthrough   = ?
+| paraimmune     = yes
+| senseinvis     = yes
+| physicalDmgMod = 100%?
+| earthDmgMod    = 110%
+| fireDmgMod     = 20%
+| deathDmgMod    = 110%
+| energyDmgMod   = 99%<?
+| holyDmgMod     = 90%
+| iceDmgMod      = 100%?
+| hpDrainDmgMod  = 100%?
+| drownDmgMod    = 100%?
+| healMod        = 100%?
+| sounds         = {{Sound List|Gadarat Ulderek!|Ruzad buta bana!|Rahi Gosh!|Ikem rambo zambo!}}
+| implemented    = 8.20
+| race_id	= 419
+| notes          = <gallery mode="nolines">Orc.Boss.jpg
+Warlord Ruzad Menera.jpg|Warlord Ruzad on Menera
+</gallery>
+| behaviour      = Treat like a strong [[Orc Warlord]], but it [[Summon]]s [[Orc Berserker]]s.
+| speed          = ?
+| strategy       = Be careful when facing this creature. Don't let him [[Summon]], or you can die easily. The strategy is almost the same than an [[Orc Warlord]]. Using [[Stealth Ring]]s or [[Invisibility]] would prevent you from being damaged by the summoned [[Orc Berserker]]s, but not the [[Orc leader]]s.
+| location       = [[Orc Fortress]], in the tower near [[The Explorer Society Quest|Orc Powder Quest Room]], {{Mapper Coords|128.202,123.233,5-2|text=here}}.
+| loot           = {{Loot Table
+ |{{Loot Item|0-59|Gold Coin}}
+ |{{Loot Item|0-14|Throwing Star}}
+ |{{Loot Item|Meat}}
+ |{{Loot Item|Fish}}
+ |{{Loot Item|Orc Leather}}
+ |{{Loot Item|Hunting Spear}}
+ |{{Loot Item|Scimitar}}
+ |{{Loot Item|Brass Legs}}
+ |{{Loot Item|Plate Legs}}
+ |{{Loot Item|Dark Helmet}}
+ |{{Loot Item|Orcish Axe}}
+ |{{Loot Item|Protection Amulet}}
+ |{{Loot Item|Plate Armor}}
+ |{{Loot Item|Two Handed Sword}}
+ |{{Loot Item|Magma Boots}}
+ |{{Loot Item|Butcher's Axe}}
+}}
+| bosstiaryclass    = Nemesis
+}}

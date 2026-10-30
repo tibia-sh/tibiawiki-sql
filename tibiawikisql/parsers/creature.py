@@ -7,6 +7,7 @@ import mwparserfromhell
 
 import tibiawikisql.schema
 from tibiawikisql.api import Article
+from tibiawikisql.models.base import LocationCoordinate
 from tibiawikisql.models.creature import (
     Creature,
     CreatureAbility,
@@ -16,7 +17,7 @@ from tibiawikisql.models.creature import (
 from tibiawikisql.parsers import BaseParser
 from tibiawikisql.parsers.base import AttributeParser
 from tibiawikisql.utils import (
-    clean_links,
+    clean_location,
     find_template,
     number_pattern,
     parse_boolean,
@@ -25,6 +26,7 @@ from tibiawikisql.utils import (
     parse_integer,
     parse_known_boolean,
     parse_known_text,
+    parse_location_coordinates,
     parse_min_max,
     parse_sounds,
     strip_code,
@@ -482,7 +484,7 @@ class CreatureParser(BaseParser):
         "modifier_healing": AttributeParser.optional("healMod", parse_known_integer),
         "walks_through": AttributeParser.optional("walksthrough", parse_monster_walks),
         "walks_around": AttributeParser.optional("walksaround", parse_monster_walks),
-        "location": AttributeParser.optional("location", clean_links),
+        "location": AttributeParser.optional("location", clean_location),
         "race_id": AttributeParser.optional("race_id", parse_client_id),
         "version": AttributeParser.optional("implemented"),
         "status": AttributeParser.status(),
@@ -512,6 +514,11 @@ class CreatureParser(BaseParser):
             row["loot"] = loot_items
         if "sounds" in raw_attributes:
             row["sounds"] = parse_sounds(raw_attributes["sounds"])
+        if "location" in raw_attributes:
+            row["location_coordinates"] = [
+                LocationCoordinate(x=x, y=y, z=z, label=label)
+                for x, y, z, label in parse_location_coordinates(raw_attributes["location"])
+            ]
         if "abilities" in raw_attributes:
             abilities = parse_abilities(raw_attributes["abilities"])
             if abilities:

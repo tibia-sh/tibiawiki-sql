@@ -10,6 +10,7 @@ from typing_extensions import Self
 
 from tibiawikisql.api import WikiEntry
 from tibiawikisql.models.base import (
+    LocationCoordinate,
     RowModel,
     WithImage,
     WithStatus,
@@ -18,6 +19,7 @@ from tibiawikisql.models.base import (
 from tibiawikisql.schema import (
     CreatureAbilityTable,
     CreatureDropTable,
+    CreatureLocationCoordinateTable,
     CreatureMaxDamageTable,
     CreatureSoundTable,
     CreatureTable,
@@ -253,7 +255,9 @@ class Creature(WikiEntry, WithStatus, WithVersion, WithImage, RowModel, table=Cr
     sounds: list[str] = Field([])
     """The "sounds" made by the creature."""
     location: str | None
-    """The locations where the creature can be found."""
+    """The locations where the creature can be found. Each map position is replaced by its label, if it has one."""
+    location_coordinates: list[LocationCoordinate] = Field(default_factory=list)
+    """The map positions in the creature's location, in the order the wiki lists them."""
     race_id: int | None = None
     """The client race ID of the creature."""
     loot_statistics_kills: int | None = None
@@ -310,6 +314,10 @@ class Creature(WikiEntry, WithStatus, WithVersion, WithImage, RowModel, table=Cr
             CreatureSoundTable.insert(conn, creature_id=self.article_id, content=sound)
         for ability in self.abilities:
             CreatureAbilityTable.insert(conn, creature_id=self.article_id, **ability.model_dump())
+        for position, coordinate in enumerate(self.location_coordinates):
+            CreatureLocationCoordinateTable.insert(
+                conn, creature_id=self.article_id, position=position, **coordinate.model_dump(),
+            )
         if self.max_damage:
             CreatureMaxDamageTable.insert(conn, creature_id=self.article_id, **self.max_damage.model_dump())
 
@@ -327,6 +335,11 @@ class Creature(WikiEntry, WithStatus, WithVersion, WithImage, RowModel, table=Cr
 
         abilities = CreatureAbilityTable.get_list_by_field(conn, "creature_id", creature.article_id)
         creature.abilities = [CreatureAbility(**dict(r)) for r in abilities]
+
+        coordinates = CreatureLocationCoordinateTable.get_list_by_field(
+            conn, "creature_id", creature.article_id, sort_by="position",
+        )
+        creature.location_coordinates = [LocationCoordinate(**dict(r)) for r in coordinates]
 
         drops = CreatureDropTable.get_by_creature_id(conn, creature.article_id)
         creature.loot = [CreatureDrop(**dict(r)) for r in drops]
