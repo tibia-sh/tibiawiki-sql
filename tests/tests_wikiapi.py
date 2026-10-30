@@ -6,6 +6,7 @@ from unittest.mock import Mock, call
 import requests
 
 from tests import load_resource
+from tibiawikisql import __version__
 from tibiawikisql.api import Article, WikiClient, WikiEntry, Image
 from tibiawikisql.errors import WikiApiError
 
@@ -313,3 +314,13 @@ class TestWikiApi(unittest.TestCase):
         self.assertEqual(context.exception.status, 502)
         self.assert_requests(5)
         self.assertEqual(self.sleep.call_args_list, [call(5), call(15), call(30), call(60)])
+
+    def test_requests_carry_the_user_agent(self):
+        client = WikiClient()
+
+        request = client.session.prepare_request(requests.Request("GET", WikiClient.ENDPOINT))
+
+        self.assertEqual(
+            request.headers["User-Agent"],
+            f"tibiawikisql/{__version__} (+https://github.com/tibia-sh/tibiawiki-sql)",
+        )
