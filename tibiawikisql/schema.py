@@ -89,6 +89,7 @@ class CreatureTable(Table):
     walks_around = Column(Text)
     location = Column(Text)
     race_id = Column(Integer)
+    loot_statistics_kills = Column(Integer)
     version = Column(Text, index=True)
     image = Column(Blob)
     status = Column(Text, default="active", nullable=False)
@@ -194,6 +195,7 @@ class CreatureDropTable(Table, table_name="creature_drop"):
     chance = Column(Real)
     min = Column(Integer, nullable=False)
     max = Column(Integer, nullable=False)
+    rarity = Column(Text)
 
     @classmethod
     def get_by_creature_id(cls, conn: Connection | Cursor, creature_id: int):
@@ -207,6 +209,7 @@ class CreatureDropTable(Table, table_name="creature_drop"):
                 this.min,
                 this.max,
                 this.chance,
+                this.rarity,
             )
             .join(item).on(this.item_id == item.article_id)
         )
@@ -224,6 +227,7 @@ class CreatureDropTable(Table, table_name="creature_drop"):
                 this.min,
                 this.max,
                 this.chance,
+                this.rarity,
             )
             .join(creature).on(this.creature_id == creature.article_id)
         )

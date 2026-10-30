@@ -28,6 +28,8 @@ The copy adds this data to the database:
 * The `creature.attack_type` and `creature.uses_spells` columns. They hold how a creature attacks, in lower case, like
   `melee`, and whether it uses spells, `NULL` when the wiki does not say.
 * The `item_client_id` table. It keeps every client ID of an item, in the order the wiki lists them, from position 0.
+* The `creature_drop.rarity` and `creature.loot_statistics_kills` columns. They hold the rarity a creature's article
+  gives a drop, like `common`, and the kills on its Loot Statistics page that the drop chances come from.
 
 The [database schema](docs/schema.md) describes each of them.
 

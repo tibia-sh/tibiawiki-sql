@@ -4,7 +4,7 @@ import unittest
 
 from tests import load_resource
 from tibiawikisql.api import Article
-from tibiawikisql.models import Creature
+from tibiawikisql.models import Creature, CreatureDrop
 from tibiawikisql.parsers.creature import CreatureParser, parse_abilities, parse_mana_cost, parse_maximum_damage
 
 
@@ -408,3 +408,99 @@ class TestCreatureParserKnownValues(unittest.TestCase):
         creature = self._edited("| usespells    = yes\n", "")
 
         self.assertIsNone(creature.uses_spells)
+
+
+class TestCreatureParserLoot(unittest.TestCase):
+    GOLD_COIN = " |{{Loot Item|1-105|Gold Coin|common}}"
+
+    def _parse(self, content: str) -> Creature:
+        article = Article(
+            article_id=1,
+            title="Dragon",
+            timestamp=datetime.datetime.fromisoformat("2026-06-25T06:40:57+00:00"),
+            content=content,
+        )
+
+        return CreatureParser.from_article(article)
+
+    def _gold_coin(self, line: str) -> CreatureDrop:
+        content = load_resource("content_creature_dragon.txt")
+        self.assertIn(self.GOLD_COIN, content)
+        creature = self._parse(content.replace(self.GOLD_COIN, line))
+        return next(drop for drop in creature.loot if drop.item_title == "Gold Coin")
+
+    def test_rarity_with_amount(self):
+        drop = self._gold_coin(" |{{Loot Item|1-3|Gold Coin|common}}")
+
+        self.assertEqual("common", drop.rarity)
+        self.assertEqual((1, 3), (drop.min, drop.max))
+
+    def test_rarity_without_amount(self):
+        drop = self._gold_coin(" |{{Loot Item|Gold Coin|common}}")
+
+        self.assertEqual("common", drop.rarity)
+        self.assertEqual((0, 1), (drop.min, drop.max))
+
+    def test_rarity_absent(self):
+        drop = self._gold_coin(" |{{Loot Item|1-3|Gold Coin}}")
+
+        self.assertIsNone(drop.rarity)
+        self.assertEqual((1, 3), (drop.min, drop.max))
+
+    def test_rarity_absent_without_amount(self):
+        drop = self._gold_coin(" |{{Loot Item|Gold Coin}}")
+
+        self.assertIsNone(drop.rarity)
+        self.assertEqual((0, 1), (drop.min, drop.max))
+
+    def test_rarity_unknown(self):
+        drop = self._gold_coin(" |{{Loot Item|1-3|Gold Coin|?}}")
+
+        self.assertIsNone(drop.rarity)
+
+    def test_rarity_typo(self):
+        drop = self._gold_coin(" |{{Loot Item|1-3|Gold Coin|comon}}")
+
+        self.assertIsNone(drop.rarity)
+
+    def test_rarity_lower_cased_past_a_comment(self):
+        drop = self._gold_coin(" |{{Loot Item|1-3|Gold Coin|Very Rare <!-- note -->}}")
+
+        self.assertEqual("very rare", drop.rarity)
+
+    def test_rarity_only_in_a_comment(self):
+        drop = self._gold_coin(" |{{Loot Item|1-3|Gold Coin|<!-- common -->}}")
+
+        self.assertIsNone(drop.rarity)
+
+    def test_dragon_loot(self):
+        creature = self._parse(load_resource("content_creature_dragon.txt"))
+
+        # Item, min and max are pinned to what the parser gave before rarity was read.
+        self.assertEqual(
+            [
+                ("Gold Coin", 1, 105, "common"),
+                ("Dragon Ham", 1, 3, "common"),
+                ("Steel Shield", 0, 1, "uncommon"),
+                ("Crossbow", 0, 1, "uncommon"),
+                ("Dragon's Tail", 0, 1, "uncommon"),
+                ("Burst Arrow", 1, 10, "uncommon"),
+                ("Longsword", 0, 1, "semi-rare"),
+                ("Steel Helmet", 0, 1, "semi-rare"),
+                ("Broadsword", 0, 1, "semi-rare"),
+                ("Plate Legs", 0, 1, "semi-rare"),
+                ("Green Dragon Leather", 0, 1, "rare"),
+                ("Wand of Inferno", 0, 1, "rare"),
+                ("Strong Health Potion", 0, 1, "rare"),
+                ("Green Dragon Scale", 0, 1, "rare"),
+                ("Double Axe", 0, 1, "rare"),
+                ("Dragon Hammer", 0, 1, "rare"),
+                ("Serpent Sword", 0, 1, "rare"),
+                ("Small Diamond", 0, 1, "very rare"),
+                ("Dragon Shield", 0, 1, "very rare"),
+                ("Life Crystal", 0, 1, "very rare"),
+                ("Dragonbone Staff", 0, 1, "very rare"),
+                ("Dragon Trophy", 0, 1, "very rare"),
+            ],
+            [(drop.item_title, drop.min, drop.max, drop.rarity) for drop in creature.loot],
+        )

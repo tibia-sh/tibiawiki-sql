@@ -12,6 +12,26 @@ if TYPE_CHECKING:
     import sqlite3
 
 
+def article_rarity(cursor: sqlite3.Cursor, creature_id: int, item_id: int) -> str | None:
+    """Get the rarity the creature's article gives a drop, before its rows are replaced.
+
+    Args:
+        cursor: A cursor to the database.
+        creature_id: The article id of the creature.
+        item_id: The article id of the item.
+
+    Returns:
+        The rarity of the drop's rows when they all have the same one, ``None`` included, and ``None`` when they
+        disagree, like a crystal coin listed both ``common`` and ``very rare``, or when there are no rows.
+
+    """
+    rows = cursor.execute(
+        "SELECT DISTINCT rarity FROM creature_drop WHERE creature_id = ? AND item_id = ?",
+        (creature_id, item_id),
+    ).fetchall()
+    return rows[0][0] if len(rows) == 1 else None
+
+
 def generate_loot_statistics(
     conn: sqlite3.Connection,
     data_store: dict[str, Any],
@@ -47,7 +67,12 @@ def generate_loot_statistics(
                 if kills <= 0:
                     # Without a positive number of kills no chance can be computed.
                     continue
+                cursor.execute(
+                    "UPDATE creature SET loot_statistics_kills = ? WHERE article_id = ?",
+                    (kills, creature_id),
+                )
                 rows = []
+                rarities: dict[int, str | None] = {}
                 for entry in loot_stats:
                     if not entry:
                         continue
@@ -62,13 +87,15 @@ def generate_loot_statistics(
                     amount = entry.get("amount", 1)
                     percentage = min(times / kills * 100, 100)
                     minimum, maximum = parse_min_max(amount)
-                    rows.append((creature_id, item_id, percentage, minimum, maximum))
+                    if item_id not in rarities:
+                        rarities[item_id] = article_rarity(cursor, creature_id, item_id)
+                    rows.append((creature_id, item_id, percentage, minimum, maximum, rarities[item_id]))
                     cursor.execute(
                         "DELETE FROM creature_drop WHERE creature_id = ? AND item_id = ?",
                         (creature_id, item_id),
                     )
                 cursor.executemany(
-                    "INSERT INTO creature_drop(creature_id, item_id, chance, min, max) VALUES(?,?,?,?,?)",
+                    "INSERT INTO creature_drop(creature_id, item_id, chance, min, max, rarity) VALUES(?,?,?,?,?,?)",
                     rows,
                 )
         if unknown_items:

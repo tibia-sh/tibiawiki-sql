@@ -35,6 +35,9 @@ if TYPE_CHECKING:
 
 range_hyphen_pattern = re.compile(r"(?<=\d)-(?=\d)")
 
+LOOT_RARITIES = ("always", "common", "uncommon", "semi-rare", "rare", "very rare")
+"""The rarity words of the Loot Item template."""
+
 
 def parse_maximum_damage(value: str) -> dict[str, int]:
     """Parse the maximum damage template from TibiaWiki.
@@ -142,14 +145,29 @@ def parse_paralysable(value: str) -> bool | None:
     return parse_boolean(visible_text(value), None, invert=True)
 
 
-def parse_loot(value: str) -> list[tuple[str, str]]:
+def parse_loot_rarity(value: str) -> str | None:
+    """Parse the rarity of a Loot Item template from the visible text of its value, in lower case.
+
+    Args:
+        value: The raw value of the rarity parameter.
+
+    Returns:
+        One of :data:`LOOT_RARITIES`, or ``None`` for any other value, such as ``?`` or a typo.
+
+    """
+    rarity = parse_known_text(value)
+    return rarity if rarity in LOOT_RARITIES else None
+
+
+def parse_loot(value: str) -> list[tuple[str, str, str | None]]:
     """Get every item drop entry of a creature's drops.
 
     Args:
         value: A string containing item drops.
 
     Return:
-        A list of tuples containing the name of the item and the amount dropped (or empty for 1).
+        A list of tuples containing the name of the item, the amount dropped (or empty for 1) and the rarity of the
+        drop (or ``None`` if unknown).
 
     """
 
@@ -162,13 +180,15 @@ def parse_loot(value: str) -> list[tuple[str, str]]:
     for item_template in loot_items_templates:
         param_count = len(item_template.params)
         if param_count < 2:
-            loot.append((strip_code(item_template.get(1)), ""))
+            loot.append((strip_code(item_template.get(1)), "", None))
         else:
             second_param = strip_code(item_template.get(2))
-            if second_param in ["always", "common", "uncommon", "semi-rare", "rare", "very rare"]:
-                loot.append((strip_code(item_template.get(1)), ""))
+            if second_param in LOOT_RARITIES:
+                rarity = parse_loot_rarity(str(item_template.get(2).value))
+                loot.append((strip_code(item_template.get(1)), "", rarity))
             else:
-                loot.append((second_param, (strip_code(item_template.get(1)))))
+                rarity = parse_loot_rarity(str(item_template.get(3).value)) if item_template.has(3) else None
+                loot.append((second_param, (strip_code(item_template.get(1))), rarity))
     return loot
 
 
@@ -327,7 +347,7 @@ class CreatureParser(BaseParser):
         if "loot" in raw_attributes:
             loot = parse_loot(raw_attributes["loot"])
             loot_items = []
-            for item, amounts in loot:
+            for item, amounts, rarity in loot:
                 if not amounts:
                     _min, _max = 0, 1
                 else:
@@ -337,6 +357,7 @@ class CreatureParser(BaseParser):
                         item_title=item,
                         min=_min,
                         max=_max,
+                        rarity=rarity,
                     ),
                 )
             row["loot"] = loot_items

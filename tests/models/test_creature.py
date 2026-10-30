@@ -3,7 +3,8 @@ import sqlite3
 import unittest
 
 from tibiawikisql import schema
-from tibiawikisql.models import Creature
+from tibiawikisql.models import Creature, CreatureDrop, Item
+from tibiawikisql.schema import ItemTable
 
 
 class TestCreature(unittest.TestCase):
@@ -17,6 +18,8 @@ class TestCreature(unittest.TestCase):
         race_id: int | None,
         attack_type: str | None = None,
         uses_spells: bool | None = None,
+        loot_statistics_kills: int | None = None,
+        loot: list[CreatureDrop] | None = None,
     ) -> Creature:
         return Creature(
             article_id=1,
@@ -64,6 +67,8 @@ class TestCreature(unittest.TestCase):
             walks_around=None,
             location="Demona, Edron Demon Forge.",
             race_id=race_id,
+            loot_statistics_kills=loot_statistics_kills,
+            loot=loot or [],
             version="4.0",
             status="active",
             timestamp=datetime.datetime.fromisoformat("2024-07-29T16:37:09+00:00"),
@@ -98,3 +103,40 @@ class TestCreature(unittest.TestCase):
 
         self.assertIsNone(loaded.attack_type)
         self.assertIsNone(loaded.uses_spells)
+
+    def test_creature_loot_statistics_kills_round_trip(self):
+        self._creature(35, loot_statistics_kills=36488).insert(self.conn)
+
+        loaded = Creature.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertEqual(36488, loaded.loot_statistics_kills)
+
+    def test_creature_loot_statistics_kills_round_trip_none(self):
+        self._creature(35).insert(self.conn)
+
+        loaded = Creature.get_one_by_field(self.conn, "article_id", 1)
+
+        self.assertIsNone(loaded.loot_statistics_kills)
+
+    def test_creature_drop_rarity_round_trip(self):
+        timestamp = datetime.datetime.fromisoformat("2024-07-29T16:37:09+00:00")
+        ItemTable.insert(self.conn, article_id=2, title="Gold Coin", name="Gold Coin", timestamp=timestamp)
+        ItemTable.insert(self.conn, article_id=3, title="Demon Horn", name="Demon Horn", timestamp=timestamp)
+        ItemTable.insert(self.conn, article_id=4, title="Talon", name="Talon", timestamp=timestamp)
+        self._creature(35, loot=[
+            CreatureDrop(item_title="Gold Coin", min=0, max=100, rarity="common"),
+            CreatureDrop(item_id=3, item_title="Demon Horn", min=0, max=1, rarity="uncommon"),
+            CreatureDrop(item_title="Talon", min=0, max=1),
+        ]).insert(self.conn)
+
+        loaded = Creature.get_one_by_field(self.conn, "article_id", 1)
+        gold_coin = Item.get_one_by_field(self.conn, "article_id", 2)
+
+        self.assertEqual(
+            [("Gold Coin", 0, 100, "common"), ("Demon Horn", 0, 1, "uncommon"), ("Talon", 0, 1, None)],
+            [(drop.item_title, drop.min, drop.max, drop.rarity) for drop in loaded.loot],
+        )
+        self.assertEqual(
+            [("Demon", 0, 100, "common")],
+            [(drop.creature_title, drop.min, drop.max, drop.rarity) for drop in gold_coin.dropped_by],
+        )

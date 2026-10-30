@@ -94,6 +94,8 @@ class ItemDrop(BaseModel):
     """The maximum possible amount of the dropped item."""
     chance: float | None = None
     """The chance percentage of getting this item dropped by this creature."""
+    rarity: str | None = None
+    """The rarity of the drop, in lower case, like ``common`` or ``very rare``. ``None`` if unknown."""
 
 class ItemQuestReward(BaseModel):
     """A quest where the item is awarded."""

@@ -24,6 +24,14 @@
   like `?`, gives no rows. `item.client_id` is unchanged and still holds the first ID.
   It keeps its earlier reading, which counts comments, so when `itemid` starts with a comment holding a number, like
   `<!-- 7 -->644`, `client_id` is 7 while the rows start at 644.
+- Add `creature_drop.rarity` and `creature.loot_statistics_kills`. `rarity` is the rarity word of a `{{Loot Item}}`,
+  with or without an amount, as in `{{Loot Item|1-3|Gold Coin|common}}` and `{{Loot Item|Gold Coin|common}}`, in lower
+  case: `always`, `common`, `uncommon`, `semi-rare`, `rare` or `very rare`. Any other word, `?`, an empty or absent
+  rarity is `NULL`, and wiki comments are ignored. When a Loot Statistics page replaces a drop's rows, the new row keeps
+  the rarity the old rows share, `NULL` included, and is `NULL` when they disagree, like Court Warlock's crystal coin
+  listed both `common` and `very rare`, or when the article does not list the item. `loot_statistics_kills` holds the
+  kills of the page the chances come from, and is `NULL` for a creature without a page or whose page has no positive
+  number of kills. Loot `min` and `max`, and the number of drop rows, are unchanged.
 
 ## 9.0.0+tibiash.9
 

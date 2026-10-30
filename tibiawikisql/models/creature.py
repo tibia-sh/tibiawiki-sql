@@ -72,6 +72,8 @@ class CreatureDrop(BaseModel):
     """The maximum possible amount of the dropped item."""
     chance: float | None = None
     """The chance percentage of getting this item dropped by this creature."""
+    rarity: str | None = None
+    """The rarity of the drop, in lower case, like ``common`` or ``very rare``. ``None`` if unknown."""
 
     def insert(self, conn: sqlite3.Connection | sqlite3.Cursor, creature_id: int) -> None:
         if self.item_id is not None:
@@ -87,6 +89,7 @@ class CreatureDrop(BaseModel):
                 "min",
                 "max",
                 "chance",
+                "rarity",
             )
             .insert(
                 Parameter(":creature_id"),
@@ -98,6 +101,7 @@ class CreatureDrop(BaseModel):
                 Parameter(":min"),
                 Parameter(":max"),
                 Parameter(":chance"),
+                Parameter(":rarity"),
             )
         )
         query_str = q.get_sql()
@@ -245,6 +249,8 @@ class Creature(WikiEntry, WithStatus, WithVersion, WithImage, RowModel, table=Cr
     """The locations where the creature can be found."""
     race_id: int | None = None
     """The client race ID of the creature."""
+    loot_statistics_kills: int | None = None
+    """The kills on the creature's Loot Statistics page that its drop chances come from. ``None`` without a page."""
     loot: list[CreatureDrop] = Field([])
     """The items dropped by this creature."""
 
