@@ -377,6 +377,10 @@ that doesn't form a range.
 | client_id | `INTEGER` | A client ID of the item, a whole number in `itemid` after wiki comments are removed. |
 | position  | `INTEGER` | The ID's place in the `itemid` list, from 0.                                         |
 
+These rows ignore wiki comments, but `item.client_id` keeps its earlier reading, the first integer in the raw value,
+comments included. So when `itemid` starts with a comment holding a number, the two differ: `<!-- 7 -->644,645` gives
+`client_id` 7 and the rows 644 and 645, and `<!-- 7 -->` gives `client_id` 7 and no rows.
+
 
 
 ### item_key

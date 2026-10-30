@@ -22,6 +22,8 @@
 - Add the `item_client_id` table, with every client ID in an item's `itemid` in listed order, from position 0. Shallow
   Water's `629,630,631,632,633,634` gives six rows. Wiki comments are ignored, and an `itemid` with no whole number,
   like `?`, gives no rows. `item.client_id` is unchanged and still holds the first ID.
+  It keeps its earlier reading, which counts comments, so when `itemid` starts with a comment holding a number, like
+  `<!-- 7 -->644`, `client_id` is 7 while the rows start at 644.
 
 ## 9.0.0+tibiash.9
 

@@ -155,3 +155,36 @@ class TestItem(unittest.TestCase):
 
         self.assertEqual([35609], loaded.client_ids)
         self.assertEqual([(1, 35609, 0)], [tuple(row) for row in rows])
+
+    def _insert_amethyst_necklace_with_itemid(self, itemid: str) -> None:
+        content = load_resource("content_item_amethyst_necklace.txt")
+        self.assertIn("| itemid        = 35609", content)
+        article = Article(
+            article_id=1,
+            title="Amethyst Necklace",
+            timestamp=datetime.datetime.fromisoformat("2018-08-20T04:33:15+00:00"),
+            content=content.replace("| itemid        = 35609", f"| itemid        = {itemid}"),
+        )
+        ItemParser.from_article(article).insert(self.conn)
+
+    def test_item_client_ids_round_trip_leading_comment(self):
+        self._insert_amethyst_necklace_with_itemid("<!-- 7 -->644,645")
+
+        loaded = Item.get_one_by_field(self.conn, "article_id", 1)
+        rows = self.conn.execute(
+            "SELECT item_id, client_id, position FROM item_client_id ORDER BY position",
+        ).fetchall()
+
+        self.assertEqual(7, loaded.client_id)
+        self.assertEqual([644, 645], loaded.client_ids)
+        self.assertEqual([(1, 644, 0), (1, 645, 1)], [tuple(row) for row in rows])
+
+    def test_item_client_ids_round_trip_comment_only(self):
+        self._insert_amethyst_necklace_with_itemid("<!-- 7 -->")
+
+        loaded = Item.get_one_by_field(self.conn, "article_id", 1)
+        rows = self.conn.execute("SELECT item_id, client_id, position FROM item_client_id").fetchall()
+
+        self.assertEqual(7, loaded.client_id)
+        self.assertEqual([], loaded.client_ids)
+        self.assertEqual([], rows)

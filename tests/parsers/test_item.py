@@ -395,15 +395,37 @@ class TestItemParserClientIds(unittest.TestCase):
 
         self.assertEqual([35609], item.client_ids)
 
-    def test_first_id_matches_client_id_in_every_item_fixture(self):
+    def test_client_id_reads_a_leading_comment_the_rows_ignore(self):
+        item = self._edited("| itemid        = 35609", "| itemid        = <!-- 7 -->644,645")
+
+        self.assertEqual(7, item.client_id)
+        self.assertEqual([644, 645], item.client_ids)
+
+    def test_client_id_reads_a_comment_only_value_with_no_rows(self):
+        item = self._edited("| itemid        = 35609", "| itemid        = <!-- 7 -->")
+
+        self.assertEqual(7, item.client_id)
+        self.assertEqual([], item.client_ids)
+
+    def _item_fixtures(self) -> list[str]:
         resources = sorted(
             name for name in os.listdir(RESOURCES_PATH)
             if name.startswith("content_item") and "{{Infobox Object" in load_resource(name)
         )
         self.assertGreaterEqual(len(resources), 19)
-        for resource in resources:
+        return resources
+
+    def test_every_item_fixture_has_a_client_id(self):
+        for resource in self._item_fixtures():
             with self.subTest(resource=resource):
                 item = self._parse_content(resource, load_resource(resource))
 
                 self.assertTrue(item.client_ids)
-                self.assertEqual(item.client_id, item.client_ids[0])
+
+    def test_first_id_matches_client_id_in_every_item_fixture(self):
+        for resource in self._item_fixtures():
+            with self.subTest(resource=resource):
+                item = self._parse_content(resource, load_resource(resource))
+
+                if item.client_ids:
+                    self.assertEqual(item.client_id, item.client_ids[0])
