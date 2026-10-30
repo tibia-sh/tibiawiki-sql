@@ -1,7 +1,7 @@
 <!-- Changed by tibia.sh in 2026. See "About this copy" in README.md. -->
 # Changelog
 
-## Unreleased
+## 9.0.0+tibiash.8
 
 - Retry a TibiaWiki API request that gets no response within 60 seconds, a response cut short mid-body, a 429 or 5xx
   status, or a body that is not JSON, up to 5 attempts, waiting 5, 15, 30 and 60 seconds between them. Any other
