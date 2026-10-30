@@ -29,6 +29,18 @@ def revisions_body(titles: list[str]) -> str:
     return json.dumps({"query": {"pages": pages}})
 
 
+def category_body(titles: list[str], cmcontinue: str | None = None) -> str:
+    """A category members query body holding one page per title, continued from `cmcontinue` if given."""
+    members = [
+        {"pageid": page_id, "ns": 0, "title": title, "sortkeyprefix": "", "timestamp": "2017-04-26T20:04:19Z"}
+        for page_id, title in enumerate(titles, start=1)
+    ]
+    body = {"query": {"categorymembers": members}}
+    if cmcontinue is not None:
+        body["continue"] = {"cmcontinue": cmcontinue, "continue": "-||"}
+    return json.dumps(body)
+
+
 class TestWikiApi(unittest.TestCase):
 
     def setUp(self):
@@ -36,10 +48,23 @@ class TestWikiApi(unittest.TestCase):
         self.wiki_client = WikiClient(sleep=self.sleep)
         self.session = Mock()
         self.wiki_client.session = self.session
+        self.sent_params = []
 
     def respond(self, *outcomes):
-        """Make the session answer each request with the next outcome, a response or an exception to raise."""
-        self.session.get.side_effect = list(outcomes)
+        """Make the session answer each request with the next outcome, a response or an exception to raise.
+
+        A copy of each request's params is kept in `sent_params`, since the client reuses one dict across requests.
+        """
+        remaining = iter(outcomes)
+
+        def get(*args, **kwargs):
+            self.sent_params.append(dict(kwargs["params"]))
+            outcome = next(remaining)
+            if isinstance(outcome, Exception):
+                raise outcome
+            return outcome
+
+        self.session.get.side_effect = get
 
     def assert_requests(self, count: int):
         self.assertEqual(self.session.get.call_count, count)
@@ -136,6 +161,35 @@ class TestWikiApi(unittest.TestCase):
         self.assertEqual(len(members), 8)
         self.assert_requests(2)
         self.assertEqual(self.sleep.call_args_list, [call(5)])
+
+    def test_category_members_follow_cmcontinue(self):
+        self.respond(
+            response(200, category_body(["Spell 1", "Spell 2"], cmcontinue="page|5350454c4c2033|123")),
+            response(200, category_body(["Spell 3"])),
+        )
+
+        titles = [member.title for member in self.wiki_client.get_category_members("Spells")]
+
+        self.assertEqual(titles, ["Spell 1", "Spell 2", "Spell 3"])
+        self.assert_requests(2)
+        self.assertIsNone(self.sent_params[0]["cmcontinue"])
+        self.assertEqual(self.sent_params[1]["cmcontinue"], "page|5350454c4c2033|123")
+        self.assertEqual(self.sent_params[1]["cmtitle"], "Category:Spells")
+
+    def test_articles_are_requested_in_batches_of_fifty(self):
+        first_batch = [f"Article {n}" for n in range(50)]
+        second_batch = [f"Article {n}" for n in range(50, 60)]
+        self.respond(response(200, revisions_body(first_batch)), response(200, revisions_body(second_batch)))
+
+        titles = [article.title for article in self.wiki_client.get_articles(first_batch + second_batch)]
+
+        self.assertEqual(titles, first_batch + second_batch)
+        self.assert_requests(2)
+        self.assertEqual(
+            [params["titles"] for params in self.sent_params],
+            ["|".join(first_batch), "|".join(second_batch)],
+        )
+        self.sleep.assert_not_called()
 
     def test_body_cut_short_is_retried(self):
         self.respond(
@@ -235,6 +289,10 @@ class TestWikiApi(unittest.TestCase):
 
         self.assertEqual(titles, first_batch + second_batch)
         self.assert_requests(3)
+        self.assertEqual(
+            [params["titles"] for params in self.sent_params],
+            ["|".join(first_batch), "|".join(second_batch), "|".join(second_batch)],
+        )
         self.assertEqual(self.sleep.call_args_list, [call(5)])
 
     def test_images_info_stops_after_not_found(self):
