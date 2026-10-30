@@ -35,6 +35,8 @@ if TYPE_CHECKING:
     from mwparserfromhell.nodes import Template
 
 range_hyphen_pattern = re.compile(r"(?<=\d)-(?=\d)")
+positional_parameter_pattern = re.compile(r"[0-9]+")
+outfit_thing_pattern = re.compile(r"thing([0-9]+)")
 
 LOOT_RARITIES = ("always", "common", "uncommon", "semi-rare", "rare", "very rare")
 """The rarity words of the Loot Item template."""
@@ -268,7 +270,9 @@ def parse_outfit_names(template: "Template") -> list[str]:
     """Parse the outfits an Outfit template changes into.
 
     The first outfit is ``thing`` or parameter 2. Parameter 3 is never an outfit. Each extra outfit ``thingN``, from
-    ``thing2`` on, may also be given as parameter N + 2, which takes precedence.
+    ``thing2`` on, may also be given as parameter N + 2, which takes precedence. Only the parameters given are read,
+    in the order of N, so a gap between them costs nothing. A name with digits other than ASCII ones, or with a number
+    too long to read, is ignored.
 
     Args:
         template: The Outfit template.
@@ -277,15 +281,19 @@ def parse_outfit_names(template: "Template") -> list[str]:
         The names of the outfits, in order, without the empty ones.
 
     """
-    last_extra = 1
+    extras: dict[int, str] = {}
     for param in template.params:
         name = str(param.name).strip()
-        if name.isdigit():
-            last_extra = max(last_extra, int(name) - 2)
-        elif name.startswith("thing") and name[len("thing"):].isdigit():
-            last_extra = max(last_extra, int(name[len("thing"):]))
+        thing = outfit_thing_pattern.fullmatch(name)
+        try:
+            if positional_parameter_pattern.fullmatch(name) and int(name) >= 4:
+                extras[int(name) - 2] = name
+            elif thing and int(thing[1]) >= 2:
+                extras.setdefault(int(thing[1]), name)
+        except ValueError:
+            continue
     names = [template_value(template, "thing", "2")]
-    names.extend(template_value(template, str(number + 2), f"thing{number}") for number in range(2, last_extra + 1))
+    names.extend(template_value(template, extras[number]) for number in sorted(extras))
     return [name for name in names if name]
 
 

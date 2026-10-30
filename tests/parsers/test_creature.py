@@ -744,3 +744,23 @@ class TestCreatureParserAbilities(unittest.TestCase):
     def test_outfit_named_victim_and_thing_win_over_positional(self):
         self.assertEqual([("Bug", "yes", "outfit", None, None)],
                          self._rows("{{Ability List|{{Outfit|no|Rat|victim=yes|thing=Bug}}}}"))
+
+    def test_outfit_far_extra_is_read_without_a_range_scan(self):
+        self.assertEqual([("Bug", "yes", "outfit", None, None), ("Rat", "yes", "outfit", None, None)],
+                         self._rows("{{Ability List|{{Outfit|yes|Bug||thing1000000000=Rat}}}}"))
+
+    def test_outfit_far_positional_extra(self):
+        self.assertEqual([("Bug", "yes", "outfit", None, None), ("Rat", "yes", "outfit", None, None)],
+                         self._rows("{{Ability List|{{Outfit|yes|Bug||1000000000=Rat}}}}"))
+
+    def test_outfit_ignores_non_ascii_digits(self):
+        self.assertEqual([("Bug", "yes", "outfit", None, None)],
+                         self._rows("{{Ability List|{{Outfit|yes|Bug|thing²=Rat|²=Cat}}}}"))
+
+    def test_outfit_ignores_a_number_too_long_to_read(self):
+        self.assertEqual([("Bug", "yes", "outfit", None, None)],
+                         self._rows("{{Ability List|{{Outfit|yes|Bug|thing" + "9" * 5000 + "=Rat}}}}"))
+
+    def test_outfit_extras_with_a_gap(self):
+        self.assertEqual([("A", "no", "outfit", None, None), ("B", "no", "outfit", None, None)],
+                         self._rows("{{Ability List|{{Outfit|no|thing2=A|thing5=B}}}}"))
